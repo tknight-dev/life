@@ -1,0 +1,25 @@
+/**
+ * @author tknight-dev
+ */
+
+:root {
+	--global-color-accent-bright: #8d9ea5;
+	--global-color-accent-dark: #6b7c83;
+	--global-color-app-background: #000a0a;
+	--global-color-app-background-accent: #103030;
+	--global-color-app-background-accent-rgb: 16, 48, 48;
+	--global-color-menu-border: #2a465a;
+	--global-color-menu-border-rgb: 42, 70, 90;
+	--global-color-modal-background: #071a1a;
+	--global-color-font-bright: white;
+	--global-color-font-dark: black;
+
+	--global-color-background: radial-gradient(circle at 20% 10%, #103030 0%, #000a0a 40%);
+
+	--global-color-gray-33: #333333;
+	--global-color-gray-66: #666666;
+	--global-color-gray-bb: #bbbbbb;
+
+	--global-color-green: #04cb04;
+	--global-color-red: #d70404;
+}

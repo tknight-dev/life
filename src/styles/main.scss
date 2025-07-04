@@ -1,0 +1,58 @@
+/**
+ * @author tknight-dev
+ */
+
+// System
+@import 'system/color.scss';
+@import 'system/scrollbar.scss';
+@import 'system/z-index.scss';
+
+// Elements
+@import 'elements/inputs.scss';
+@import 'elements/modal.scss';
+@import 'elements/table.scss';
+
+html,
+body {
+	background: var(--global-color-background);
+	color: var(--global-color-font-bright);
+	font-family: 'Lato', sans-serif;
+	font-size: 16px;
+	font-weight: 400;
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+	padding: 0;
+	position: relative;
+	user-select: none;
+	width: 100%;
+}
+
+a,
+.hyperlink {
+	color: var(--global-color-gray-bb);
+	cursor: pointer;
+	text-decoration: none;
+	transition: color 0.125s linear;
+
+	&:hover,
+	&.active {
+		color: var(--global-color-font-bright);
+		text-decoration: none;
+	}
+}
+
+.clickable {
+	cursor: pointer;
+}
+
+.wrapper {
+	height: 100%;
+	position: relative;
+	width: 100%;
+}
+
+* {
+	box-sizing: border-box;
+	font-family: 'Lato', sans-serif;
+}

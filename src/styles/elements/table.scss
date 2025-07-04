@@ -1,0 +1,137 @@
+/**
+ * @author tknight-dev
+ */
+
+:root {
+}
+
+$table-cell-background-color: rgba(255, 255, 255, 0.25);
+$table-cell-background-color-alt: rgba(255, 255, 255, 0.2);
+
+table {
+	border-collapse: collapse;
+	height: 100%;
+	width: 100%;
+
+	tr {
+		height: 40px;
+
+		td {
+			height: 40px;
+
+			&.center {
+				text-align: center;
+			}
+
+			&.width-50 {
+				width: 50%;
+			}
+
+			&.radio-spread,
+			&.radio-spread > span {
+				align-items: center;
+			}
+
+			&.radio-spread,
+			&.radio-spread > span,
+			&.range-label-spread {
+				display: flex;
+				justify-content: space-evenly;
+			}
+
+			&.range-label-spread {
+				align-items: end;
+			}
+		}
+	}
+
+	&.gameboard {
+		border-radius: 5px;
+		overflow: hidden;
+
+		tr {
+			height: auto;
+
+			td {
+				background-color: $table-cell-background-color;
+				border: 1px solid rgba(var(--global-color-menu-border-rgb), 0.5);
+				height: auto;
+				position: relative;
+
+				&:nth-child(odd) {
+					background-color: $table-cell-background-color-alt;
+				}
+
+				.color {
+					bottom: 5px;
+					left: 5px;
+					opacity: 0;
+					right: 5px;
+					top: 5px;
+					transition: opacity 0.5s;
+
+					&.o {
+						background-color: rgb(176, 42, 67);
+						box-shadow: 0 0 3px 3px rgb(176, 42, 67);
+						z-index: 1;
+					}
+
+					&.x {
+						background-color: rgb(67, 176, 42);
+						box-shadow: 0 0 3px 3px rgb(67, 176, 42);
+						z-index: 2;
+					}
+				}
+
+				.color,
+				.coordinate,
+				.piece {
+					position: absolute;
+				}
+
+				.coordinate {
+					bottom: 1px;
+					color: var(--global-color-gray-bb);
+					font-size: 10px;
+					right: 1px;
+					z-index: 3;
+				}
+
+				.piece {
+					bottom: 0;
+					left: 0;
+					right: 0;
+					top: 0;
+					z-index: 4;
+
+					&.o {
+						// !Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.
+						background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path fill="white" d="M224 96a160 160 0 1 0 0 320 160 160 0 1 0 0-320zM448 256A224 224 0 1 1 0 256a224 224 0 1 1 448 0z"/></svg>')
+							center no-repeat;
+					}
+
+					&.x {
+						// !Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.
+						background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path fill="white" d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z"/></svg>')
+							center no-repeat;
+					}
+
+					&.o,
+					&.x {
+						background-size: 90% 90%;
+					}
+				}
+			}
+
+			&:nth-child(odd) {
+				td {
+					background-color: $table-cell-background-color-alt;
+
+					&:nth-child(odd) {
+						background-color: $table-cell-background-color;
+					}
+				}
+			}
+		}
+	}
+}

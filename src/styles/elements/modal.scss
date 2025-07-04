@@ -1,0 +1,61 @@
+/**
+ * @author tknight-dev
+ */
+
+.modal {
+	transition: opacity 0.125s linear;
+
+	.background,
+	.foreground {
+		bottom: 0;
+		left: 0;
+		position: fixed;
+		right: 0;
+		top: 0;
+	}
+
+	.background {
+		background-color: rgba(0, 0, 0, 0.25);
+		z-index: var(--global-z-index-modal-background);
+	}
+
+	.foreground {
+		align-items: center;
+		display: flex;
+		justify-content: center;
+		z-index: var(--global-z-index-modal-foreground);
+
+		.container {
+			border-radius: 20px;
+			box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.5);
+			cursor: default;
+			max-width: calc(100% - 20px);
+			min-width: 300px;
+			width: 75%;
+
+			.body {
+				background-color: var(--global-color-modal-background);
+				border-bottom-left-radius: 20px;
+				border-bottom-right-radius: 20px;
+				padding: 20px;
+			}
+
+			.body,
+			.header {
+				position: relative;
+			}
+
+			.header {
+				align-items: center;
+				background-color: color-mix(in srgb, var(--global-color-app-background-accent), white 3%);
+				border-top-left-radius: 20px;
+				border-top-right-radius: 20px;
+				display: flex;
+				font-size: 20px;
+				height: 60px;
+				justify-content: center;
+				padding: 0 20px;
+			}
+		}
+	}
+}

@@ -1,0 +1,31 @@
+{
+  "author": "tknight-dev",
+  "description": "A multithreaded game of life",
+  "name": "life",
+  "scripts": {
+    "dev": "rimraf dist && yarn tsc && yarn concurrently --kill-others \"yarn watch-html\" \"yarn watch-scss\" \"yarn watch-serve\" \"yarn watch-tsc\" -n HTML,SCSS,HTTP,TS --pad-prefix",
+    "lint": "prettier src/. --write",
+    "prod": "rimraf dist && yarn lint && node esbuild.mjs",
+    "serve": "live-server dist --entry-file=life.html --port 8080 --wait=1000",
+    "watch-html": "nodemon --quiet --watch src/life.html -x \"copyfiles -u 1 src/life.html dist\"",
+    "watch-scss": "sass src/life.scss:dist/life.css --quiet --watch",
+    "watch-serve": "live-server dist --entry-file=life.html --port 8080 --quiet --wait=1000 --watch=.",
+    "watch-tsc": "tsc --preserveWatchOutput --watch"
+  },
+  "type": "module",
+  "version": "0.1.0",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "copyfiles": "^2.0.0",
+    "esbuild": "^0.25.5",
+    "esbuild-sass-plugin": "^3.3.1",
+    "live-server": "^1.0.0",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.0.0",
+    "rimraf": "^6.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}

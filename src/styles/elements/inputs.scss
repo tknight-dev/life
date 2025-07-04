@@ -1,0 +1,122 @@
+/**
+ * @author tknight-dev
+ */
+
+:root {
+	--global-input-height: 40px;
+	--global-input-height-toggle: 26px;
+	--global-input-width-toggle: 60px;
+}
+
+.input {
+	align-items: center;
+	box-sizing: border-box;
+	color: var(--global-color-font-bright);
+	display: flex;
+	justify-content: left;
+	height: var(--global-input-height);
+	padding-left: 12px;
+	width: 100%;
+}
+
+input,
+select,
+textarea {
+	background-color: rgba(0, 0, 0, 0.25);
+	border: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
+	border-radius: 5px;
+	box-sizing: border-box;
+	color: var(--global-color-font-bright);
+	font-family: inherit;
+	height: var(--global-input-height);
+	outline: none;
+	padding: 5px;
+	width: 100%;
+
+	&:disabled {
+		color: var(--global-color-gray-33);
+	}
+
+	&:focus {
+		outline: none;
+	}
+
+	&.invalid,
+	&.ng-invalid {
+		border: 2px solid var(--global-color-red);
+	}
+}
+
+input,
+button {
+	font-family: inherit;
+	font-size: 1em;
+	padding-left: 10px;
+}
+
+input[type='button'],
+input[type='submit'],
+button {
+	background-color: var(--global-color-accent-bright);
+	border-radius: 5px;
+	color: var(--global-color-font-dark);
+	cursor: pointer;
+	height: var(--global-input-height);
+	padding: 0 20px;
+
+	&:disabled {
+		background-color: color-mix(in srgb, var(--global-color-accent-bright), black 50%);
+		color: var(--global-color-gray-bb);
+		cursor: default;
+	}
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+	height: calc(var(--global-input-height) / 1.5);
+	width: calc(var(--global-input-height) / 1.5);
+}
+
+.input-toggle {
+	background-color: rgba(0, 0, 0, 0.3);
+	border: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
+	border-radius: 5px;
+	height: var(--global-input-height-toggle);
+	position: relative;
+	transition-property: background-color;
+	transition-duration: 0.125s;
+	transition-timing-function: linear;
+	width: var(--global-input-width-toggle);
+
+	.ball {
+		background-color: white;
+		border-radius: 50%;
+		box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.5);
+		cursor: pointer;
+		left: 0;
+		height: var(--global-input-height-toggle);
+		position: absolute;
+		top: 0;
+		transition-property: left;
+		transition-duration: 0.125s;
+		transition-timing-function: linear;
+		width: var(--global-input-height-toggle);
+	}
+
+	&.true {
+		background-color: var(--global-color-accent-bright);
+
+		&.danger {
+			background-color: var(--global-color-red);
+		}
+
+		.ball {
+			left: calc(100% - var(--global-input-height-toggle));
+		}
+	}
+}
+
+select > option {
+	background: var(--global-color-app-background);
+	cursor: pointer;
+}
