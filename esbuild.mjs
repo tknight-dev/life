@@ -58,17 +58,6 @@ if (production) {
 	config.minify = false;
 	config.plugins.push(
 		typecheckPlugin({
-            compilerOptions: {
-                "baseUrl": "./",
-                "esModuleInterop": true,
-                "module": "ESNext",
-                "noEmit": true,
-                "pretty": true,
-                "skipLibCheck": true,
-                "strict": true,
-                "strictPropertyInitialization": false,
-                "target": "ESNext"
-            },
 			watch: true,
 		}),
 	);
