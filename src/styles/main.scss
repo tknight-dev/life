@@ -3,14 +3,14 @@
  */
 
 // System
-@import 'system/color.scss';
-@import 'system/scrollbar.scss';
-@import 'system/z-index.scss';
+@forward 'system/color.scss';
+@forward 'system/scrollbar.scss';
+@forward 'system/z-index.scss';
 
 // Elements
-@import 'elements/inputs.scss';
-@import 'elements/modal.scss';
-@import 'elements/table.scss';
+@forward 'elements/inputs.scss';
+@forward 'elements/modal.scss';
+@forward 'elements/table.scss';
 
 html,
 body {

@@ -1,21 +1,4 @@
 {
-    "compilerOptions": {
-        "baseUrl": "./",
-        "esModuleInterop": true,
-        "module": "ESNext",
-        "noEmit": false,
-        "outDir": "dist",
-        "pretty": true,
-        "removeComments": false,
-        "skipLibCheck": true,
-        "sourceMap": true,
-        "strict": true,
-        "strictPropertyInitialization": false,
-        "target": "ESNext"
-    },
     "include": ["src/**/*.ts"],
-    "exclude": ["node_modules"],
-    "ts-node": {
-        "esm": true
-    },
+    "exclude": ["node_modules"]
 }
