@@ -5,7 +5,7 @@ import { VideoBusInputCmd, VideoBusInputDataInit, VideoBusInputPayload, VideoBus
  */
 
 export class VideoBusEngine {
-	private static callback: () => void;
+	private static callbackInitComplete: () => void;
 	private static canvas: HTMLCanvasElement;
 	private static canvasOffscreen: OffscreenCanvas;
 	private static worker: Worker;
@@ -14,7 +14,7 @@ export class VideoBusEngine {
 	 * Start the video streams in another thread
 	 */
 	public static initialize(canvas: HTMLCanvasElement, callback: () => void): void {
-		VideoBusEngine.callback = callback;
+		VideoBusEngine.callbackInitComplete = callback;
 		VideoBusEngine.canvas = canvas;
 		VideoBusEngine.canvasOffscreen = canvas.transferControlToOffscreen();
 
@@ -52,11 +52,9 @@ export class VideoBusEngine {
 			const payloads: VideoBusOutputPayload[] = event.data.payloads;
 
 			for (let i = 0; i < payloads.length; i++) {
-				const payload = payloads[i];
-
-				switch (payload.cmd) {
+				switch (payloads[i].cmd) {
 					case VideoBusOutputCmd.INIT_COMPLETE:
-						VideoBusEngine.callback();
+						VideoBusEngine.callbackInitComplete();
 						break;
 				}
 			}

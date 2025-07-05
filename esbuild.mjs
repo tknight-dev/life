@@ -27,6 +27,7 @@ var config = {
 		index: 'src/index.html',
 		style: 'src/style.scss',
 		script: 'src/script.ts',
+		'calc.engine': 'src/workers/calc/calc.engine.ts', // Worker entry point
 		'video.engine': 'src/workers/video/video.engine.ts', // Worker entry point
 	},
 	loader: {

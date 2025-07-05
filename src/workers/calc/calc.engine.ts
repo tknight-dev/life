@@ -1,54 +1,36 @@
-// import {
-// 	VideoBusInputCmd,
-// 	VideoBusInputCmdAudioBufferIds,
-// 	VideoBusInputCmdInit,
-// 	VideoBusInputCmdMapLoad,
-// 	VideoBusInputCmdMapLoadById,
-// 	VideoBusInputCmdResize,
-// 	VideoBusInputCmdGameModeEdit,
-// 	VideoBusInputCmdGameModeEditApply,
-// 	VideoBusInputCmdGameModeEditDraw,
-// 	VideoBusInputCmdGamePause,
-// 	VideoBusInputCmdGamePauseReason,
-// 	VideoBusInputCmdGameSave,
-// 	VideoBusInputCmdGameStart,
-// 	VideoBusInputCmdGameUnpause,
-// 	VideoBusInputCmdSettings,
-// 	VideoBusPayload,
-// 	VideoBusOutputCmd,
-// 	VideoBusWorkerPayload,
-// } from '../../engines/buses/video.model.bus';
+import { CalcBusInputCmd, CalcBusInputDataInit, CalcBusInputPayload, CalcBusOutputCmd, CalcBusOutputPayload } from './calc.model';
 
 /**
  * @author tknight-dev
  */
 
 self.onmessage = (event: MessageEvent) => {
-	// let videoBusPayload: VideoBusPayload = event.data;
-	// switch (videoBusPayload.cmd) {
-	// 	case VideoBusInputCmd.AUDIO_BUFFER_IDS:
-	// 		CalcWorkerEngine.inputAudioBufferIds(<VideoBusInputCmdAudioBufferIds>videoBusPayload.data);
-	// 		break;
-	// }
+	const videoBusInputPayload: CalcBusInputPayload = event.data;
+
+	switch (videoBusInputPayload.cmd) {
+		case CalcBusInputCmd.INIT:
+			CalcWorkerEngine.initialize(self, <CalcBusInputDataInit>videoBusInputPayload.data);
+			break;
+	}
 };
 
 class CalcWorkerEngine {
 	private static self: Window & typeof globalThis;
 
-	public static async initialize(self: Window & typeof globalThis, data: any): Promise<void> {
+	public static async initialize(self: Window & typeof globalThis, data: CalcBusInputDataInit): Promise<void> {
 		CalcWorkerEngine.self = self;
+
+		CalcWorkerEngine.post([
+			{
+				cmd: CalcBusOutputCmd.INIT_COMPLETE,
+				data: undefined,
+			},
+		]);
 	}
 
-	// public static outputAudioFade(bufferId: number, durationInMs: number, volumePercentage: number): void {
-	// 	CalcWorkerEngine.post([
-	// 		{
-	// 			cmd: VideoBusOutputCmd.AUDIO_FADE,
-	// 			data: {
-	// 				durationInMs: durationInMs,
-	// 				bufferId: bufferId,
-	// 				volumePercentage: volumePercentage,
-	// 			},
-	// 		},
-	// 	]);
-	// }
+	private static post(CalcBusWorkerPayloads: CalcBusOutputPayload[]): void {
+		CalcWorkerEngine.self.postMessage({
+			payloads: CalcBusWorkerPayloads,
+		});
+	}
 }

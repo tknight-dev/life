@@ -1,3 +1,4 @@
+import { CalcBusEngine } from './workers/calc/calc.bus';
 import { VideoBusEngine } from './workers/video/video.bus';
 // import { VideoBusInputCmdInit } from './buses/video.model.bus';
 
@@ -35,16 +36,29 @@ class Life {
 		Life.elementStatsCPS = <HTMLElement>document.getElementById('cps');
 	}
 
-	private static initializeWorkers(): void {
-		let then: number = performance.now();
-		VideoBusEngine.initialize(Life.elementCanvas, () => {
-			console.log('VideoBusEngine: loaded in', performance.now() - then, 'ms');
+	private static initializeWorkers(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			let then: number = performance.now();
+			CalcBusEngine.initialize(() => {
+				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
+
+				then = performance.now();
+				VideoBusEngine.initialize(Life.elementCanvas, () => {
+					console.log('Engine > Video: loaded in', performance.now() - then, 'ms');
+					resolve();
+				});
+			});
 		});
 	}
 
-	public static main(): void {
+	public static async main(): Promise<void> {
+		let then: number = performance.now();
+
+		// Initialize
 		Life.initializeDOM();
-		Life.initializeWorkers();
+		await Life.initializeWorkers();
+
+		console.log('System Loaded in', performance.now() - then, 'ms');
 	}
 }
 Life.main();
