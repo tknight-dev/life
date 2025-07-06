@@ -15,6 +15,8 @@ class Life {
 	private static elementControlsPause: HTMLElement;
 	private static elementControlsPlay: HTMLElement;
 	private static elementControlsReset: HTMLElement;
+	private static elementDataContainer: HTMLElement;
+	private static elementFPS: HTMLElement;
 	private static elementMenuInfo: HTMLElement;
 	private static elementStatsC: HTMLElement;
 	private static elementStatsCPS: HTMLElement;
@@ -32,6 +34,9 @@ class Life {
 			(<any>window).open('https://tknight.dev/#/creations', '_blank').focus();
 		};
 
+		Life.elementDataContainer = <HTMLElement>document.getElementById('data-container');
+		Life.elementFPS = <HTMLElement>document.getElementById('fps');
+
 		Life.elementStatsC = <HTMLElement>document.getElementById('c');
 		Life.elementStatsCPS = <HTMLElement>document.getElementById('cps');
 	}
@@ -43,7 +48,10 @@ class Life {
 				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
 
 				then = performance.now();
-				VideoBusEngine.initialize(Life.elementCanvas, () => {
+				VideoBusEngine.setCallbackFPS((fps: number) => {
+					Life.elementFPS.innerText = String(fps);
+				});
+				VideoBusEngine.initialize(Life.elementCanvas, Life.elementDataContainer, () => {
 					console.log('Engine > Video: loaded in', performance.now() - then, 'ms');
 					resolve();
 				});

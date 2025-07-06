@@ -28,12 +28,17 @@
 			</div>
 			<div class="game" id="game">
 				<div class="wrapper">
+						<br><br><br><br>
 						Any live cell with fewer than two live neighbors - Dies (underpopulation)<br>
 						Any live cell with two or three live neighbors - Stays alive<br>
 						Any live cell with more than three live neighbors - Dies (overpopulation)<br>
 						Any dead cell with exactly three live neighbors - Becomes alive (reproduction)<br>
 					<div class="canvas">
-						<canvas class="data" id="cavnas"></canvas>
+						<div class="aspect-ratio">
+							<div class="data-container" id="data-container">
+								<canvas class="data" id="cavnas"></canvas>
+							</div>
+						</div>
 					</div>
 					<div class="controls">
 						<div class="left">
@@ -47,12 +52,13 @@
 							<div class="life-icon forward" id="forward"></div>
 						</div>
 					</div>
+					<div class="fps" id="fps"></div>
 					<div class="stats">
 						<div class="c" id="c">
-							0 cycles
+							0 iterations
 						</div>
 						<div class="cps" id="cps">
-							0 cycles/second
+							0 iterations/second
 						</div>
 					</div>
 				</div>
