@@ -32,6 +32,7 @@ export interface CalcBusInputPayload {
 export enum CalcBusOutputCmd {
 	INIT_COMPLETE,
 	IPS,
+	POSITIONS,
 }
 
 export interface CalcBusOutputDataIPS {
@@ -41,5 +42,5 @@ export interface CalcBusOutputDataIPS {
 
 export interface CalcBusOutputPayload {
 	cmd: CalcBusOutputCmd;
-	data: CalcBusOutputDataIPS | undefined;
+	data: CalcBusOutputDataIPS | Uint32Array | undefined;
 }

@@ -76,6 +76,9 @@ class Life {
 				Life.elementStatsC.innerText = String((data.ipsTotal / 1000) | 0);
 				Life.elementStatsCPS.innerText = String(data.ips);
 			});
+			CalcBusEngine.setCallbackPositions((data: Uint32Array) => {
+				// console.log('positions', data);
+			});
 			CalcBusEngine.initialize(Life.settingsCalc, () => {
 				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
 
@@ -103,6 +106,10 @@ class Life {
 		await Life.initializeWorkers();
 
 		console.log('System Loaded in', performance.now() - then, 'ms');
+
+		// 1. Allow user to define starting cells (video integration)
+		// 2. Submit cells to calc
+		// 3. Draw cells in video
 	}
 
 	// http://detectmobilebrowsers.com/

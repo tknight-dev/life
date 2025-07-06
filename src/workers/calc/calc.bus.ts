@@ -7,7 +7,6 @@ import {
 	CalcBusOutputDataIPS,
 	CalcBusOutputPayload,
 } from './calc.model';
-import { VideoBusInputDataSettingsFPS } from '../video/video.model';
 
 /**
  * @author tknight-dev
@@ -16,6 +15,7 @@ import { VideoBusInputDataSettingsFPS } from '../video/video.model';
 export class CalcBusEngine {
 	private static callbackInitComplete: () => void;
 	private static callbackIPS: (data: CalcBusOutputDataIPS) => void;
+	private static callbackPositions: (data: Uint32Array) => void;
 	private static worker: Worker;
 
 	/**
@@ -63,6 +63,9 @@ export class CalcBusEngine {
 					case CalcBusOutputCmd.IPS:
 						CalcBusEngine.callbackIPS(<CalcBusOutputDataIPS>payloads[i].data);
 						break;
+					case CalcBusOutputCmd.POSITIONS:
+						CalcBusEngine.callbackPositions(<Uint32Array>payloads[i].data);
+						break;
 				}
 			}
 		};
@@ -77,5 +80,9 @@ export class CalcBusEngine {
 
 	public static setCallbackIPS(callbackIPS: (data: CalcBusOutputDataIPS) => void): void {
 		CalcBusEngine.callbackIPS = callbackIPS;
+	}
+
+	public static setCallbackPositions(callbackPositions: (data: Uint32Array) => void): void {
+		CalcBusEngine.callbackPositions = callbackPositions;
 	}
 }
