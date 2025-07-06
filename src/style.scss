@@ -70,23 +70,33 @@ $life-logo-width: 152px;
 			z-index: 1;
 
 			.aspect-ratio {
+				align-items: center;
 				aspect-ratio: 16 / 9;
+				display: flex;
+				justify-content: center;
 				max-height: 100%;
 				position: relative;
 				width: 100%;
 
-				.data-container {
-					bottom: 0;
-					left: 0;
-					position: absolute;
-					right: 0;
-					top: 0;
-					transform-origin: 50% 50%;
+				.aspect-ratio2 {
+					aspect-ratio: 16 / 9;
+					height: 100%;
+					position: relative;
+					max-width: 100%;
 
-					.data {
-						border: 1px solid red;
-						position: relative;
-						transform-origin: top left;
+					.data-container {
+						bottom: 0;
+						left: 0;
+						position: absolute;
+						right: 0;
+						top: 0;
+						transform-origin: 50% 50%;
+
+						.data {
+							border: 1px solid red;
+							position: relative;
+							transform-origin: top left;
+						}
 					}
 				}
 			}

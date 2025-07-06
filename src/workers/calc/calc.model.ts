@@ -1,3 +1,5 @@
+import { VideoBusInputDataSettingsFPS } from '../video/video.model';
+
 /**
  * @author tknight-dev
  */
@@ -8,9 +10,15 @@
 
 export enum CalcBusInputCmd {
 	INIT,
+	SETTINGS,
 }
 
-export interface CalcBusInputDataInit {}
+export interface CalcBusInputDataInit extends CalcBusInputDataSettings {}
+
+export interface CalcBusInputDataSettings {
+	fps: VideoBusInputDataSettingsFPS;
+	iterationsPerSecond: number;
+}
 
 export interface CalcBusInputPayload {
 	cmd: CalcBusInputCmd;
@@ -23,9 +31,15 @@ export interface CalcBusInputPayload {
 
 export enum CalcBusOutputCmd {
 	INIT_COMPLETE,
+	IPS,
+}
+
+export interface CalcBusOutputDataIPS {
+	ips: number;
+	ipsTotal: number;
 }
 
 export interface CalcBusOutputPayload {
 	cmd: CalcBusOutputCmd;
-	data: undefined;
+	data: CalcBusOutputDataIPS | undefined;
 }

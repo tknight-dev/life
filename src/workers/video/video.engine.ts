@@ -36,11 +36,10 @@ class VideoWorkerEngine {
 	private static ctxWidth: number;
 	private static devicePixelRatioEff: number;
 	private static frameCount: number = 0;
-	private static frameCountInterval: ReturnType<typeof setInterval>;
 	private static frameRequest: number;
 	private static framesPerMillisecond: number;
-	private static framesPerSecondCalc: number = 0;
 	private static frameTimestampDelta: number = 0;
+	private static frameTimestampFPSThen: number = 0;
 	private static frameTimestampThen: number = 0;
 	private static self: Window & typeof globalThis;
 
@@ -73,17 +72,6 @@ class VideoWorkerEngine {
 
 		// Start rendering thread
 		VideoWorkerEngine.frameRequest = requestAnimationFrame(VideoWorkerEngine.render);
-		VideoWorkerEngine.frameCountInterval = setInterval(() => {
-			VideoWorkerEngine.framesPerSecondCalc = VideoWorkerEngine.frameCount;
-			VideoWorkerEngine.frameCount = 0;
-
-			VideoWorkerEngine.post([
-				{
-					cmd: VideoBusOutputCmd.FPS,
-					data: VideoWorkerEngine.framesPerSecondCalc,
-				},
-			]);
-		}, 1000);
 	}
 
 	public static inputResize(data: VideoBusInputDataResize): void {
@@ -122,6 +110,23 @@ class VideoWorkerEngine {
 		VideoWorkerEngine.frameRequest = requestAnimationFrame(VideoWorkerEngine.render);
 		VideoWorkerEngine.frameTimestampDelta = timestampNow - VideoWorkerEngine.frameTimestampThen;
 
+		/**
+		 * Send FPS to main thread every second
+		 */
+		if (timestampNow - VideoWorkerEngine.frameTimestampFPSThen > 999) {
+			VideoWorkerEngine.post([
+				{
+					cmd: VideoBusOutputCmd.FPS,
+					data: VideoWorkerEngine.frameCount,
+				},
+			]);
+			VideoWorkerEngine.frameCount = 0;
+			VideoWorkerEngine.frameTimestampFPSThen = timestampNow;
+		}
+
+		/**
+		 * Render data at frames per ms rate
+		 */
 		if (VideoWorkerEngine.frameTimestampDelta > VideoWorkerEngine.framesPerMillisecond) {
 			VideoWorkerEngine.frameTimestampThen =
 				timestampNow - (VideoWorkerEngine.frameTimestampDelta % VideoWorkerEngine.framesPerMillisecond);

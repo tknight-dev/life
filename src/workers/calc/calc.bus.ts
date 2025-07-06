@@ -1,4 +1,13 @@
-import { CalcBusInputCmd, CalcBusInputDataInit, CalcBusInputPayload, CalcBusOutputCmd, CalcBusOutputPayload } from './calc.model';
+import {
+	CalcBusInputCmd,
+	CalcBusInputDataInit,
+	CalcBusInputDataSettings,
+	CalcBusInputPayload,
+	CalcBusOutputCmd,
+	CalcBusOutputDataIPS,
+	CalcBusOutputPayload,
+} from './calc.model';
+import { VideoBusInputDataSettingsFPS } from '../video/video.model';
 
 /**
  * @author tknight-dev
@@ -6,12 +15,13 @@ import { CalcBusInputCmd, CalcBusInputDataInit, CalcBusInputPayload, CalcBusOutp
 
 export class CalcBusEngine {
 	private static callbackInitComplete: () => void;
+	private static callbackIPS: (data: CalcBusOutputDataIPS) => void;
 	private static worker: Worker;
 
 	/**
 	 * Start the video streams in another thread
 	 */
-	public static initialize(callback: () => void): void {
+	public static initialize(settings: CalcBusInputDataSettings, callback: () => void): void {
 		CalcBusEngine.callbackInitComplete = callback;
 
 		// Spawn Calc thread
@@ -27,7 +37,7 @@ export class CalcBusEngine {
 			/*
 			 * Initialization payload
 			 */
-			const videoBusInputDataInit: CalcBusInputDataInit = {};
+			const videoBusInputDataInit: CalcBusInputDataInit = Object.assign({}, settings);
 			const videoBusInputPayload: CalcBusInputPayload = {
 				cmd: CalcBusInputCmd.INIT,
 				data: videoBusInputDataInit,
@@ -50,8 +60,22 @@ export class CalcBusEngine {
 					case CalcBusOutputCmd.INIT_COMPLETE:
 						CalcBusEngine.callbackInitComplete();
 						break;
+					case CalcBusOutputCmd.IPS:
+						CalcBusEngine.callbackIPS(<CalcBusOutputDataIPS>payloads[i].data);
+						break;
 				}
 			}
 		};
+	}
+
+	public static outputSettings(data: CalcBusInputDataSettings): void {
+		CalcBusEngine.worker.postMessage({
+			cmd: CalcBusInputCmd.SETTINGS,
+			data: data,
+		});
+	}
+
+	public static setCallbackIPS(callbackIPS: (data: CalcBusOutputDataIPS) => void): void {
+		CalcBusEngine.callbackIPS = callbackIPS;
 	}
 }
