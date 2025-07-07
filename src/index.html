@@ -23,16 +23,13 @@
 					<div class="content" id="menu-content">
 						<span class="hyperlink menu"></span>
 						<span class="hyperlink menu-item" id="info-click">Info</span>
+						<span class="hyperlink menu-item" id="info-rules">Rules</span>
+						<span class="hyperlink menu-item" id="info-settings">Settings</span>
 					</div>
 				</div>
 			</div>
 			<div class="game" id="game">
 				<div class="wrapper">
-						<br><br><br><br>
-						Any live cell with fewer than two live neighbors - Dies (underpopulation)<br>
-						Any live cell with two or three live neighbors - Stays alive<br>
-						Any live cell with more than three live neighbors - Dies (overpopulation)<br>
-						Any dead cell with exactly three live neighbors - Becomes alive (reproduction)<br>
 					<div class="canvas">
 						<div class="aspect-ratio">
 							<div class="aspect-ratio2">
@@ -55,13 +52,106 @@
 						</div>
 					</div>
 					<div class="fps" id="fps"></div>
+					<div class="rules" id="rules">
+						<div class="wrapper">
+							<div class="header">Rules</div>
+							<div class="body">
+								<strong>Conway's Game of Life:</strong><br>
+								<ul>
+									<li>Diagonal, Horizontal, and Vertical cells considered</li>
+								</ul>
+								<ol>
+									<li>&nbsp;Dies: Any live cell with fewer than two live neighbors (underpopulation)</li>
+									<li>Lives: Any live cell with two or three live neighbors</li>
+									<li>&nbsp;Dies: Any live cell with more than three live neighbors (overpopulation)</li>
+									<li>&nbsp;Born: Any dead cell with exactly three live neighbors</li>
+								</ol>
+								<br>
+								<strong>Limitations:</strong><br>
+								<ul>
+									<li>Iterations per Second (<i>i/s</i>)
+										<ul>
+											<li>Max: 1,000,000,000?</li>
+											<li>Min: 1</li>
+										</ul>
+									</li>
+									<li>Table size (16x9 aspect ratio)
+										<ul>
+											<li>Max: is 32,752 by 18,423 (&le; ~75 MB)</li>
+											<li>Min: is 496&nbsp;&nbsp;&nbsp; by 279&nbsp;&nbsp;&nbsp; (&le; ~17 KB)</li>
+										</ul>
+									</li>
+								</ul>
+							</div>
+							<div class="buttons">
+								<button id="rules-close">Close</button>
+							</div>
+						</div>
+					</div>
+					<div class="settings" id="settings">
+						<div class="wrapper">
+							<div class="header">Settings</div>
+							<div class="body">
+								<table>
+									<tbody>
+										<tr>
+											<td>FPS</td>
+											<td>
+												<select id="settings-value-fps">
+													<option value="30">30</option>
+													<option value="40">40</option>
+													<option value="60" selected>60</option>
+													<option value="120">120</option>
+													<option value="1">Unlimited</option>
+												</select>
+											</td>
+										</tr>
+										<tr>
+											<td>Grid</td>
+											<td><input id="settings-value-grid" type="checkbox" checked /></td>
+										</tr>
+										<tr>
+											<td><i>i/s</i></td>
+											<td><input id="settings-value-ips" max="1000000000" min="1" type="number" value="1" /></td>
+										</tr>
+										<tr>
+											<td>Resolution</td>
+											<td>
+												<select id="settings-value-resolution">
+													<option value="null" selected>Native</option>
+													<option value="256">256</option>
+													<option value="384">384</option>
+													<option value="512">512</option>
+													<option value="640">640</option>
+													<option value="1280">1280</option>
+													<option value="1920">1920</option>
+												</select>
+											</td>
+										</tr>
+										<tr>
+											<td>Table Size</td>
+											<td>
+												<select id="settings-value-table-size">
+													<option value="full" selected>32,752 by 18,423 (&le; ~75 MB)</option>
+													<option value="half">16,368 by 9,207 (&le; ~19 MB)</option>
+													<option value="quarter">8,176 by 4,599 (&le; ~5 MB)</option>
+													<option value="eighth">2,032 by 1,143 (&le; ~290 KB)</option>
+													<option value="sixteenth">1,008 by 567 (&le; ~71 KB)</option>
+													<option value="thirtysecond">496 by 279 (&le; ~17 KB)</option>
+												</select>
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div class="buttons">
+								<button id="settings-cancel">Cancel</button>
+								<button id="settings-apply">Apply</button>
+							</div>
+						</div>
+					</div>
 					<div class="stats">
-						<div class="c">
-							<span id="c"></span><span>i/k</span>
-						</div>
-						<div class="cps">
-							<span id="cps"></span><span>i/s</span>
-						</div>
+						<span id="c"></span>&nbsp;<sup>i</sup>&nbsp;|&nbsp;<span id="cps"></span>&nbsp;<sup>i/s</sup>
 					</div>
 				</div>
 			</div>

@@ -42,7 +42,7 @@ var config = {
 		'.js': '.mjs',
 	},
 	platform: 'node',
-	plugins: [sassPlugin()],
+	plugins: [], // Don't set plugins here
 	sourcemap: false,
 };
 
@@ -50,6 +50,9 @@ var config = {
  * Build
  */
 if (production) {
+	// Config: prod
+	config.plugins = [sassPlugin(), typecheckPlugin()];
+
 	await esbuild.build(config);
 } else {
 	var host = 'localhost',
@@ -57,11 +60,14 @@ if (production) {
 
 	// Config: dev
 	config.minify = false;
-	config.plugins.push(
+	config.plugins = [
+		sassPlugin({
+			watch: true,
+		}),
 		typecheckPlugin({
 			watch: true,
 		}),
-	);
+	];
 	config.sourcemap = true;
 
 	// Serve and Watch

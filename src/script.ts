@@ -19,6 +19,13 @@ class Life {
 	private static elementDataContainer: HTMLElement;
 	private static elementFPS: HTMLElement;
 	private static elementMenuInfo: HTMLElement;
+	private static elementMenuRules: HTMLElement;
+	private static elementMenuSettings: HTMLElement;
+	private static elementRules: HTMLElement;
+	private static elementRulesClose: HTMLButtonElement;
+	private static elementSettings: HTMLElement;
+	private static elementSettingsApply: HTMLButtonElement;
+	private static elementSettingsCancel: HTMLButtonElement;
 	private static elementStatsC: HTMLElement;
 	private static elementStatsCPS: HTMLElement;
 	private static settingsCalc: CalcBusInputDataSettings;
@@ -36,6 +43,32 @@ class Life {
 		Life.elementMenuInfo.onclick = () => {
 			(<any>window).open('https://tknight.dev/#/creations', '_blank').focus();
 		};
+		Life.elementMenuRules = <HTMLElement>document.getElementById('info-rules');
+		Life.elementMenuRules.onclick = () => {
+			Life.elementSettingsCancel.click();
+			Life.elementRules.style.display = 'block';
+		};
+		Life.elementMenuSettings = <HTMLElement>document.getElementById('info-settings');
+		Life.elementMenuSettings.onclick = () => {
+			Life.elementRulesClose.click();
+			Life.elementSettings.style.display = 'block';
+		};
+
+		Life.elementRules = <HTMLButtonElement>document.getElementById('rules');
+		Life.elementRulesClose = <HTMLButtonElement>document.getElementById('rules-close');
+		Life.elementRulesClose.onclick = () => {
+			Life.elementRules.style.display = 'none';
+		};
+
+		Life.elementSettings = <HTMLElement>document.getElementById('settings');
+		Life.elementSettingsApply = <HTMLButtonElement>document.getElementById('settings-apply');
+		Life.elementSettingsApply.onclick = () => {
+			Life.elementSettings.style.display = 'none';
+		};
+		Life.elementSettingsCancel = <HTMLButtonElement>document.getElementById('settings-cancel');
+		Life.elementSettingsCancel.onclick = () => {
+			Life.elementSettings.style.display = 'none';
+		};
 
 		Life.elementDataContainer = <HTMLElement>document.getElementById('data-container');
 		Life.elementFPS = <HTMLElement>document.getElementById('fps');
@@ -50,11 +83,13 @@ class Life {
 		 */
 		Life.settingsVideo = {
 			fps: VideoBusInputDataSettingsFPS._60,
+			grid: true,
 			resolution: null, // Native
 		};
 
 		if (Life.isMobileOrTablet()) {
-			Life.settingsVideo.resolution = 512; // Mobile devices utilize sub-pixel rendering with their canvas implementation
+			// Mobile devices utilize sub-pixel rendering with their canvas API implementations
+			Life.settingsVideo.resolution = 512;
 		}
 
 		/*
@@ -62,7 +97,7 @@ class Life {
 		 */
 		Life.settingsCalc = {
 			fps: Life.settingsVideo.fps,
-			iterationsPerSecond: 1000, // 1000 is min
+			iterationsPerSecond: 1, // 1 is min
 		};
 	}
 
@@ -73,7 +108,7 @@ class Life {
 			 */
 			let then: number = performance.now();
 			CalcBusEngine.setCallbackIPS((data: CalcBusOutputDataIPS) => {
-				Life.elementStatsC.innerText = String((data.ipsTotal / 1000) | 0);
+				Life.elementStatsC.innerText = data.ipsTotal.toLocaleString('en-US');
 				Life.elementStatsCPS.innerText = String(data.ips);
 			});
 			CalcBusEngine.setCallbackPositions((data: Uint32Array) => {
@@ -88,6 +123,14 @@ class Life {
 				then = performance.now();
 				VideoBusEngine.setCallbackFPS((fps: number) => {
 					Life.elementFPS.innerText = String(fps);
+
+					if (fps < Life.settingsVideo.fps * 0.9) {
+						Life.elementFPS.style.color = 'yellow';
+					} else if (fps < Life.settingsVideo.fps * 0.8) {
+						Life.elementFPS.style.color = 'red';
+					} else {
+						Life.elementFPS.style.color = 'green';
+					}
 				});
 				VideoBusEngine.initialize(Life.elementCanvas, Life.elementDataContainer, Life.settingsVideo, () => {
 					console.log('Engine > Video: loaded in', performance.now() - then, 'ms');

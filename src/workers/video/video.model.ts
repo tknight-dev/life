@@ -26,6 +26,7 @@ export interface VideoBusInputDataResize {
 
 export interface VideoBusInputDataSettings {
 	fps: VideoBusInputDataSettingsFPS;
+	grid: boolean;
 	resolution: null | 256 | 384 | 512 | 640 | 1280 | 1920;
 }
 

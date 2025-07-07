@@ -57,7 +57,7 @@ class CalcWorkerEngine {
 		} else {
 			CalcWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
 		}
-		CalcWorkerEngine.iterationsPerMillisecond = Math.max((data.iterationsPerSecond / 1000) | 0, 1);
+		CalcWorkerEngine.iterationsPerMillisecond = Math.max(data.iterationsPerSecond, 1) / 1000;
 	}
 
 	private static post(CalcBusWorkerPayloads: CalcBusOutputPayload[], data: any[] = []): void {
@@ -71,47 +71,37 @@ class CalcWorkerEngine {
 
 	private static calc(timestampNow: number): void {}
 
+	/**
+	 * Refactor to use maps instead of objects?
+	 * Refactor to use smaller table size and encode x,y as single int and use map to store neighbor count
+	 */
 	private static calcBinder(): void {
 		let calcCount: number = 0,
 			calcCountTotal: number = 0,
 			calcIterations: number = 0,
-			calcTimestampDelta: number = 0,
 			calcTimestampFPSThen: number = 0,
 			calcTimestampIPSThen: number = 0,
 			calcTimestampThen: number = 0,
-			dataByY: { [key: number]: number } = {}, // y: neighbor count
-			dataByYByX: { [key: number]: { [key: number]: number } } = {}, // x, y: neighbor count
-			dataByYByXPrevious: { [key: number]: { [key: number]: number } } = {},
-			dataFinalByYByX: { [key: number]: { [key: number]: null } } = {}, // x, y
-			dataFinalByY: { [key: number]: null } = {}, // x, y
-			dataFinalByYByXPrevious: { [key: number]: { [key: number]: null } } = {}, // x, y
-			dataFinalByYPrevious: { [key: number]: null } = {}, // y
-			dataFinalSize: number,
-			i: number,
+			data: Map<number, number> = new Map<number, number>(),
+			dataNew: boolean,
+			neighbors: number,
 			positions: Uint32Array,
-			tableMax: number = 65536, // 65535 is max, but the logic uses '<'
-			value: number,
 			x: number,
-			xPlus1: number,
-			xPlus1Available: boolean,
-			xSub1: number,
-			xSub1Available: boolean,
-			xString: string,
+			xMask: number,
+			xMask1: number = 0x8000, // 0x8000 is 1 << 15
+			xMaskPlus1: number,
+			xMaskSub1: number,
+			xMax: number = 32752,
+			xy: number,
+			xyMaskAlive: number = 0x40000000, // 0x40000000 is 1 << 30 (alive)
+			xyWorking: number,
 			y: number,
-			yPlus1: number, // down the graph visually
+			yMaskPlus1: number,
+			yMaskSub1: number,
+			yMax: number = 18423,
 			yPlus1Available: boolean, // down the graph visually
-			ySub1: number, // up the graph visually
-			ySub1Available: boolean, // up the graph visually
-			yString: string;
+			ySub1Available: boolean; // up the graph visually
 
-		/**
-		 * Consider: Diagonals, Horizontal, and Veritical cells
-		 *
-		 * Any live cell with fewer than two live neighbors		- Dies (underpopulation)
-		 * Any live cell with two or three live neighbors		- Stays alive
-		 * Any live cell with more than three live neighbors	- Dies (overpopulation)
-		 * Any dead cell with exactly three live neighbors		- Becomes alive (reproduction)
-		 */
 		const calc = (timestampNow: number) => {
 			timestampNow |= 0;
 
@@ -121,25 +111,12 @@ class CalcWorkerEngine {
 			/**
 			 * Send data to video thread at FPS rate (if required)
 			 */
-			if (timestampNow - calcTimestampFPSThen > CalcWorkerEngine.framesPerMillisecond) {
+			if (dataNew && timestampNow - calcTimestampFPSThen > CalcWorkerEngine.framesPerMillisecond) {
 				calcTimestampFPSThen = timestampNow;
-
-				// Format data as an array of unsigned ints
-				i = 0;
-				positions = new Uint32Array(dataFinalSize); // 134MB max
-				for (xString in dataFinalByYByX) {
-					x = Number(xString);
-
-					for (yString in dataFinalByYByX[xString]) {
-						y = Number(yString);
-
-						// uint32: 16bits=x,16bits=y
-						positions[i] = ((x & 0xffff) << 16) | (y & 0xffff);
-						i++;
-					}
-				}
+				dataNew = false;
 
 				// Post postions
+				positions = Uint32Array.from(data.keys());
 				CalcWorkerEngine.post(
 					[
 						{
@@ -171,97 +148,120 @@ class CalcWorkerEngine {
 			/**
 			 * timestampNow is based on ms
 			 */
-			calcTimestampDelta = timestampNow - calcTimestampThen;
-			if (calcTimestampDelta !== 0) {
-				calcIterations = calcTimestampDelta * CalcWorkerEngine.iterationsPerMillisecond;
+			calcIterations = ((timestampNow - calcTimestampThen) * CalcWorkerEngine.iterationsPerMillisecond) | 0;
+			if (calcIterations !== 0) {
 				calcTimestampThen = timestampNow;
-
-				// Config
-				dataByYByXPrevious = dataByYByX;
-				dataFinalByYByXPrevious = dataFinalByYByX;
+				dataNew = true;
 
 				// Metrics
 				calcCount += calcIterations;
 				calcCountTotal += calcIterations;
 
-				// Reset
-				dataByYByX = <any>new Object();
-				dataFinalByYByX = <any>new Object();
-				dataFinalSize = 0;
-
-				// Calc: neighbors
+				// Calc
 				while (calcIterations !== 0) {
 					calcIterations--;
 
-					// Iterate over current live cells
-					for (xString in dataByYByXPrevious) {
-						x = Number(xString);
+					/**
+					 * Neighbors
+					 *
+					 * Consider: Diagonals, Horizontal, and Veritical cells
+					 */
+					for (xy of data.keys()) {
+						if ((xy & xyMaskAlive) === 0) {
+							// dead cell
+							continue;
+						}
 
-						dataByYByX[x] = {}; // Prepare for y counts
-						xSub1 = x - 1;
-						xSub1Available = xSub1 > -1; // 0 is min
-						xPlus1 = x + 1;
-						xPlus1Available = x + 1 < tableMax;
+						// Decode x & y
+						x = (xy >> 15) & 0x7fff;
+						xMask = xy & 0x3fff8000; // 0x3FFF8000 is 0x7fff << 15
+						y = xy & 0x7fff;
 
-						for (yString in dataByYByXPrevious[xString]) {
-							y = Number(yString);
-							ySub1 = y - 1;
-							ySub1Available = ySub1 > -1; // 0 is min
-							yPlus1 = y + 1;
-							yPlus1Available = yPlus1 < tableMax;
+						// Cache checks
+						yPlus1Available = y !== yMax;
+						ySub1Available = y !== 0;
 
-							// Middle
-							dataByY = dataByYByX[x];
+						// Middle Vertical
+						if (yPlus1Available) {
+							// Up
+							yMaskPlus1 = y + 1;
+							xyWorking = xMask | yMaskPlus1;
+							data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+						}
+						if (ySub1Available) {
+							// Down
+							yMaskSub1 = y - 1;
+							xyWorking = xMask | yMaskSub1;
+							data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+						}
 
-							dataByY[y] = (dataByY[y] || 0) + 1;
-							yPlus1Available && (dataByY[yPlus1] = (dataByY[yPlus1] || 0) + 1);
-							ySub1Available && (dataByY[ySub1] = (dataByY[ySub1] || 0) + 1);
+						// Left Vertical
+						if (x !== 0) {
+							xMaskSub1 = xMask - xMask1;
 
-							// Left by 1
-							if (xSub1Available) {
-								dataByY = dataByYByX[xSub1];
-
-								dataByY[y] = (dataByY[y] || 0) + 1;
-								yPlus1Available && (dataByY[yPlus1] = (dataByY[yPlus1] || 0) + 1);
-								ySub1Available && (dataByY[ySub1] = (dataByY[ySub1] || 0) + 1);
+							// Up
+							if (yPlus1Available) {
+								xyWorking = xMaskSub1 | yMaskPlus1;
+								data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
 							}
 
-							// Right by 1
-							if (xPlus1Available) {
-								dataByY = dataByYByX[xPlus1];
+							// Middle
+							xyWorking = xMaskSub1 | y;
+							data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
 
-								dataByY[y] = (dataByY[y] || 0) + 1;
-								yPlus1Available && (dataByY[yPlus1] = (dataByY[yPlus1] || 0) + 1);
-								ySub1Available && (dataByY[ySub1] = (dataByY[ySub1] || 0) + 1);
+							// Down
+							if (ySub1Available) {
+								xyWorking = xMaskSub1 | yMaskSub1;
+								data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+							}
+						}
+
+						// Right Vertical
+						if (x !== xMax) {
+							xMaskPlus1 = xMask + xMask1;
+
+							// Up
+							if (yPlus1Available) {
+								xyWorking = xMaskPlus1 | yMaskPlus1;
+								data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+							}
+
+							// Middle
+							xyWorking = xMaskPlus1 | y;
+							data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+
+							// Down
+							if (ySub1Available) {
+								xyWorking = xMaskPlus1 | yMaskSub1;
+								data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
 							}
 						}
 					}
-				}
 
-				// Calc: living cells
-				for (xString in dataByYByX) {
-					x = Number(xString);
-					dataByY = dataByYByX[xString];
-
-					dataFinalByYPrevious = dataFinalByYByXPrevious[xString];
-
-					for (yString in dataByYByX[xString]) {
-						y = Number(yString);
-						value = dataByY[yString];
-
-						// 2 neighbors is still-alive
-						// 3 neighbors is still-alive or born
-						if (value === 3 || (value === 2 && dataFinalByYPrevious[yString] === null)) {
-							dataFinalSize++;
-							dataFinalByY = dataFinalByYByX[xString];
-
-							if (dataFinalByY) {
-								dataFinalByY[yString] = null;
+					/**
+					 * Living Cells (reset neighbor count while iterating)
+					 *
+					 * 1. Any live cell with fewer than two live neighbors		- Dies (underpopulation)
+					 * 2. Any live cell with two or three live neighbors		- Stays alive
+					 * 3. Any live cell with more than three live neighbors		- Dies (overpopulation)
+					 * 4. Any dead cell with exactly three live neighbors		- Becomes alive (reproduction)
+					 */
+					for ([xy, neighbors] of data) {
+						if ((xy & xyMaskAlive) !== 0) {
+							if (neighbors === 2 || neighbors === 3) {
+								// Rule 2
+								data.set(xy, 0);
 							} else {
-								dataFinalByYByX[xString] = {
-									[yString]: null,
-								};
+								// Rule 1 & Rule 3
+								data.set(xy & ~xyMaskAlive, 0);
+								data.delete(xy);
 							}
+						} else if (neighbors === 3) {
+							// Rule 4
+							data.set(xy | xyMaskAlive, 0);
+							data.delete(xy);
+						} else {
+							data.set(xy, 0);
 						}
 					}
 				}
