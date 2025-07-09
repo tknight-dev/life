@@ -35,6 +35,7 @@ export interface CalcBusInputPayload {
  */
 
 export enum CalcBusOutputCmd {
+	GAME_OVER,
 	INIT_COMPLETE,
 	PS,
 	POSITIONS,
@@ -50,5 +51,5 @@ export interface CalcBusOutputDataPS {
 
 export interface CalcBusOutputPayload {
 	cmd: CalcBusOutputCmd;
-	data: CalcBusOutputDataPS | Uint32Array | undefined;
+	data: CalcBusOutputDataPS | number | Uint32Array | undefined;
 }

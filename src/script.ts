@@ -1,5 +1,5 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
-import { CalcBusInputDataSettings, CalcBusOutputDataIPS } from './workers/calc/calc.model';
+import { CalcBusInputDataSettings, CalcBusOutputDataPS } from './workers/calc/calc.model';
 import { VideoBusEngine } from './workers/video/video.bus';
 import { VideoBusInputDataSettings, VideoBusInputDataSettingsFPS } from './workers/video/video.model';
 
@@ -20,6 +20,7 @@ class Life {
 	private static elementControlsReset: HTMLElement;
 	private static elementDead: HTMLElement;
 	private static elementDataContainer: HTMLElement;
+	private static elementGameOver: HTMLElement;
 	private static elementFPS: HTMLElement;
 	private static elementIPSRequested: HTMLElement;
 	private static elementMenu: HTMLElement;
@@ -39,6 +40,7 @@ class Life {
 	private static elementSettingsValueTableSize: HTMLInputElement;
 	private static elementStatsC: HTMLElement;
 	private static elementStatsCPS: HTMLElement;
+	private static elementStatsCPSAll: HTMLElement;
 	private static settingsCalc: CalcBusInputDataSettings;
 	private static settingsCalcIPSMax: number = 20000000;
 	private static settingsVideo: VideoBusInputDataSettings;
@@ -46,7 +48,6 @@ class Life {
 	private static initializeDOM(): void {
 		Life.elementAlive = <HTMLCanvasElement>document.getElementById('alive');
 		Life.elementCanvas = <HTMLCanvasElement>document.getElementById('cavnas');
-		Life.elementDead = <HTMLCanvasElement>document.getElementById('dead');
 
 		Life.elementRules = <HTMLButtonElement>document.getElementById('rules');
 		Life.elementRulesClose = <HTMLButtonElement>document.getElementById('rules-close');
@@ -55,11 +56,14 @@ class Life {
 		};
 
 		Life.elementDataContainer = <HTMLElement>document.getElementById('data-container');
+		Life.elementDead = <HTMLCanvasElement>document.getElementById('dead');
+		Life.elementGameOver = <HTMLElement>document.getElementById('game-over');
 		Life.elementFPS = <HTMLElement>document.getElementById('fps');
 		Life.elementIPSRequested = <HTMLElement>document.getElementById('ips-requested');
 
 		Life.elementStatsC = <HTMLElement>document.getElementById('c');
 		Life.elementStatsCPS = <HTMLElement>document.getElementById('cps');
+		Life.elementStatsCPSAll = <HTMLElement>document.getElementById('cps-all');
 
 		/**
 		 * Controls
@@ -116,6 +120,21 @@ class Life {
 		Life.elementControlsPlay.style.display = 'none';
 		Life.elementControlsReset = <HTMLElement>document.getElementById('reset');
 		Life.elementControlsReset.onclick = () => {
+			Life.elementAlive.innerText = '';
+			Life.elementDead.innerText = '';
+
+			Life.elementControlsBackward.style.display = 'block';
+			Life.elementControlsForward.style.display = 'block';
+			Life.elementControlsPlay.style.display = 'none';
+			Life.elementControlsPause.style.display = 'block';
+
+			Life.elementGameOver.classList.remove('show');
+			Life.elementIPSRequested.style.display = 'flex';
+			setTimeout(() => {
+				Life.elementGameOver.style.display = 'none';
+			}, 1000);
+			Life.elementStatsC.innerText = '0';
+
 			CalcBusEngine.outputReset();
 
 			// Random initial seed for dev
@@ -124,8 +143,7 @@ class Life {
 			// Random initial seed for dev
 			// Random initial seed for dev
 			// Random initial seed for dev
-			let data: Uint32Array,
-				life: Set<number> = new Set<number>(),
+			let life: Set<number> = new Set<number>(),
 				x: number,
 				xMax: number = Life.settingsCalc.tableSizeX,
 				xyMaskAlive: number = 0x40000000,
@@ -134,13 +152,14 @@ class Life {
 				maxLife: number = Math.random() * xMax * yMax;
 
 			for (let i = 0; i < maxLife; i++) {
-				x = (Math.random() * xMax) & 0x7fff;
-				y = (Math.random() * yMax) & 0x7fff;
+				x = Math.round(Math.random() * xMax) & 0x7fff;
+				y = Math.round(Math.random() * yMax) & 0x7fff;
 				life.add((x << 15) | y | xyMaskAlive);
 			}
-
-			data = Uint32Array.from(life);
-			CalcBusEngine.outputLife(data);
+			CalcBusEngine.outputLife(Uint32Array.from(life));
+			setTimeout(() => {
+				CalcBusEngine.outputPlay();
+			}, 1000);
 		};
 
 		/**
@@ -258,7 +277,22 @@ class Life {
 			 * Load Calc Engine
 			 */
 			let then: number = performance.now();
-			CalcBusEngine.setCallbackPS((data: CalcBusOutputDataIPS) => {
+			CalcBusEngine.setCallbackGameOver((dead: number) => {
+				Life.elementAlive.innerText = '0';
+				Life.elementDead.innerText = dead.toLocaleString('en-US');
+
+				Life.elementControlsBackward.style.display = 'none';
+				Life.elementControlsForward.style.display = 'none';
+				Life.elementControlsPlay.style.display = 'none';
+				Life.elementControlsPause.style.display = 'none';
+
+				Life.elementStatsCPSAll.style.display = 'none';
+
+				Life.elementIPSRequested.classList.remove('show');
+				Life.elementGameOver.style.display = 'flex';
+				Life.elementGameOver.classList.add('show');
+			});
+			CalcBusEngine.setCallbackPS((data: CalcBusOutputDataPS) => {
 				Life.elementAlive.innerText = data.alive.toLocaleString('en-US');
 				Life.elementDead.innerText = data.dead.toLocaleString('en-US');
 
@@ -267,6 +301,7 @@ class Life {
 
 				Life.elementStatsC.innerText = data.ipsTotal.toLocaleString('en-US');
 				Life.elementStatsCPS.innerText = ipsEff.toLocaleString('en-US');
+				Life.elementStatsCPSAll.style.display = 'block';
 
 				if (ipsEff < Life.settingsCalc.iterationsPerSecond * 0.8) {
 					Life.elementStatsCPS.style.color = 'red';

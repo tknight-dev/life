@@ -60,6 +60,7 @@ $life-logo-width: 152px;
 		.alive,
 		.canvas,
 		.controls,
+		.game-over,
 		.fps,
 		.ips-requested,
 		.rules,
@@ -68,6 +69,7 @@ $life-logo-width: 152px;
 			left: 0;
 			position: absolute;
 			right: 0;
+			z-index: 1;
 		}
 
 		.canvas {
@@ -118,7 +120,6 @@ $life-logo-width: 152px;
 			bottom: 60px;
 			justify-content: center;
 			top: 40px;
-			z-index: 1;
 		}
 
 		.controls {
@@ -165,18 +166,15 @@ $life-logo-width: 152px;
 			}
 		}
 
-		.fps {
-			font-size: 30px;
-			font-weight: bold;
-			left: 10px;
-			top: 1px;
-			z-index: 3;
+		.game-over {
+			z-index: 2;
 		}
 
+		.game-over,
 		.ips-requested {
 			align-items: center;
 			bottom: 0;
-			display: flex;
+			display: none;
 			font-size: 30px;
 			font-weight: bold;
 			justify-content: center;
@@ -188,6 +186,14 @@ $life-logo-width: 152px;
 			&.show {
 				opacity: 1;
 			}
+		}
+
+		.fps {
+			font-size: 30px;
+			font-weight: bold;
+			left: 10px;
+			top: 1px;
+			z-index: 3;
 		}
 
 		.rules,
@@ -291,6 +297,10 @@ $life-logo-width: 152px;
 
 			#cps {
 				font-weight: bold;
+			}
+
+			#cps-all {
+				display: none;
 			}
 		}
 	}

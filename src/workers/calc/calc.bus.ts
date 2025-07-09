@@ -13,6 +13,7 @@ import {
  */
 
 export class CalcBusEngine {
+	private static callbackGameOver: (dead: number) => void;
 	private static callbackInitComplete: () => void;
 	private static callbackPS: (data: CalcBusOutputDataPS) => void;
 	private static callbackPositions: (data: Uint32Array) => void;
@@ -57,6 +58,9 @@ export class CalcBusEngine {
 
 			for (let i = 0; i < payloads.length; i++) {
 				switch (payloads[i].cmd) {
+					case CalcBusOutputCmd.GAME_OVER:
+						CalcBusEngine.callbackGameOver(<number>payloads[i].data);
+						break;
 					case CalcBusOutputCmd.INIT_COMPLETE:
 						CalcBusEngine.callbackInitComplete();
 						break;
@@ -107,6 +111,10 @@ export class CalcBusEngine {
 			cmd: CalcBusInputCmd.SETTINGS,
 			data: data,
 		});
+	}
+
+	public static setCallbackGameOver(callbackGameOver: (dead: number) => void): void {
+		CalcBusEngine.callbackGameOver = callbackGameOver;
 	}
 
 	public static setCallbackPS(callbackPS: (data: CalcBusOutputDataPS) => void): void {

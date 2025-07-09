@@ -144,8 +144,17 @@ class CalcWorkerEngine {
 			// Start the request for the next frame
 			CalcWorkerEngine.calcRequest = requestAnimationFrame(calc);
 
-			if (!CalcWorkerEngine.play) {
+			/**
+			 * Reset
+			 */
+			if (CalcWorkerEngine.reset) {
+				CalcWorkerEngine.reset = false;
+				CalcWorkerEngine.play = false;
+
 				calcCount = 0;
+				calcCountTotal = 0;
+				data.clear(); // TODO: Replace with the original seed (if available)
+
 				calcTimestampFPSThen = timestampNow;
 				calcTimestampIPSThen = timestampNow;
 				calcTimestampThen = timestampNow;
@@ -153,15 +162,10 @@ class CalcWorkerEngine {
 			}
 
 			/**
-			 * Reset
+			 * Play/Pause
 			 */
-			if (CalcWorkerEngine.reset) {
-				CalcWorkerEngine.reset = false;
-
+			if (!CalcWorkerEngine.play) {
 				calcCount = 0;
-				calcCountTotal = 0;
-				data.clear(); // TODO: Replace with the original seed (if available)
-
 				calcTimestampFPSThen = timestampNow;
 				calcTimestampIPSThen = timestampNow;
 				calcTimestampThen = timestampNow;
@@ -346,6 +350,31 @@ class CalcWorkerEngine {
 						} else {
 							data.set(xy, 0);
 						}
+					}
+
+					if (alive === 0) {
+						CalcWorkerEngine.play = false;
+
+						// Post game over
+						CalcWorkerEngine.post([
+							{
+								cmd: CalcBusOutputCmd.GAME_OVER,
+								data: data.size,
+							},
+						]);
+
+						// Post postions
+						positions = Uint32Array.from(data.keys());
+						CalcWorkerEngine.post(
+							[
+								{
+									cmd: CalcBusOutputCmd.POSITIONS,
+									data: positions,
+								},
+							],
+							[positions.buffer],
+						);
+						break;
 					}
 				}
 			}
