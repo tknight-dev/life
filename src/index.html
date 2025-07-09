@@ -21,7 +21,7 @@
 	        			<a class="image" href="https://tknight.dev"></a>
 					</div>
 					<div class="content" id="menu-content">
-						<span class="hyperlink menu"></span>
+						<span class="hyperlink menu" id="info-menu"></span>
 						<span class="hyperlink menu-item" id="info-click">Info</span>
 						<span class="hyperlink menu-item" id="info-rules">Rules</span>
 						<span class="hyperlink menu-item" id="info-settings">Settings</span>
@@ -30,6 +30,14 @@
 			</div>
 			<div class="game" id="game">
 				<div class="wrapper">
+					<div class="alive">
+						<div>
+							<span>Alive: </span><span id="alive"></span>
+						</div>
+						<div>
+							<span>Dead: </span><span id="dead"></span>
+						</div>
+					</div>
 					<div class="canvas">
 						<div class="aspect-ratio">
 							<div class="aspect-ratio2">
@@ -48,10 +56,12 @@
 							<div class="life-icon play" id="play"></div>
 						</div>
 						<div class="right">
+							<div class="life-icon backward" id="backward"></div>
 							<div class="life-icon forward" id="forward"></div>
 						</div>
 					</div>
 					<div class="fps" id="fps"></div>
+					<div class="ips-requested" id="ips-requested"></div>
 					<div class="rules" id="rules">
 						<div class="wrapper">
 							<div class="header">Rules</div>
@@ -77,8 +87,8 @@
 									</li>
 									<li>Table size (16x9 aspect ratio)
 										<ul>
-											<li>Max: is 32,752 by 18,423 (&le; ~75 MB)</li>
-											<li>Min: is 496&nbsp;&nbsp;&nbsp; by 279&nbsp;&nbsp;&nbsp; (&le; ~17 KB)</li>
+											<li>Max: is 32,752 by 18,423 (&le; ~2.4 GB)</li>
+											<li>Min: is &nbsp;&nbsp;&nbsp;&nbsp;48 by &nbsp;&nbsp;&nbsp;&nbsp;27 (&le; ~5&nbsp;&nbsp; KB)</li>
 										</ul>
 									</li>
 								</ul>
@@ -97,47 +107,50 @@
 										<tr>
 											<td>FPS</td>
 											<td>
-												<select id="settings-value-fps">
-													<option value="30">30</option>
-													<option value="40">40</option>
-													<option value="60" selected>60</option>
-													<option value="120">120</option>
-													<option value="1">Unlimited</option>
+												<select autocomplete="off" id="settings-value-fps">
+													<option autocomplete="off" value="30">30</option>
+													<option autocomplete="off" value="40">40</option>
+													<option autocomplete="off" value="60" selected>60</option>
+													<option autocomplete="off" value="120">120</option>
+													<option autocomplete="off" value="1">Unlimited</option>
 												</select>
 											</td>
 										</tr>
 										<tr>
 											<td>Grid</td>
-											<td><input id="settings-value-grid" type="checkbox" checked /></td>
+											<td><input autocomplete="off" id="settings-value-grid" type="checkbox" checked /></td>
 										</tr>
 										<tr>
 											<td><i>i/s</i></td>
-											<td><input id="settings-value-ips" max="1000000000" min="1" type="number" value="1" /></td>
+											<td><input autocomplete="off" id="settings-value-ips" max="20000000" min="1" type="number" value="1" /></td>
 										</tr>
 										<tr>
 											<td>Resolution</td>
 											<td>
-												<select id="settings-value-resolution">
-													<option value="null" selected>Native</option>
-													<option value="256">256</option>
-													<option value="384">384</option>
-													<option value="512">512</option>
-													<option value="640">640</option>
-													<option value="1280">1280</option>
-													<option value="1920">1920</option>
+												<select autocomplete="off" id="settings-value-resolution">
+													<option autocomplete="off" value="null" selected>Native</option>
+													<option autocomplete="off" value="256">256</option>
+													<option autocomplete="off" value="384">384</option>
+													<option autocomplete="off" value="512">512</option>
+													<option autocomplete="off" value="640">640</option>
+													<option autocomplete="off" value="1280">1280</option>
+													<option autocomplete="off" value="1920">1920</option>
 												</select>
 											</td>
 										</tr>
 										<tr>
 											<td>Table Size</td>
 											<td>
-												<select id="settings-value-table-size">
-													<option value="full" selected>32,752 by 18,423 (&le; ~75 MB)</option>
-													<option value="half">16,368 by 9,207 (&le; ~19 MB)</option>
-													<option value="quarter">8,176 by 4,599 (&le; ~5 MB)</option>
-													<option value="eighth">2,032 by 1,143 (&le; ~290 KB)</option>
-													<option value="sixteenth">1,008 by 567 (&le; ~71 KB)</option>
-													<option value="thirtysecond">496 by 279 (&le; ~17 KB)</option>
+												<select autocomplete="off" id="settings-value-table-size">
+													<option autocomplete="off" value="32752">32,752 by 18,423 (&le; ~2.4 GB)</option>
+													<option autocomplete="off" value="16368">16,368 by 9,207 (&le; ~600 MB)</option>
+													<option autocomplete="off" value="8176">8,176 by 4,599 (&le; ~150 MB)</option>
+													<option autocomplete="off" value="2032">2,032 by 1,143 (&le; ~9 MB)</option>
+													<option autocomplete="off" value="1008">1,008 by 567 (&le; ~2 MB)</option>
+													<option autocomplete="off" value="496">496 by 279 (&le; ~550 KB)</option>
+													<option autocomplete="off" value="240">240 by 135 (&le; ~130 KB)</option>
+													<option autocomplete="off" value="112">112 by 63 (&le; ~28 KB)</option>
+													<option autocomplete="off" value="48" selected>48 by 27 (&le; ~5 KB)</option>
 												</select>
 											</td>
 										</tr>
@@ -151,7 +164,7 @@
 						</div>
 					</div>
 					<div class="stats">
-						<span id="c"></span>&nbsp;<sup>i</sup>&nbsp;|&nbsp;<span id="cps"></span>&nbsp;<sup>i/s</sup>
+						<span id="cps"></span>&nbsp;<sup>i/s</sup>&nbsp;|&nbsp;<span id="c"></span>&nbsp;<sup>i</sup>
 					</div>
 				</div>
 			</div>

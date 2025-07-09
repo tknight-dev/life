@@ -4,7 +4,7 @@ import {
 	CalcBusInputDataSettings,
 	CalcBusInputPayload,
 	CalcBusOutputCmd,
-	CalcBusOutputDataIPS,
+	CalcBusOutputDataPS,
 	CalcBusOutputPayload,
 } from './calc.model';
 
@@ -14,7 +14,7 @@ import {
 
 export class CalcBusEngine {
 	private static callbackInitComplete: () => void;
-	private static callbackIPS: (data: CalcBusOutputDataIPS) => void;
+	private static callbackPS: (data: CalcBusOutputDataPS) => void;
 	private static callbackPositions: (data: Uint32Array) => void;
 	private static worker: Worker;
 
@@ -60,8 +60,8 @@ export class CalcBusEngine {
 					case CalcBusOutputCmd.INIT_COMPLETE:
 						CalcBusEngine.callbackInitComplete();
 						break;
-					case CalcBusOutputCmd.IPS:
-						CalcBusEngine.callbackIPS(<CalcBusOutputDataIPS>payloads[i].data);
+					case CalcBusOutputCmd.PS:
+						CalcBusEngine.callbackPS(<CalcBusOutputDataPS>payloads[i].data);
 						break;
 					case CalcBusOutputCmd.POSITIONS:
 						CalcBusEngine.callbackPositions(<Uint32Array>payloads[i].data);
@@ -71,6 +71,37 @@ export class CalcBusEngine {
 		};
 	}
 
+	public static outputLife(data: Uint32Array): void {
+		CalcBusEngine.worker.postMessage(
+			{
+				cmd: CalcBusInputCmd.LIFE,
+				data: data,
+			},
+			[data.buffer],
+		);
+	}
+
+	public static outputPlay(): void {
+		CalcBusEngine.worker.postMessage({
+			cmd: CalcBusInputCmd.PLAY,
+			data: undefined,
+		});
+	}
+
+	public static outputPause(): void {
+		CalcBusEngine.worker.postMessage({
+			cmd: CalcBusInputCmd.PAUSE,
+			data: undefined,
+		});
+	}
+
+	public static outputReset(): void {
+		CalcBusEngine.worker.postMessage({
+			cmd: CalcBusInputCmd.RESET,
+			data: undefined,
+		});
+	}
+
 	public static outputSettings(data: CalcBusInputDataSettings): void {
 		CalcBusEngine.worker.postMessage({
 			cmd: CalcBusInputCmd.SETTINGS,
@@ -78,8 +109,8 @@ export class CalcBusEngine {
 		});
 	}
 
-	public static setCallbackIPS(callbackIPS: (data: CalcBusOutputDataIPS) => void): void {
-		CalcBusEngine.callbackIPS = callbackIPS;
+	public static setCallbackPS(callbackPS: (data: CalcBusOutputDataPS) => void): void {
+		CalcBusEngine.callbackPS = callbackPS;
 	}
 
 	public static setCallbackPositions(callbackPositions: (data: Uint32Array) => void): void {

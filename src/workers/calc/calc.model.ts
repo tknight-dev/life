@@ -10,6 +10,10 @@ import { VideoBusInputDataSettingsFPS } from '../video/video.model';
 
 export enum CalcBusInputCmd {
 	INIT,
+	LIFE,
+	PLAY,
+	PAUSE,
+	RESET,
 	SETTINGS,
 }
 
@@ -18,11 +22,12 @@ export interface CalcBusInputDataInit extends CalcBusInputDataSettings {}
 export interface CalcBusInputDataSettings {
 	fps: VideoBusInputDataSettingsFPS;
 	iterationsPerSecond: number;
+	tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
 }
 
 export interface CalcBusInputPayload {
 	cmd: CalcBusInputCmd;
-	data: CalcBusInputDataInit | undefined;
+	data: CalcBusInputDataInit | Uint32Array | undefined;
 }
 
 /*
@@ -31,16 +36,19 @@ export interface CalcBusInputPayload {
 
 export enum CalcBusOutputCmd {
 	INIT_COMPLETE,
-	IPS,
+	PS,
 	POSITIONS,
 }
 
-export interface CalcBusOutputDataIPS {
+export interface CalcBusOutputDataPS {
+	alive: number;
+	dead: number;
 	ips: number;
+	ipsDeltaInMS: number;
 	ipsTotal: number;
 }
 
 export interface CalcBusOutputPayload {
 	cmd: CalcBusOutputCmd;
-	data: CalcBusOutputDataIPS | Uint32Array | undefined;
+	data: CalcBusOutputDataPS | Uint32Array | undefined;
 }

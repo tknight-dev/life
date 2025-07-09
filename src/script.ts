@@ -11,13 +11,19 @@ import { VideoBusInputDataSettings, VideoBusInputDataSettingsFPS } from './worke
 new EventSource('/esbuild').addEventListener('change', () => location.reload());
 
 class Life {
+	private static elementAlive: HTMLElement;
 	private static elementCanvas: HTMLCanvasElement;
+	private static elementControlsBackward: HTMLElement;
 	private static elementControlsForward: HTMLElement;
 	private static elementControlsPause: HTMLElement;
 	private static elementControlsPlay: HTMLElement;
 	private static elementControlsReset: HTMLElement;
+	private static elementDead: HTMLElement;
 	private static elementDataContainer: HTMLElement;
 	private static elementFPS: HTMLElement;
+	private static elementIPSRequested: HTMLElement;
+	private static elementMenu: HTMLElement;
+	private static elementMenuContent: HTMLElement;
 	private static elementMenuInfo: HTMLElement;
 	private static elementMenuRules: HTMLElement;
 	private static elementMenuSettings: HTMLElement;
@@ -26,33 +32,21 @@ class Life {
 	private static elementSettings: HTMLElement;
 	private static elementSettingsApply: HTMLButtonElement;
 	private static elementSettingsCancel: HTMLButtonElement;
+	private static elementSettingsValueFPS: HTMLInputElement;
+	private static elementSettingsValueGrid: HTMLInputElement;
+	private static elementSettingsValueIPS: HTMLInputElement;
+	private static elementSettingsValueResolution: HTMLInputElement;
+	private static elementSettingsValueTableSize: HTMLInputElement;
 	private static elementStatsC: HTMLElement;
 	private static elementStatsCPS: HTMLElement;
 	private static settingsCalc: CalcBusInputDataSettings;
+	private static settingsCalcIPSMax: number = 20000000;
 	private static settingsVideo: VideoBusInputDataSettings;
 
 	private static initializeDOM(): void {
+		Life.elementAlive = <HTMLCanvasElement>document.getElementById('alive');
 		Life.elementCanvas = <HTMLCanvasElement>document.getElementById('cavnas');
-
-		Life.elementControlsForward = <HTMLElement>document.getElementById('forward');
-		Life.elementControlsPause = <HTMLElement>document.getElementById('pause');
-		Life.elementControlsPlay = <HTMLElement>document.getElementById('play');
-		Life.elementControlsReset = <HTMLElement>document.getElementById('reset');
-
-		Life.elementMenuInfo = <HTMLElement>document.getElementById('info-click');
-		Life.elementMenuInfo.onclick = () => {
-			(<any>window).open('https://tknight.dev/#/creations', '_blank').focus();
-		};
-		Life.elementMenuRules = <HTMLElement>document.getElementById('info-rules');
-		Life.elementMenuRules.onclick = () => {
-			Life.elementSettingsCancel.click();
-			Life.elementRules.style.display = 'block';
-		};
-		Life.elementMenuSettings = <HTMLElement>document.getElementById('info-settings');
-		Life.elementMenuSettings.onclick = () => {
-			Life.elementRulesClose.click();
-			Life.elementSettings.style.display = 'block';
-		};
+		Life.elementDead = <HTMLCanvasElement>document.getElementById('dead');
 
 		Life.elementRules = <HTMLButtonElement>document.getElementById('rules');
 		Life.elementRulesClose = <HTMLButtonElement>document.getElementById('rules-close');
@@ -60,23 +54,178 @@ class Life {
 			Life.elementRules.style.display = 'none';
 		};
 
+		Life.elementDataContainer = <HTMLElement>document.getElementById('data-container');
+		Life.elementFPS = <HTMLElement>document.getElementById('fps');
+		Life.elementIPSRequested = <HTMLElement>document.getElementById('ips-requested');
+
+		Life.elementStatsC = <HTMLElement>document.getElementById('c');
+		Life.elementStatsCPS = <HTMLElement>document.getElementById('cps');
+
+		/**
+		 * Controls
+		 */
+		Life.elementControlsBackward = <HTMLElement>document.getElementById('backward');
+		Life.elementControlsBackward.onclick = () => {
+			Life.settingsCalc.iterationsPerSecond = Math.max(1, Math.round(Life.settingsCalc.iterationsPerSecond / 2));
+
+			Life.elementSettingsValueIPS.value = String(Life.settingsCalc.iterationsPerSecond);
+			Life.elementIPSRequested.innerText = Life.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
+			Life.elementIPSRequested.classList.add('show');
+			setTimeout(() => {
+				Life.elementIPSRequested.classList.remove('show');
+			}, 1000);
+
+			CalcBusEngine.outputSettings(Life.settingsCalc);
+		};
+		Life.elementControlsForward = <HTMLElement>document.getElementById('forward');
+		Life.elementControlsForward.onclick = () => {
+			Life.settingsCalc.iterationsPerSecond = Math.min(Life.settingsCalcIPSMax, Life.settingsCalc.iterationsPerSecond * 2);
+
+			Life.elementSettingsValueIPS.value = String(Life.settingsCalc.iterationsPerSecond);
+			Life.elementIPSRequested.innerText = Life.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
+			Life.elementIPSRequested.classList.add('show');
+			setTimeout(() => {
+				Life.elementIPSRequested.classList.remove('show');
+			}, 1000);
+
+			CalcBusEngine.outputSettings(Life.settingsCalc);
+		};
+		Life.elementControlsPause = <HTMLElement>document.getElementById('pause');
+		Life.elementControlsPause.onclick = () => {
+			Life.elementControlsPause.style.display = 'none';
+			Life.elementControlsPlay.style.display = 'block';
+
+			Life.elementStatsCPS.style.display = 'none';
+
+			CalcBusEngine.outputPause();
+		};
+		Life.elementControlsPlay = <HTMLElement>document.getElementById('play');
+		Life.elementControlsPlay.onclick = () => {
+			Life.elementControlsPlay.style.display = 'none';
+			Life.elementControlsPause.style.display = 'block';
+
+			Life.elementStatsCPS.style.display = 'block';
+			Life.elementIPSRequested.innerText = Life.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
+			Life.elementIPSRequested.classList.add('show');
+			setTimeout(() => {
+				Life.elementIPSRequested.classList.remove('show');
+			}, 1000);
+
+			CalcBusEngine.outputPlay();
+		};
+		Life.elementControlsPlay.style.display = 'none';
+		Life.elementControlsReset = <HTMLElement>document.getElementById('reset');
+		Life.elementControlsReset.onclick = () => {
+			CalcBusEngine.outputReset();
+
+			// Random initial seed for dev
+			// Random initial seed for dev
+			// Random initial seed for dev
+			// Random initial seed for dev
+			// Random initial seed for dev
+			// Random initial seed for dev
+			let data: Uint32Array,
+				life: Set<number> = new Set<number>(),
+				x: number,
+				xMax: number = Life.settingsCalc.tableSizeX,
+				xyMaskAlive: number = 0x40000000,
+				y: number,
+				yMax: number = (Life.settingsCalc.tableSizeX * 9) / 16,
+				maxLife: number = Math.random() * xMax * yMax;
+
+			for (let i = 0; i < maxLife; i++) {
+				x = (Math.random() * xMax) & 0x7fff;
+				y = (Math.random() * yMax) & 0x7fff;
+				life.add((x << 15) | y | xyMaskAlive);
+			}
+
+			data = Uint32Array.from(life);
+			CalcBusEngine.outputLife(data);
+		};
+
+		/**
+		 * Menu
+		 */
+		Life.elementMenu = <HTMLElement>document.getElementById('info-menu');
+		Life.elementMenu.onclick = () => {
+			Life.elementMenuContent.classList.toggle('open');
+		};
+		Life.elementMenuContent = <HTMLElement>document.getElementById('menu-content');
+		Life.elementMenuInfo = <HTMLElement>document.getElementById('info-click');
+		Life.elementMenuInfo.onclick = () => {
+			(<any>window).open('https://tknight.dev/#/creations', '_blank').focus();
+		};
+		Life.elementMenuRules = <HTMLElement>document.getElementById('info-rules');
+		Life.elementMenuRules.onclick = () => {
+			Life.elementSettingsCancel.click();
+			Life.elementMenuContent.classList.remove('open');
+
+			Life.elementRules.style.display = 'block';
+		};
+		Life.elementMenuSettings = <HTMLElement>document.getElementById('info-settings');
+		Life.elementMenuSettings.onclick = () => {
+			Life.elementRulesClose.click();
+			Life.elementMenuContent.classList.remove('open');
+
+			Life.elementSettings.style.display = 'block';
+		};
+
+		document.addEventListener('click', (event: any) => {
+			if (event.target.id !== 'info-menu') {
+				Life.elementMenuContent.classList.remove('open');
+			}
+		});
+
+		/**
+		 * Settings
+		 */
 		Life.elementSettings = <HTMLElement>document.getElementById('settings');
 		Life.elementSettingsApply = <HTMLButtonElement>document.getElementById('settings-apply');
 		Life.elementSettingsApply.onclick = () => {
+			/**
+			 * HTML -> JS
+			 */
+			Life.settingsCalc = {
+				fps: Number(Life.elementSettingsValueFPS.value),
+				iterationsPerSecond: Math.round(Math.max(1, Math.min(Life.settingsCalcIPSMax, Number(Life.elementSettingsValueIPS.value)))),
+				tableSizeX: <any>Number(Life.elementSettingsValueTableSize.value),
+			};
+
+			Life.settingsVideo = {
+				fps: Life.settingsCalc.fps,
+				grid: Boolean(Life.elementSettingsValueGrid.checked),
+				resolution: <any>(
+					(Life.elementSettingsValueResolution.value === 'null' ? null : Number(Life.elementSettingsValueResolution.value))
+				),
+				tableSizeX: Life.settingsCalc.tableSizeX,
+			};
+
+			/**
+			 * Main thread -> workers
+			 */
+			CalcBusEngine.outputSettings(Life.settingsCalc);
+			VideoBusEngine.outputSettings(Life.settingsVideo);
+
+			/**
+			 * Done
+			 */
 			Life.elementSettings.style.display = 'none';
+			Life.elementSettingsValueIPS.value = String(Life.settingsCalc.iterationsPerSecond);
 		};
 		Life.elementSettingsCancel = <HTMLButtonElement>document.getElementById('settings-cancel');
 		Life.elementSettingsCancel.onclick = () => {
 			Life.elementSettings.style.display = 'none';
 		};
-
-		Life.elementDataContainer = <HTMLElement>document.getElementById('data-container');
-		Life.elementFPS = <HTMLElement>document.getElementById('fps');
-
-		Life.elementStatsC = <HTMLElement>document.getElementById('c');
-		Life.elementStatsCPS = <HTMLElement>document.getElementById('cps');
+		Life.elementSettingsValueFPS = <HTMLInputElement>document.getElementById('settings-value-fps');
+		Life.elementSettingsValueGrid = <HTMLInputElement>document.getElementById('settings-value-grid');
+		Life.elementSettingsValueIPS = <HTMLInputElement>document.getElementById('settings-value-ips');
+		Life.elementSettingsValueResolution = <HTMLInputElement>document.getElementById('settings-value-resolution');
+		Life.elementSettingsValueTableSize = <HTMLInputElement>document.getElementById('settings-value-table-size');
 	}
 
+	/**
+	 * Update the HTML defaults to match the values set here
+	 */
 	private static initializeSettings(): void {
 		/*
 		 * Video
@@ -85,6 +234,7 @@ class Life {
 			fps: VideoBusInputDataSettingsFPS._60,
 			grid: true,
 			resolution: null, // Native
+			tableSizeX: 48,
 		};
 
 		if (Life.isMobileOrTablet()) {
@@ -98,6 +248,7 @@ class Life {
 		Life.settingsCalc = {
 			fps: Life.settingsVideo.fps,
 			iterationsPerSecond: 1, // 1 is min
+			tableSizeX: Life.settingsVideo.tableSizeX,
 		};
 	}
 
@@ -107,9 +258,23 @@ class Life {
 			 * Load Calc Engine
 			 */
 			let then: number = performance.now();
-			CalcBusEngine.setCallbackIPS((data: CalcBusOutputDataIPS) => {
+			CalcBusEngine.setCallbackPS((data: CalcBusOutputDataIPS) => {
+				Life.elementAlive.innerText = data.alive.toLocaleString('en-US');
+				Life.elementDead.innerText = data.dead.toLocaleString('en-US');
+
+				// too many i/s requests results in deltas >1s
+				let ipsEff: number = Math.max(1, (data.ips / (data.ipsDeltaInMS / 1000)) | 0);
+
 				Life.elementStatsC.innerText = data.ipsTotal.toLocaleString('en-US');
-				Life.elementStatsCPS.innerText = String(data.ips);
+				Life.elementStatsCPS.innerText = ipsEff.toLocaleString('en-US');
+
+				if (ipsEff < Life.settingsCalc.iterationsPerSecond * 0.8) {
+					Life.elementStatsCPS.style.color = 'red';
+				} else if (ipsEff < Life.settingsCalc.iterationsPerSecond * 0.9) {
+					Life.elementStatsCPS.style.color = 'yellow';
+				} else {
+					Life.elementStatsCPS.style.color = 'green';
+				}
 			});
 			CalcBusEngine.setCallbackPositions((data: Uint32Array) => {
 				// console.log('positions', data);
@@ -124,10 +289,10 @@ class Life {
 				VideoBusEngine.setCallbackFPS((fps: number) => {
 					Life.elementFPS.innerText = String(fps);
 
-					if (fps < Life.settingsVideo.fps * 0.9) {
-						Life.elementFPS.style.color = 'yellow';
-					} else if (fps < Life.settingsVideo.fps * 0.8) {
+					if (fps < Life.settingsVideo.fps * 0.8) {
 						Life.elementFPS.style.color = 'red';
+					} else if (fps < Life.settingsVideo.fps * 0.9) {
+						Life.elementFPS.style.color = 'yellow';
 					} else {
 						Life.elementFPS.style.color = 'green';
 					}
@@ -153,6 +318,8 @@ class Life {
 		// 1. Allow user to define starting cells (video integration)
 		// 2. Submit cells to calc
 		// 3. Draw cells in video
+
+		Life.elementControlsReset.click(); // delete me
 	}
 
 	// http://detectmobilebrowsers.com/

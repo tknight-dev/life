@@ -41,7 +41,10 @@ class VideoWorkerEngine {
 	private static frameTimestampDelta: number = 0;
 	private static frameTimestampFPSThen: number = 0;
 	private static frameTimestampThen: number = 0;
+	private static grid: boolean;
 	private static self: Window & typeof globalThis;
+	private static tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
+	private static tableSizeY: number;
 
 	public static async initialize(self: Window & typeof globalThis, data: VideoBusInputDataInit): Promise<void> {
 		// Config
@@ -95,6 +98,9 @@ class VideoWorkerEngine {
 		} else {
 			VideoWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
 		}
+		VideoWorkerEngine.grid = data.grid;
+		VideoWorkerEngine.tableSizeX = data.tableSizeX;
+		VideoWorkerEngine.tableSizeY = (data.tableSizeX * 9) / 16;
 	}
 
 	private static post(VideoBusWorkerPayloads: VideoBusOutputPayload[]): void {
