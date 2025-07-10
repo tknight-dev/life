@@ -146,9 +146,9 @@ class Life {
 		};
 		Life.elementControlsReset = <HTMLElement>document.getElementById('reset');
 		Life.elementControlsReset.onclick = () => {
-			const data: Uint32Array = Life.initializeLife();
-			VideoBusEngine.outputData(data);
-			CalcBusEngine.outputLife(data);
+			const data: Uint32Array[] = Life.initializeLife();
+			VideoBusEngine.outputData(data[0]);
+			CalcBusEngine.outputLife(data[1]);
 
 			Life.elementAlive.innerText = '';
 			Life.elementDead.innerText = '';
@@ -246,7 +246,7 @@ class Life {
 		Life.elementSettingsValueTableSize = <HTMLInputElement>document.getElementById('settings-value-table-size');
 	}
 
-	private static initializeLife(): Uint32Array {
+	private static initializeLife(): Uint32Array[] {
 		let data: Set<number> = new Set<number>(),
 			tableSizeX: number = Life.settingsCalc.tableSizeX,
 			tableSizeY: number = (Life.settingsCalc.tableSizeX * 9) / 16,
@@ -263,7 +263,8 @@ class Life {
 		data.add(((xMiddle - 1) << 15) | (yMiddle + 1) | xyMaskAlive);
 		data.add((xMiddle << 15) | (yMiddle + 1) | xyMaskAlive);
 
-		return Uint32Array.from(data);
+		// The array buffer must be passed to each web worker independently
+		return [Uint32Array.from(data), Uint32Array.from(data)];
 	}
 
 	/**
@@ -297,7 +298,7 @@ class Life {
 
 	private static initializeWorkers(): Promise<boolean> {
 		return new Promise((resolve, reject) => {
-			let data: Uint32Array = Life.initializeLife(),
+			let data: Uint32Array[] = Life.initializeLife(),
 				then: number = performance.now();
 
 			/*
@@ -327,7 +328,7 @@ class Life {
 
 				Life.elementStatsC.innerText = data.ipsTotal.toLocaleString('en-US');
 				Life.elementStatsCPS.innerText = ipsEff.toLocaleString('en-US');
-				Life.elementStatsCPSAll.style.display = 'block';
+				Life.elementStatsCPSAll.style.display = 'flex';
 
 				if (ipsEff < Life.settingsCalc.iterationsPerSecond * 0.8) {
 					Life.elementStatsCPS.style.color = 'red';
@@ -337,7 +338,7 @@ class Life {
 					Life.elementStatsCPS.style.color = 'green';
 				}
 			});
-			CalcBusEngine.initialize(data, Life.settingsCalc, () => {
+			CalcBusEngine.initialize(data[0], Life.settingsCalc, () => {
 				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
 
 				/*
@@ -355,9 +356,8 @@ class Life {
 						Life.elementFPS.style.color = 'green';
 					}
 				});
-				VideoBusEngine.initialize(Life.elementCanvas, Life.elementDataContainer, Life.settingsVideo, (status: boolean) => {
+				VideoBusEngine.initialize(Life.elementCanvas, Life.elementDataContainer, data[1], Life.settingsVideo, (status: boolean) => {
 					if (status) {
-						VideoBusEngine.outputData(data);
 						console.log('Engine > Video: loaded in', performance.now() - then, 'ms');
 						resolve(true);
 					} else {

@@ -54,6 +54,7 @@ class VideoWorkerEngine {
 		VideoWorkerEngine.self = self;
 
 		// Engines
+		VideoWorkerEngine.inputData(data.life);
 		VideoWorkerEngine.inputResize(data);
 		VideoWorkerEngine.inputSettings(data);
 

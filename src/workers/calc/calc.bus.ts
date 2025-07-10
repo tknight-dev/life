@@ -48,7 +48,7 @@ export class CalcBusEngine {
 				cmd: CalcBusInputCmd.INIT,
 				data: videoBusInputDataInit,
 			};
-			CalcBusEngine.worker.postMessage(videoBusInputPayload);
+			CalcBusEngine.worker.postMessage(videoBusInputPayload, [life.buffer]);
 		} else {
 			alert('Web Workers are not supported by your browser');
 		}
