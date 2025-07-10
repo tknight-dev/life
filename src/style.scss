@@ -65,7 +65,8 @@ $life-logo-width: 152px;
 		.ips-requested,
 		.rules,
 		.settings,
-		.stats {
+		.stats,
+		.webgl-not-supported {
 			left: 0;
 			position: absolute;
 			right: 0;
@@ -171,7 +172,8 @@ $life-logo-width: 152px;
 		}
 
 		.game-over,
-		.ips-requested {
+		.ips-requested,
+		.webgl-not-supported {
 			align-items: center;
 			bottom: 0;
 			display: none;
@@ -302,6 +304,10 @@ $life-logo-width: 152px;
 			#cps-all {
 				display: none;
 			}
+		}
+
+		.webgl-not-supported {
+			z-index: 3;
 		}
 	}
 

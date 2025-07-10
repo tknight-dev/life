@@ -16,7 +16,7 @@ import { ResizeEngine } from '../../engines/resize.engine';
 
 export class VideoBusEngine {
 	private static callbackFPS: (fps: number) => void;
-	private static callbackInitComplete: () => void;
+	private static callbackInitComplete: (status: boolean) => void;
 	private static canvas: HTMLCanvasElement;
 	private static canvasOffscreen: OffscreenCanvas;
 	private static complete: boolean;
@@ -31,7 +31,7 @@ export class VideoBusEngine {
 		canvas: HTMLCanvasElement,
 		game: HTMLElement,
 		settings: VideoBusInputDataSettings,
-		callback: () => void,
+		callback: (status: boolean) => void,
 	): void {
 		VideoBusEngine.callbackInitComplete = callback;
 		VideoBusEngine.canvas = canvas;
@@ -87,11 +87,21 @@ export class VideoBusEngine {
 						VideoBusEngine.callbackFPS(<number>payloads[i].data);
 						break;
 					case VideoBusOutputCmd.INIT_COMPLETE:
-						VideoBusEngine.callbackInitComplete();
+						VideoBusEngine.callbackInitComplete(<boolean>payloads[i].data);
 						break;
 				}
 			}
 		};
+	}
+
+	public static outputData(data: Uint32Array): void {
+		VideoBusEngine.worker.postMessage(
+			{
+				cmd: VideoBusInputCmd.DATA,
+				data: data,
+			},
+			[data.buffer],
+		);
 	}
 
 	public static outputResolution(resolution: null | 256 | 384 | 512 | 640 | 1280 | 1920): void {

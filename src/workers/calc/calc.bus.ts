@@ -7,6 +7,7 @@ import {
 	CalcBusOutputDataPS,
 	CalcBusOutputPayload,
 } from './calc.model';
+import { VideoBusEngine } from '../video/video.bus';
 
 /**
  * @author tknight-dev
@@ -16,7 +17,6 @@ export class CalcBusEngine {
 	private static callbackGameOver: (dead: number) => void;
 	private static callbackInitComplete: () => void;
 	private static callbackPS: (data: CalcBusOutputDataPS) => void;
-	private static callbackPositions: (data: Uint32Array) => void;
 	private static worker: Worker;
 
 	/**
@@ -68,7 +68,7 @@ export class CalcBusEngine {
 						CalcBusEngine.callbackPS(<CalcBusOutputDataPS>payloads[i].data);
 						break;
 					case CalcBusOutputCmd.POSITIONS:
-						CalcBusEngine.callbackPositions(<Uint32Array>payloads[i].data);
+						VideoBusEngine.outputData(<Uint32Array>payloads[i].data);
 						break;
 				}
 			}
@@ -119,9 +119,5 @@ export class CalcBusEngine {
 
 	public static setCallbackPS(callbackPS: (data: CalcBusOutputDataPS) => void): void {
 		CalcBusEngine.callbackPS = callbackPS;
-	}
-
-	public static setCallbackPositions(callbackPositions: (data: Uint32Array) => void): void {
-		CalcBusEngine.callbackPositions = callbackPositions;
 	}
 }

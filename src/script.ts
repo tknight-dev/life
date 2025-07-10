@@ -41,6 +41,7 @@ class Life {
 	private static elementStatsC: HTMLElement;
 	private static elementStatsCPS: HTMLElement;
 	private static elementStatsCPSAll: HTMLElement;
+	private static elementWebGLNotSupported: HTMLElement;
 	private static settingsCalc: CalcBusInputDataSettings;
 	private static settingsCalcIPSMax: number = 20000000;
 	private static settingsVideo: VideoBusInputDataSettings;
@@ -64,6 +65,8 @@ class Life {
 		Life.elementStatsC = <HTMLElement>document.getElementById('c');
 		Life.elementStatsCPS = <HTMLElement>document.getElementById('cps');
 		Life.elementStatsCPSAll = <HTMLElement>document.getElementById('cps-all');
+
+		Life.elementWebGLNotSupported = <HTMLElement>document.getElementById('webgl-not-supported');
 
 		/**
 		 * Controls
@@ -271,7 +274,7 @@ class Life {
 		};
 	}
 
-	private static initializeWorkers(): Promise<void> {
+	private static initializeWorkers(): Promise<boolean> {
 		return new Promise((resolve, reject) => {
 			/*
 			 * Load Calc Engine
@@ -311,9 +314,6 @@ class Life {
 					Life.elementStatsCPS.style.color = 'green';
 				}
 			});
-			CalcBusEngine.setCallbackPositions((data: Uint32Array) => {
-				// console.log('positions', data);
-			});
 			CalcBusEngine.initialize(Life.settingsCalc, () => {
 				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
 
@@ -332,9 +332,13 @@ class Life {
 						Life.elementFPS.style.color = 'green';
 					}
 				});
-				VideoBusEngine.initialize(Life.elementCanvas, Life.elementDataContainer, Life.settingsVideo, () => {
-					console.log('Engine > Video: loaded in', performance.now() - then, 'ms');
-					resolve();
+				VideoBusEngine.initialize(Life.elementCanvas, Life.elementDataContainer, Life.settingsVideo, (status: boolean) => {
+					if (status) {
+						console.log('Engine > Video: loaded in', performance.now() - then, 'ms');
+						resolve(true);
+					} else {
+						resolve(false);
+					}
 				});
 			});
 		});
@@ -346,15 +350,27 @@ class Life {
 		// Initialize
 		Life.initializeDOM();
 		Life.initializeSettings();
-		await Life.initializeWorkers();
 
-		console.log('System Loaded in', performance.now() - then, 'ms');
+		if (await Life.initializeWorkers()) {
+			console.log('System Loaded in', performance.now() - then, 'ms');
 
-		// 1. Allow user to define starting cells (video integration)
-		// 2. Submit cells to calc
-		// 3. Draw cells in video
+			// 1. Allow user to define starting cells (video integration)
+			// 2. Submit cells to calc
+			// 3. Draw cells in video
 
-		Life.elementControlsReset.click(); // delete me
+			Life.elementControlsReset.click(); // delete me
+		} else {
+			CalcBusEngine.outputPause();
+
+			Life.elementWebGLNotSupported.style.display = 'flex';
+			Life.elementWebGLNotSupported.classList.add('show');
+
+			Life.elementControlsBackward.style.display = 'none';
+			Life.elementControlsForward.style.display = 'none';
+			Life.elementControlsPlay.style.display = 'none';
+			Life.elementControlsPause.style.display = 'none';
+			Life.elementControlsReset.style.display = 'none';
+		}
 	}
 
 	// http://detectmobilebrowsers.com/
