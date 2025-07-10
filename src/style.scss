@@ -33,6 +33,16 @@ $life-logo-width: 152px;
 		mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M52.5 440.6c-9.5 7.9-22.8 9.7-34.1 4.4S0 428.4 0 416L0 96C0 83.6 7.2 72.3 18.4 67s24.5-3.6 34.1 4.4L224 214.3l0 41.7 0 41.7L52.5 440.6zM256 352l0-96 0-128 0-32c0-12.4 7.2-23.7 18.4-29s24.5-3.6 34.1 4.4l192 160c7.3 6.1 11.5 15.1 11.5 24.6s-4.2 18.5-11.5 24.6l-192 160c-9.5 7.9-22.8 9.7-34.1 4.4s-18.4-16.6-18.4-29l0-64z"/></svg>');
 	}
 
+	&.fullscreen {
+		// !Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.
+		mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M32 32C14.3 32 0 46.3 0 64l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L32 32zM64 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 32c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM448 352c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96z"/></svg>');
+	}
+
+	&.fullscreen-exit {
+		// !Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.
+		mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M160 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 64-64 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l96 0c17.7 0 32-14.3 32-32l0-96zM32 320c-17.7 0-32 14.3-32 32s14.3 32 32 32l64 0 0 64c0 17.7 14.3 32 32 32s32-14.3 32-32l0-96c0-17.7-14.3-32-32-32l-96 0zM352 64c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32l96 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-64 0 0-64zM320 320c-17.7 0-32 14.3-32 32l0 96c0 17.7 14.3 32 32 32s32-14.3 32-32l0-64 64 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0z"/></svg>');
+	}
+
 	&.play {
 		// !Font Awesome Free 6.6.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.
 		mask-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80L0 432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg>');
@@ -74,6 +84,12 @@ $life-logo-width: 152px;
 		}
 
 		.canvas {
+			align-items: center;
+			display: flex;
+			bottom: 0;
+			justify-content: center;
+			top: 0;
+
 			.aspect-ratio {
 				align-items: center;
 				aspect-ratio: 16 / 9;
@@ -111,9 +127,9 @@ $life-logo-width: 152px;
 			bottom: 65px;
 			font-family: monospace;
 			pointer-events: none;
+			z-index: 2;
 		}
 
-		.canvas,
 		.rules,
 		.settings {
 			align-items: center;
@@ -125,7 +141,7 @@ $life-logo-width: 152px;
 
 		.controls {
 			align-items: center;
-			background-color: rgba(0, 0, 0, 0.35);
+			background-color: rgba(0, 0, 0, 0.5);
 			border-top: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
 			display: flex;
 			bottom: 0;
@@ -153,6 +169,11 @@ $life-logo-width: 152px;
 			}
 
 			.left {
+				.life-icon {
+					&:not(:first-child) {
+						margin-left: 20px;
+					}
+				}
 			}
 
 			.middle {
@@ -286,7 +307,7 @@ $life-logo-width: 152px;
 
 		.stats {
 			align-items: center;
-			background-color: rgba(0, 0, 0, 0.35);
+			background-color: rgba(0, 0, 0, 0.5);
 			border-bottom: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
 			display: flex;
 			font-family: monospace;

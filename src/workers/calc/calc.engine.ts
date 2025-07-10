@@ -45,7 +45,7 @@ class CalcWorkerEngine {
 	private static life: Uint32Array;
 	private static lifeAvailable: boolean;
 	private static iterationsPerMillisecond: number;
-	private static play: boolean = true;
+	private static play: boolean;
 	private static reset: boolean;
 	private static self: Window & typeof globalThis;
 	private static tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
@@ -56,6 +56,7 @@ class CalcWorkerEngine {
 		CalcWorkerEngine.self = self;
 
 		// Engines
+		CalcWorkerEngine.inputLife(data.life);
 		CalcWorkerEngine.inputSettings(data);
 
 		// Done
@@ -119,7 +120,7 @@ class CalcWorkerEngine {
 			calcTimestampFPSThen: number = Math.round(performance.now()),
 			calcTimestampIPSDelta: number = 0,
 			calcTimestampIPSThen: number = calcTimestampFPSThen,
-			calcTimestampThen: number = calcTimestampFPSThen,
+			calcTimestampThen: number = 0,
 			data: Map<number, number> = new Map<number, number>(),
 			dataNew: boolean,
 			neighbors: number,
@@ -170,47 +171,6 @@ class CalcWorkerEngine {
 				calcTimestampIPSThen = timestampNow;
 				calcTimestampThen = timestampNow;
 				return;
-			}
-
-			/**
-			 * Send data to video thread at FPS rate (if required)
-			 */
-			if (dataNew && timestampNow - calcTimestampFPSThen > CalcWorkerEngine.framesPerMillisecond) {
-				calcTimestampFPSThen = timestampNow;
-				dataNew = false;
-
-				// Post postions
-				positions = Uint32Array.from(data.keys());
-				CalcWorkerEngine.post(
-					[
-						{
-							cmd: CalcBusOutputCmd.POSITIONS,
-							data: positions,
-						},
-					],
-					[positions.buffer],
-				);
-			}
-
-			/**
-			 * Send iterations/second to main thread every second
-			 */
-			calcTimestampIPSDelta = timestampNow - calcTimestampIPSThen;
-			if (calcTimestampIPSDelta > 999) {
-				CalcWorkerEngine.post([
-					{
-						cmd: CalcBusOutputCmd.PS,
-						data: {
-							alive: alive,
-							dead: data.size - alive,
-							ips: calcCount,
-							ipsDeltaInMS: calcTimestampIPSDelta,
-							ipsTotal: calcCountTotal,
-						},
-					},
-				]);
-				calcCount = 0;
-				calcTimestampIPSThen = timestampNow;
 			}
 
 			/**
@@ -377,6 +337,47 @@ class CalcWorkerEngine {
 						break;
 					}
 				}
+			}
+
+			/**
+			 * Send data to video thread at FPS rate (if required)
+			 */
+			if (dataNew && timestampNow - calcTimestampFPSThen > CalcWorkerEngine.framesPerMillisecond) {
+				calcTimestampFPSThen = timestampNow;
+				dataNew = false;
+
+				// Post postions
+				positions = Uint32Array.from(data.keys());
+				CalcWorkerEngine.post(
+					[
+						{
+							cmd: CalcBusOutputCmd.POSITIONS,
+							data: positions,
+						},
+					],
+					[positions.buffer],
+				);
+			}
+
+			/**
+			 * Send iterations/second to main thread every second
+			 */
+			calcTimestampIPSDelta = timestampNow - calcTimestampIPSThen;
+			if (calcTimestampIPSDelta > 999) {
+				CalcWorkerEngine.post([
+					{
+						cmd: CalcBusOutputCmd.PS,
+						data: {
+							alive: alive,
+							dead: data.size - alive,
+							ips: calcCount,
+							ipsDeltaInMS: calcTimestampIPSDelta,
+							ipsTotal: calcCountTotal,
+						},
+					},
+				]);
+				calcCount = 0;
+				calcTimestampIPSThen = timestampNow;
 			}
 		};
 		CalcWorkerEngine.calc = calc;

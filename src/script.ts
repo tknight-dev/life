@@ -1,5 +1,7 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
 import { CalcBusInputDataSettings, CalcBusOutputDataPS } from './workers/calc/calc.model';
+import { FullscreenEngine } from './engines/fullscreen.engine';
+import { Orientation, OrientationEngine } from './engines/orientation.engine';
 import { VideoBusEngine } from './workers/video/video.bus';
 import { VideoBusInputDataSettings, VideoBusInputDataSettingsFPS } from './workers/video/video.model';
 
@@ -20,8 +22,10 @@ class Life {
 	private static elementControlsReset: HTMLElement;
 	private static elementDead: HTMLElement;
 	private static elementDataContainer: HTMLElement;
+	private static elementGame: HTMLElement;
 	private static elementGameOver: HTMLElement;
 	private static elementFPS: HTMLElement;
+	private static elementFullscreen: HTMLElement;
 	private static elementIPSRequested: HTMLElement;
 	private static elementMenu: HTMLElement;
 	private static elementMenuContent: HTMLElement;
@@ -58,8 +62,27 @@ class Life {
 
 		Life.elementDataContainer = <HTMLElement>document.getElementById('data-container');
 		Life.elementDead = <HTMLCanvasElement>document.getElementById('dead');
+		Life.elementGame = <HTMLElement>document.getElementById('game');
 		Life.elementGameOver = <HTMLElement>document.getElementById('game-over');
 		Life.elementFPS = <HTMLElement>document.getElementById('fps');
+		Life.elementFullscreen = <HTMLElement>document.getElementById('fullscreen');
+		Life.elementFullscreen.onclick = async () => {
+			Life.elementControlsPause.click();
+
+			if (FullscreenEngine.isOpen()) {
+				await FullscreenEngine.close();
+				Life.elementFullscreen.classList.remove('fullscreen-exit');
+				Life.elementFullscreen.classList.add('fullscreen');
+				OrientationEngine.unlock();
+			} else {
+				await FullscreenEngine.open(Life.elementGame);
+				Life.elementFullscreen.classList.remove('fullscreen');
+				Life.elementFullscreen.classList.add('fullscreen-exit');
+				setTimeout(() => {
+					OrientationEngine.lock(Orientation.LANDSCAPE);
+				});
+			}
+		};
 		Life.elementIPSRequested = <HTMLElement>document.getElementById('ips-requested');
 
 		Life.elementStatsC = <HTMLElement>document.getElementById('c');
@@ -106,6 +129,7 @@ class Life {
 
 			CalcBusEngine.outputPause();
 		};
+		Life.elementControlsPause.style.display = 'none';
 		Life.elementControlsPlay = <HTMLElement>document.getElementById('play');
 		Life.elementControlsPlay.onclick = () => {
 			Life.elementControlsPlay.style.display = 'none';
@@ -120,16 +144,19 @@ class Life {
 
 			CalcBusEngine.outputPlay();
 		};
-		Life.elementControlsPlay.style.display = 'none';
 		Life.elementControlsReset = <HTMLElement>document.getElementById('reset');
 		Life.elementControlsReset.onclick = () => {
+			const data: Uint32Array = Life.initializeLife();
+			VideoBusEngine.outputData(data);
+			CalcBusEngine.outputLife(data);
+
 			Life.elementAlive.innerText = '';
 			Life.elementDead.innerText = '';
 
 			Life.elementControlsBackward.style.display = 'block';
 			Life.elementControlsForward.style.display = 'block';
-			Life.elementControlsPlay.style.display = 'none';
-			Life.elementControlsPause.style.display = 'block';
+			Life.elementControlsPlay.style.display = 'block';
+			Life.elementControlsPause.style.display = 'none';
 
 			Life.elementGameOver.classList.remove('show');
 			Life.elementIPSRequested.style.display = 'flex';
@@ -137,32 +164,6 @@ class Life {
 				Life.elementGameOver.style.display = 'none';
 			}, 1000);
 			Life.elementStatsC.innerText = '0';
-
-			CalcBusEngine.outputReset();
-
-			// Random initial seed for dev
-			// Random initial seed for dev
-			// Random initial seed for dev
-			// Random initial seed for dev
-			// Random initial seed for dev
-			// Random initial seed for dev
-			let life: Set<number> = new Set<number>(),
-				x: number,
-				xMax: number = Life.settingsCalc.tableSizeX,
-				xyMaskAlive: number = 0x40000000,
-				y: number,
-				yMax: number = (Life.settingsCalc.tableSizeX * 9) / 16,
-				maxLife: number = Math.random() * xMax * yMax;
-
-			for (let i = 0; i < maxLife; i++) {
-				x = Math.round(Math.random() * xMax) & 0x7fff;
-				y = Math.round(Math.random() * yMax) & 0x7fff;
-				life.add((x << 15) | y | xyMaskAlive);
-			}
-			CalcBusEngine.outputLife(Uint32Array.from(life));
-			setTimeout(() => {
-				CalcBusEngine.outputPlay();
-			}, 1000);
 		};
 
 		/**
@@ -245,6 +246,26 @@ class Life {
 		Life.elementSettingsValueTableSize = <HTMLInputElement>document.getElementById('settings-value-table-size');
 	}
 
+	private static initializeLife(): Uint32Array {
+		let data: Set<number> = new Set<number>(),
+			tableSizeX: number = Life.settingsCalc.tableSizeX,
+			tableSizeY: number = (Life.settingsCalc.tableSizeX * 9) / 16,
+			xMiddle: number = Math.round(tableSizeX / 2),
+			xyMaskAlive: number = 0x40000000, // 0x40000000 is 1 << 30 (alive)
+			yMiddle: number = Math.round(tableSizeY / 2);
+
+		// Flyer
+		data.add(((xMiddle - 1) << 15) | (yMiddle - 1) | xyMaskAlive);
+
+		data.add((xMiddle << 15) | yMiddle | xyMaskAlive);
+		data.add(((xMiddle + 1) << 15) | yMiddle | xyMaskAlive);
+
+		data.add(((xMiddle - 1) << 15) | (yMiddle + 1) | xyMaskAlive);
+		data.add((xMiddle << 15) | (yMiddle + 1) | xyMaskAlive);
+
+		return Uint32Array.from(data);
+	}
+
 	/**
 	 * Update the HTML defaults to match the values set here
 	 */
@@ -276,10 +297,12 @@ class Life {
 
 	private static initializeWorkers(): Promise<boolean> {
 		return new Promise((resolve, reject) => {
+			let data: Uint32Array = Life.initializeLife(),
+				then: number = performance.now();
+
 			/*
 			 * Load Calc Engine
 			 */
-			let then: number = performance.now();
 			CalcBusEngine.setCallbackGameOver((dead: number) => {
 				Life.elementAlive.innerText = '0';
 				Life.elementDead.innerText = dead.toLocaleString('en-US');
@@ -314,7 +337,7 @@ class Life {
 					Life.elementStatsCPS.style.color = 'green';
 				}
 			});
-			CalcBusEngine.initialize(Life.settingsCalc, () => {
+			CalcBusEngine.initialize(data, Life.settingsCalc, () => {
 				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
 
 				/*
@@ -334,6 +357,7 @@ class Life {
 				});
 				VideoBusEngine.initialize(Life.elementCanvas, Life.elementDataContainer, Life.settingsVideo, (status: boolean) => {
 					if (status) {
+						VideoBusEngine.outputData(data);
 						console.log('Engine > Video: loaded in', performance.now() - then, 'ms');
 						resolve(true);
 					} else {
@@ -351,14 +375,22 @@ class Life {
 		Life.initializeDOM();
 		Life.initializeSettings();
 
+		// Initialize: Engines
+		FullscreenEngine.initialize();
+		FullscreenEngine.setCallback((state: boolean) => {});
+		OrientationEngine.initialize();
+		OrientationEngine.setCallback((orientation: Orientation) => {});
+
 		if (await Life.initializeWorkers()) {
 			console.log('System Loaded in', performance.now() - then, 'ms');
+
+			// Initialize: Life Seed
 
 			// 1. Allow user to define starting cells (video integration)
 			// 2. Submit cells to calc
 			// 3. Draw cells in video
 
-			Life.elementControlsReset.click(); // delete me
+			// Life.elementControlsReset.click(); // delete me, autostarts game for dev
 		} else {
 			CalcBusEngine.outputPause();
 

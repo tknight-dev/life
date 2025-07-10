@@ -17,7 +17,9 @@ export enum CalcBusInputCmd {
 	SETTINGS,
 }
 
-export interface CalcBusInputDataInit extends CalcBusInputDataSettings {}
+export interface CalcBusInputDataInit extends CalcBusInputDataSettings {
+	life: Uint32Array;
+}
 
 export interface CalcBusInputDataSettings {
 	fps: VideoBusInputDataSettingsFPS;

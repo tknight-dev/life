@@ -22,7 +22,7 @@ export class CalcBusEngine {
 	/**
 	 * Start the video streams in another thread
 	 */
-	public static initialize(settings: CalcBusInputDataSettings, callback: () => void): void {
+	public static initialize(life: Uint32Array, settings: CalcBusInputDataSettings, callback: () => void): void {
 		CalcBusEngine.callbackInitComplete = callback;
 
 		// Spawn Calc thread
@@ -38,7 +38,12 @@ export class CalcBusEngine {
 			/*
 			 * Initialization payload
 			 */
-			const videoBusInputDataInit: CalcBusInputDataInit = Object.assign({}, settings);
+			const videoBusInputDataInit: CalcBusInputDataInit = Object.assign(
+				{
+					life: life,
+				},
+				settings,
+			);
 			const videoBusInputPayload: CalcBusInputPayload = {
 				cmd: CalcBusInputCmd.INIT,
 				data: videoBusInputDataInit,

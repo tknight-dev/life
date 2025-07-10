@@ -99,6 +99,7 @@ class VideoWorkerEngine {
 
 		VideoWorkerEngine.canvasOffscreen.height = height;
 		VideoWorkerEngine.canvasOffscreen.width = width;
+		VideoWorkerEngine.canvasOffscreenContext.viewport(0, 0, width, height);
 	}
 
 	public static inputSettings(data: VideoBusInputDataSettings): void {
@@ -122,18 +123,7 @@ class VideoWorkerEngine {
 	private static render(timestampNow: number): void {}
 
 	// DELETE ME
-	private static drawScene(gl: WebGLRenderingContext, shaderProgram: WebGLProgram, buffer: WebGLBuffer, vertexPosition: number): void {
-		gl.clearColor(0.0, 0.0, 0.0, 1.0);
-		gl.clear(gl.COLOR_BUFFER_BIT);
-
-		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-		gl.vertexAttribPointer(vertexPosition, 2, gl.FLOAT, false, 0, 0);
-		gl.enableVertexAttribArray(vertexPosition);
-
-		gl.useProgram(shaderProgram);
-
-		gl.drawArrays(gl.TRIANGLES, 0, 3);
-	}
+	private static drawScene(gl: WebGLRenderingContext, shaderProgram: WebGLProgram, buffer: WebGLBuffer, vertexPosition: number): void {}
 
 	private static renderBinder(): boolean {
 		/**
@@ -174,13 +164,9 @@ class VideoWorkerEngine {
 			return false;
 		}
 
+		// Final values
+		const vertexPosition: number = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
 		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-
-		// mock data
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0.0, 1.0, -1.0, -1.0, 1.0, -1.0]), gl.STATIC_DRAW);
-
-		// mock draw
-		VideoWorkerEngine.drawScene(gl, shaderProgram, buffer, gl.getAttribLocation(shaderProgram, 'aVertexPosition'));
 
 		/**
 		 * Render
@@ -191,6 +177,38 @@ class VideoWorkerEngine {
 			// Start the request for the next frame
 			VideoWorkerEngine.frameRequest = requestAnimationFrame(render);
 			frameTimestampDelta = timestampNow - frameTimestampThen;
+
+			if (VideoWorkerEngine.dataNew) {
+				VideoWorkerEngine.dataNew = false;
+
+				// Load data into buffer :)
+			}
+
+			/**
+			 * Render data at frames per ms rate
+			 */
+			if (frameTimestampDelta > VideoWorkerEngine.framesPerMillisecond) {
+				frameTimestampThen = timestampNow - (frameTimestampDelta % VideoWorkerEngine.framesPerMillisecond);
+				frameCount++;
+
+				// Render data
+
+				// mock data
+				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0.0, 0.75, -0.75, -0.75, 0.75, -0.75]), gl.STATIC_DRAW);
+
+				// mock draw
+				VideoWorkerEngine.drawScene(gl, shaderProgram, buffer, gl.getAttribLocation(shaderProgram, 'aVertexPosition'));
+				gl.clearColor(0.0, 0.0, 0.0, 1.0);
+				gl.clear(gl.COLOR_BUFFER_BIT);
+
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+				gl.vertexAttribPointer(vertexPosition, 2, gl.FLOAT, false, 0, 0);
+				gl.enableVertexAttribArray(vertexPosition);
+
+				gl.useProgram(shaderProgram);
+
+				gl.drawArrays(gl.TRIANGLES, 0, 3); // *, offset, count
+			}
 
 			/**
 			 * Send FPS to main thread every second
@@ -204,16 +222,6 @@ class VideoWorkerEngine {
 				]);
 				frameCount = 0;
 				frameTimestampFPSThen = timestampNow;
-			}
-
-			/**
-			 * Render data at frames per ms rate
-			 */
-			if (frameTimestampDelta > VideoWorkerEngine.framesPerMillisecond) {
-				frameTimestampThen = timestampNow - (frameTimestampDelta % VideoWorkerEngine.framesPerMillisecond);
-				frameCount++;
-
-				// Render data
 			}
 		};
 		VideoWorkerEngine.render = render;
