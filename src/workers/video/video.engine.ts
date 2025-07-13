@@ -33,7 +33,7 @@ self.onmessage = (event: MessageEvent) => {
 
 class VideoWorkerEngine {
 	private static canvasOffscreen: OffscreenCanvas;
-	private static canvasOffscreenContext: WebGLRenderingContext;
+	private static canvasOffscreenContext: OffscreenCanvasRenderingContext2D;
 	private static ctxHeight: number;
 	private static ctxScaler: number;
 	private static ctxWidth: number;
@@ -43,14 +43,25 @@ class VideoWorkerEngine {
 	private static frameRequest: number;
 	private static framesPerMillisecond: number;
 	private static grid: boolean;
+	private static resized: boolean;
 	private static self: Window & typeof globalThis;
+	private static settingsNew: boolean;
 	private static tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
 	private static tableSizeY: number;
 
 	public static async initialize(self: Window & typeof globalThis, data: VideoBusInputDataInit): Promise<void> {
 		// Config
 		VideoWorkerEngine.canvasOffscreen = data.canvasOffscreen;
-		VideoWorkerEngine.canvasOffscreenContext = <WebGLRenderingContext>data.canvasOffscreen.getContext('webgl');
+		VideoWorkerEngine.canvasOffscreenContext = <OffscreenCanvasRenderingContext2D>data.canvasOffscreen.getContext('2d', {
+			alpha: true,
+			antialias: false,
+			depth: true,
+			desynchronized: true,
+			powerPreference: 'high-performance',
+			preserveDrawingBuffer: true,
+		});
+		VideoWorkerEngine.canvasOffscreenContext.imageSmoothingEnabled = false;
+		VideoWorkerEngine.canvasOffscreenContext.shadowBlur = 0;
 		VideoWorkerEngine.self = self;
 
 		// Engines
@@ -97,10 +108,10 @@ class VideoWorkerEngine {
 		VideoWorkerEngine.ctxScaler = data.scaler;
 		VideoWorkerEngine.ctxWidth = width;
 		VideoWorkerEngine.devicePixelRatioEff = Math.round((1 / devicePixelRatio) * 1000) / 1000;
+		VideoWorkerEngine.resized = true;
 
 		VideoWorkerEngine.canvasOffscreen.height = height;
 		VideoWorkerEngine.canvasOffscreen.width = width;
-		VideoWorkerEngine.canvasOffscreenContext.viewport(0, 0, width, height);
 	}
 
 	public static inputSettings(data: VideoBusInputDataSettings): void {
@@ -111,6 +122,7 @@ class VideoWorkerEngine {
 			VideoWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
 		}
 		VideoWorkerEngine.grid = data.grid;
+		VideoWorkerEngine.settingsNew = true;
 		VideoWorkerEngine.tableSizeX = data.tableSizeX;
 		VideoWorkerEngine.tableSizeY = (data.tableSizeX * 9) / 16;
 	}
@@ -123,55 +135,58 @@ class VideoWorkerEngine {
 
 	private static render(timestampNow: number): void {}
 
-	// DELETE ME
-	private static drawScene(gl: WebGLRenderingContext, shaderProgram: WebGLProgram, buffer: WebGLBuffer, vertexPosition: number): void {}
-
 	private static renderBinder(): boolean {
-		/**
-		 * FPS
-		 */
-		let frameCount: number = 0,
+		let cacheCanvasCell: OffscreenCanvas,
+			cacheCanvasCellAlive: OffscreenCanvas = new OffscreenCanvas(1, 1),
+			cacheCanvasCellAliveCtx: OffscreenCanvasRenderingContext2D,
+			cacheCanvasCellDead: OffscreenCanvas = new OffscreenCanvas(1, 1),
+			cacheCanvasCellDeadCtx: OffscreenCanvasRenderingContext2D,
+			cacheCanvasGridHorizontal: OffscreenCanvas = new OffscreenCanvas(1, 1),
+			cacheCanvasGridHorizontalCtx: OffscreenCanvasRenderingContext2D,
+			cacheCanvasGridVertical: OffscreenCanvas = new OffscreenCanvas(1, 1),
+			cacheCanvasGridVerticalCtx: OffscreenCanvasRenderingContext2D,
+			canvasOffscreenContext: OffscreenCanvasRenderingContext2D = VideoWorkerEngine.canvasOffscreenContext,
+			contextOptionsNoAlpha = {
+				alpha: false,
+				antialias: false,
+				depth: true,
+				desynchronized: true,
+				powerPreference: 'high-performance',
+				preserveDrawingBuffer: true,
+			},
+			data: Uint32Array,
+			grid: boolean,
+			frameCount: number = 0,
 			frameTimestampDelta: number = 0,
 			frameTimestampFPSThen: number = 0,
-			frameTimestampThen: number = 0;
+			frameTimestampThen: number = 0,
+			pxCellSize: number,
+			pxHeight: number,
+			pxWidth: number,
+			resized: boolean,
+			tableSizeX: number,
+			tableSizeY: number,
+			x: number,
+			xy: number,
+			xyMaskAlive: number = 0x40000000, // 0x40000000 is 1 << 30 (alive)
+			y: number;
 
-		/**
-		 * WebGL
-		 */
-		const gl: WebGLRenderingContext = VideoWorkerEngine.canvasOffscreenContext,
-			buffer: WebGLBuffer = gl.createBuffer(),
-			shaderFragment: WebGLShader | null = VideoWorkerEngine.renderShaderLoad(
-				gl,
-				gl.FRAGMENT_SHADER,
-				VideoWorkerEngine.renderShaderSourceFragment(),
-			),
-			shaderProgram: WebGLProgram = gl.createProgram(),
-			shaderVertex: WebGLShader | null = VideoWorkerEngine.renderShaderLoad(
-				gl,
-				gl.VERTEX_SHADER,
-				VideoWorkerEngine.renderShaderSourceVertex(),
-			);
+		cacheCanvasCellAliveCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasCellAlive.getContext('2d', contextOptionsNoAlpha);
+		cacheCanvasCellAliveCtx.imageSmoothingEnabled = false;
+		cacheCanvasCellAliveCtx.shadowBlur = 0;
 
-		if (shaderFragment === null || shaderVertex === null) {
-			return false;
-		}
+		cacheCanvasCellDeadCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasCellDead.getContext('2d', contextOptionsNoAlpha);
+		cacheCanvasCellDeadCtx.imageSmoothingEnabled = false;
+		cacheCanvasCellDeadCtx.shadowBlur = 0;
 
-		// Load program into the GPU
-		gl.attachShader(shaderProgram, shaderFragment);
-		gl.attachShader(shaderProgram, shaderVertex);
-		gl.linkProgram(shaderProgram);
-		if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-			console.error('Engine > Video: failed to start program:', gl.getProgramInfoLog(shaderProgram));
-			return false;
-		}
+		cacheCanvasGridHorizontalCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasGridHorizontal.getContext('2d', contextOptionsNoAlpha);
+		cacheCanvasGridHorizontalCtx.imageSmoothingEnabled = false;
+		cacheCanvasGridHorizontalCtx.shadowBlur = 0;
 
-		// Final values
-		const vertexPosition: number = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
-		gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+		cacheCanvasGridVerticalCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasGridVertical.getContext('2d', contextOptionsNoAlpha);
+		cacheCanvasGridVerticalCtx.imageSmoothingEnabled = false;
+		cacheCanvasGridVerticalCtx.shadowBlur = 0;
 
-		/**
-		 * Render
-		 */
 		const render = (timestampNow: number) => {
 			timestampNow |= 0;
 
@@ -182,7 +197,40 @@ class VideoWorkerEngine {
 			if (VideoWorkerEngine.dataNew) {
 				VideoWorkerEngine.dataNew = false;
 
-				// Load data into buffer :)
+				data = VideoWorkerEngine.data;
+			}
+
+			if (VideoWorkerEngine.resized || VideoWorkerEngine.settingsNew) {
+				VideoWorkerEngine.resized = false;
+				VideoWorkerEngine.settingsNew = false;
+
+				grid = VideoWorkerEngine.grid;
+				pxHeight = VideoWorkerEngine.ctxHeight;
+				pxWidth = VideoWorkerEngine.ctxWidth;
+				tableSizeX = VideoWorkerEngine.tableSizeX;
+				tableSizeY = VideoWorkerEngine.tableSizeY;
+
+				pxCellSize = Math.max(1, Math.round(pxWidth / tableSizeX));
+
+				cacheCanvasCellAlive.height = pxCellSize;
+				cacheCanvasCellAlive.width = pxCellSize;
+				cacheCanvasCellAliveCtx.fillStyle = 'green';
+				cacheCanvasCellAliveCtx.fillRect(0, 0, pxCellSize, pxCellSize);
+
+				cacheCanvasCellDead.height = pxCellSize;
+				cacheCanvasCellDead.width = pxCellSize;
+				cacheCanvasCellDeadCtx.fillStyle = 'red';
+				cacheCanvasCellDeadCtx.fillRect(0, 0, pxCellSize, pxCellSize);
+
+				cacheCanvasGridHorizontal.height = 1;
+				cacheCanvasGridHorizontal.width = pxWidth;
+				cacheCanvasGridHorizontalCtx.fillStyle = 'rgba(255,255,255,0.25)';
+				cacheCanvasGridHorizontalCtx.fillRect(0, 0, pxWidth, 1);
+
+				cacheCanvasGridVertical.height = pxHeight;
+				cacheCanvasGridVertical.width = 1;
+				cacheCanvasGridVerticalCtx.fillStyle = cacheCanvasGridHorizontalCtx.fillStyle;
+				cacheCanvasGridVerticalCtx.fillRect(0, 0, 1, pxHeight);
 			}
 
 			/**
@@ -192,23 +240,27 @@ class VideoWorkerEngine {
 				frameTimestampThen = timestampNow - (frameTimestampDelta % VideoWorkerEngine.framesPerMillisecond);
 				frameCount++;
 
-				// Render data
+				// Draw
+				canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);
 
-				// mock data
-				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0.0, 0.75, -0.75, -0.75, 0.75, -0.75]), gl.STATIC_DRAW);
+				// Cells
+				for (xy of data) {
+					x = (xy >> 15) & 0x7fff;
+					y = xy & 0x7fff;
 
-				// mock draw
-				VideoWorkerEngine.drawScene(gl, shaderProgram, buffer, gl.getAttribLocation(shaderProgram, 'aVertexPosition'));
-				gl.clearColor(0.0, 0.0, 0.0, 1.0);
-				gl.clear(gl.COLOR_BUFFER_BIT);
+					cacheCanvasCell = (xy & xyMaskAlive) !== 0 ? cacheCanvasCellAlive : cacheCanvasCellDead;
+					canvasOffscreenContext.drawImage(cacheCanvasCell, x * pxCellSize, y * pxCellSize);
+				}
 
-				gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-				gl.vertexAttribPointer(vertexPosition, 2, gl.FLOAT, false, 0, 0);
-				gl.enableVertexAttribArray(vertexPosition);
+				// Grid: Horizontal
+				for (y = 0; y < pxHeight; y += pxCellSize) {
+					canvasOffscreenContext.drawImage(cacheCanvasGridHorizontal, 0, y);
+				}
 
-				gl.useProgram(shaderProgram);
-
-				gl.drawArrays(gl.TRIANGLES, 0, 3); // *, offset, count
+				// Grid: Vertical
+				for (x = 0; x < pxWidth; x += pxCellSize) {
+					canvasOffscreenContext.drawImage(cacheCanvasGridVertical, x, 0);
+				}
 			}
 
 			/**
@@ -227,46 +279,5 @@ class VideoWorkerEngine {
 		};
 		VideoWorkerEngine.render = render;
 		return true;
-	}
-
-	/**
-	 * @param type from `WebGLRenderingContextBase.` enum
-	 */
-	private static renderShaderLoad(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
-		const shader: WebGLShader | null = gl.createShader(type);
-
-		if (!shader) {
-			console.error('Engine > Video: failed to create shader');
-			return null;
-		}
-
-		gl.shaderSource(shader, source);
-		gl.compileShader(shader);
-
-		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-			console.error('Engine > Video: failed to compile shader:', gl.getShaderInfoLog(shader));
-			gl.deleteShader(shader);
-			return null;
-		}
-
-		return shader;
-	}
-
-	private static renderShaderSourceFragment(): string {
-		return `
-		    void main() {
-		        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); // Red color
-		    }
-		`;
-	}
-
-	private static renderShaderSourceVertex(): string {
-		return `
-		    attribute vec4 aVertexPosition;
-
-		    void main() {
-		        gl_Position = aVertexPosition;
-		    }
-		`;
 	}
 }
