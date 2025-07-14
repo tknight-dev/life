@@ -14,7 +14,7 @@ import { VideoBusEngine } from '../video/video.bus';
  */
 
 export class CalcBusEngine {
-	private static callbackGameOver: (dead: number) => void;
+	private static callbackGameOver: () => void;
 	private static callbackInitComplete: () => void;
 	private static callbackPS: (data: CalcBusOutputDataPS) => void;
 	private static worker: Worker;
@@ -64,7 +64,7 @@ export class CalcBusEngine {
 			for (let i = 0; i < payloads.length; i++) {
 				switch (payloads[i].cmd) {
 					case CalcBusOutputCmd.GAME_OVER:
-						CalcBusEngine.callbackGameOver(<number>payloads[i].data);
+						CalcBusEngine.callbackGameOver();
 						break;
 					case CalcBusOutputCmd.INIT_COMPLETE:
 						CalcBusEngine.callbackInitComplete();
@@ -128,7 +128,7 @@ export class CalcBusEngine {
 		});
 	}
 
-	public static setCallbackGameOver(callbackGameOver: (dead: number) => void): void {
+	public static setCallbackGameOver(callbackGameOver: () => void): void {
 		CalcBusEngine.callbackGameOver = callbackGameOver;
 	}
 

@@ -306,10 +306,7 @@ class Life {
 			/*
 			 * Load Calc Engine
 			 */
-			CalcBusEngine.setCallbackGameOver((dead: number) => {
-				Life.elementAlive.innerText = '0';
-				Life.elementDead.innerText = dead.toLocaleString('en-US');
-
+			CalcBusEngine.setCallbackGameOver(() => {
 				Life.elementControlsBackward.style.display = 'none';
 				Life.elementControlsForward.style.display = 'none';
 				Life.elementControlsPlay.style.display = 'none';
