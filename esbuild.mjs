@@ -51,7 +51,7 @@ var config = {
  */
 if (production) {
 	// Config: prod
-	config.plugins = [sassPlugin(), typecheckPlugin()];
+	config.plugins = [sassPlugin()];
 
 	await esbuild.build(config);
 } else {
