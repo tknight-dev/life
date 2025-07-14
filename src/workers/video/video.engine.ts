@@ -240,17 +240,8 @@ class VideoWorkerEngine {
 				frameTimestampThen = timestampNow - (frameTimestampDelta % VideoWorkerEngine.framesPerMillisecond);
 				frameCount++;
 
-				// Draw
+				// Clear
 				canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);
-
-				// Cells
-				for (xy of data) {
-					x = (xy >> 15) & 0x7fff;
-					y = xy & 0x7fff;
-
-					cacheCanvasCell = (xy & xyMaskAlive) !== 0 ? cacheCanvasCellAlive : cacheCanvasCellDead;
-					canvasOffscreenContext.drawImage(cacheCanvasCell, x * pxCellSize, y * pxCellSize);
-				}
 
 				// Grid: Horizontal
 				for (y = 0; y < pxHeight; y += pxCellSize) {
@@ -260,6 +251,15 @@ class VideoWorkerEngine {
 				// Grid: Vertical
 				for (x = 0; x < pxWidth; x += pxCellSize) {
 					canvasOffscreenContext.drawImage(cacheCanvasGridVertical, x, 0);
+				}
+
+				// Cells
+				for (xy of data) {
+					x = (xy >> 15) & 0x7fff;
+					y = xy & 0x7fff;
+
+					cacheCanvasCell = (xy & xyMaskAlive) !== 0 ? cacheCanvasCellAlive : cacheCanvasCellDead;
+					canvasOffscreenContext.drawImage(cacheCanvasCell, x * pxCellSize, y * pxCellSize);
 				}
 			}
 

@@ -31,7 +31,7 @@ self.onmessage = (event: MessageEvent) => {
 			CalcWorkerEngine.inputPause();
 			break;
 		case CalcBusInputCmd.RESET:
-			CalcWorkerEngine.inputReset();
+			CalcWorkerEngine.inputReset(<Uint32Array | undefined>videoBusInputPayload.data);
 			break;
 		case CalcBusInputCmd.SETTINGS:
 			CalcWorkerEngine.inputSettings(<CalcBusInputDataSettings>videoBusInputPayload.data);
@@ -85,8 +85,12 @@ class CalcWorkerEngine {
 		CalcWorkerEngine.play = false;
 	}
 
-	public static inputReset(): void {
+	public static inputReset(data?: Uint32Array): void {
 		CalcWorkerEngine.reset = true;
+
+		if (data) {
+			CalcWorkerEngine.inputLife(data);
+		}
 	}
 
 	public static inputSettings(data: CalcBusInputDataSettings): void {
@@ -121,7 +125,8 @@ class CalcWorkerEngine {
 			calcTimestampIPSDelta: number = 0,
 			calcTimestampIPSThen: number = calcTimestampFPSThen,
 			calcTimestampThen: number = 0,
-			data: Map<number, number> = new Map<number, number>(),
+			data: Set<number> = new Set<number>(),
+			dataNeighbors: Map<number, number> = new Map<number, number>(),
 			dataNew: boolean,
 			neighbors: number,
 			positions: Uint32Array,
@@ -133,6 +138,7 @@ class CalcWorkerEngine {
 			xMax: number,
 			xy: number,
 			xyMaskAlive: number = 0x40000000, // 0x40000000 is 1 << 30 (alive)
+			xyMaskDead: number = 0x80000000, // 0x80000000 is 1 << 31 (dead)
 			xyWorking: number,
 			y: number,
 			yMaskPlus1: number,
@@ -154,12 +160,26 @@ class CalcWorkerEngine {
 
 				calcCount = 0;
 				calcCountTotal = 0;
-				data.clear(); // TODO: Replace with the original seed (if available)
+				data.clear();
+				dataNeighbors.clear();
 
 				calcTimestampFPSThen = timestampNow;
 				calcTimestampIPSThen = timestampNow;
 				calcTimestampThen = timestampNow;
+
+				CalcWorkerEngine.lifeAvailable = true;
 				return;
+			}
+
+			/**
+			 * Life: manually added by user
+			 */
+			if (CalcWorkerEngine.lifeAvailable) {
+				CalcWorkerEngine.lifeAvailable = false;
+
+				for (xy of CalcWorkerEngine.life) {
+					data.add(xy | xyMaskAlive);
+				}
 			}
 
 			/**
@@ -171,17 +191,6 @@ class CalcWorkerEngine {
 				calcTimestampIPSThen = timestampNow;
 				calcTimestampThen = timestampNow;
 				return;
-			}
-
-			/**
-			 * Life: manually added by user
-			 */
-			if (CalcWorkerEngine.lifeAvailable) {
-				CalcWorkerEngine.lifeAvailable = false;
-
-				for (xy of CalcWorkerEngine.life) {
-					data.set(xy, 0);
-				}
 			}
 
 			/**
@@ -209,6 +218,7 @@ class CalcWorkerEngine {
 					 *
 					 * Consider: Diagonals, Horizontal, and Veritical cells
 					 */
+					dataNeighbors.clear();
 					for (xy of data.keys()) {
 						if ((xy & xyMaskAlive) === 0) {
 							// dead cell
@@ -225,7 +235,7 @@ class CalcWorkerEngine {
 							// Neighbors: Above
 							yMaskPlus1 = y + 1;
 							xyWorking = xMask | yMaskPlus1;
-							data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+							dataNeighbors.set(xyWorking, (dataNeighbors.get(xyWorking) || 0) + 1);
 						} else {
 							yMaskPlus1 = 0;
 						}
@@ -234,7 +244,7 @@ class CalcWorkerEngine {
 							// Neighbors: Below
 							yMaskSub1 = y - 1;
 							xyWorking = xMask | yMaskSub1;
-							data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+							dataNeighbors.set(xyWorking, (dataNeighbors.get(xyWorking) || 0) + 1);
 						} else {
 							yMaskSub1 = 0;
 						}
@@ -246,17 +256,17 @@ class CalcWorkerEngine {
 							// Neighbors: Above
 							if (yMaskPlus1 !== 0) {
 								xyWorking = xMaskSub1 | yMaskPlus1;
-								data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+								dataNeighbors.set(xyWorking, (dataNeighbors.get(xyWorking) || 0) + 1);
 							}
 
 							// Neighbors: Middle
 							xyWorking = xMaskSub1 | y;
-							data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+							dataNeighbors.set(xyWorking, (dataNeighbors.get(xyWorking) || 0) + 1);
 
 							// Neighbors: Below
 							if (yMaskSub1 !== 0) {
 								xyWorking = xMaskSub1 | yMaskSub1;
-								data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+								dataNeighbors.set(xyWorking, (dataNeighbors.get(xyWorking) || 0) + 1);
 							}
 						}
 
@@ -267,17 +277,17 @@ class CalcWorkerEngine {
 							// Neighbors: Above
 							if (yMaskPlus1 !== 0) {
 								xyWorking = xMaskPlus1 | yMaskPlus1;
-								data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+								dataNeighbors.set(xyWorking, (dataNeighbors.get(xyWorking) || 0) + 1);
 							}
 
 							// Neighbors: Middle
 							xyWorking = xMaskPlus1 | y;
-							data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+							dataNeighbors.set(xyWorking, (dataNeighbors.get(xyWorking) || 0) + 1);
 
 							// Neighbors: Below
 							if (yMaskSub1 !== 0) {
 								xyWorking = xMaskPlus1 | yMaskSub1;
-								data.set(xyWorking, (data.get(xyWorking) || 0) + 1);
+								dataNeighbors.set(xyWorking, (dataNeighbors.get(xyWorking) || 0) + 1);
 							}
 						}
 					}
@@ -289,26 +299,27 @@ class CalcWorkerEngine {
 					 * 2. Any live cell with two or three live neighbors		- Stays alive
 					 * 3. Any live cell with more than three live neighbors		- Dies (overpopulation)
 					 * 4. Any dead cell with exactly three live neighbors		- Becomes alive (reproduction)
+
 					 */
 					alive = 0;
-					for ([xy, neighbors] of data) {
+					for (xy of data) {
+						neighbors = <number>dataNeighbors.get(xy & ~xyMaskAlive);
+
 						if ((xy & xyMaskAlive) !== 0) {
-							if (neighbors === 2 || neighbors === 3) {
-								// Rule 2
-								alive++;
-								data.set(xy, 0);
-							} else {
+							if (neighbors !== 2 && neighbors !== 3) {
 								// Rule 1 & Rule 3
-								data.set(xy & ~xyMaskAlive, 0);
+								data.add(xy & ~xyMaskAlive);
 								data.delete(xy);
 							}
-						} else if (neighbors === 3) {
+						}
+					}
+
+					for ([xy, neighbors] of dataNeighbors) {
+						if (neighbors === 3) {
 							// Rule 4
 							alive++;
-							data.set(xy | xyMaskAlive, 0);
+							data.add(xy | xyMaskAlive);
 							data.delete(xy);
-						} else {
-							data.set(xy, 0);
 						}
 					}
 
@@ -334,7 +345,23 @@ class CalcWorkerEngine {
 							],
 							[positions.buffer],
 						);
-						break;
+
+						// Post stats
+						CalcWorkerEngine.post([
+							{
+								cmd: CalcBusOutputCmd.PS,
+								data: {
+									alive: 0,
+									dead: data.size,
+									ips: calcCount,
+									ipsDeltaInMS: calcTimestampIPSDelta,
+									ipsTotal: calcCountTotal,
+								},
+							},
+						]);
+						calcCount = 0;
+						calcCountTotal = 0;
+						return;
 					}
 				}
 			}

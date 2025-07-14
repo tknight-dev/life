@@ -104,11 +104,21 @@ export class CalcBusEngine {
 		});
 	}
 
-	public static outputReset(): void {
-		CalcBusEngine.worker.postMessage({
-			cmd: CalcBusInputCmd.RESET,
-			data: undefined,
-		});
+	public static outputReset(data?: Uint32Array): void {
+		if (data) {
+			CalcBusEngine.worker.postMessage(
+				{
+					cmd: CalcBusInputCmd.RESET,
+					data: data,
+				},
+				[data.buffer],
+			);
+		} else {
+			CalcBusEngine.worker.postMessage({
+				cmd: CalcBusInputCmd.RESET,
+				data: undefined,
+			});
+		}
 	}
 
 	public static outputSettings(data: CalcBusInputDataSettings): void {

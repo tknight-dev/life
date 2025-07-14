@@ -47,7 +47,7 @@ class Life {
 	private static elementStatsCPSAll: HTMLElement;
 	private static elementWebGLNotSupported: HTMLElement;
 	private static settingsCalc: CalcBusInputDataSettings;
-	private static settingsCalcIPSMax: number = 20000000;
+	private static settingsCalcIPSMax: number = 20000;
 	private static settingsVideo: VideoBusInputDataSettings;
 
 	private static initializeDOM(): void {
@@ -100,6 +100,7 @@ class Life {
 
 			Life.elementSettingsValueIPS.value = String(Life.settingsCalc.iterationsPerSecond);
 			Life.elementIPSRequested.innerText = Life.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
+			Life.elementIPSRequested.style.display = 'flex';
 			Life.elementIPSRequested.classList.add('show');
 			setTimeout(() => {
 				Life.elementIPSRequested.classList.remove('show');
@@ -113,6 +114,7 @@ class Life {
 
 			Life.elementSettingsValueIPS.value = String(Life.settingsCalc.iterationsPerSecond);
 			Life.elementIPSRequested.innerText = Life.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
+			Life.elementIPSRequested.style.display = 'flex';
 			Life.elementIPSRequested.classList.add('show');
 			setTimeout(() => {
 				Life.elementIPSRequested.classList.remove('show');
@@ -148,7 +150,7 @@ class Life {
 		Life.elementControlsReset.onclick = () => {
 			const data: Uint32Array[] = Life.initializeLife();
 			VideoBusEngine.outputData(data[0]);
-			CalcBusEngine.outputLife(data[1]);
+			CalcBusEngine.outputReset(data[1]);
 
 			Life.elementAlive.innerText = '';
 			Life.elementDead.innerText = '';
