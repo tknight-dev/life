@@ -4,6 +4,7 @@ import { FullscreenEngine } from './engines/fullscreen.engine';
 import { Orientation, OrientationEngine } from './engines/orientation.engine';
 import { VideoBusEngine } from './workers/video/video.bus';
 import { VideoBusInputDataSettings, VideoBusInputDataSettingsFPS } from './workers/video/video.model';
+import { VisibilityEngine } from './engines/visibility.engine';
 
 /**
  * @author tknight-dev
@@ -379,6 +380,12 @@ class Life {
 		FullscreenEngine.setCallback((state: boolean) => {});
 		OrientationEngine.initialize();
 		OrientationEngine.setCallback((orientation: Orientation) => {});
+		VisibilityEngine.initialize();
+		VisibilityEngine.setCallback((state: boolean) => {
+			if (!state) {
+				Life.elementControlsPause.click();
+			}
+		});
 
 		if (await Life.initializeWorkers()) {
 			console.log('System Loaded in', performance.now() - then, 'ms');
