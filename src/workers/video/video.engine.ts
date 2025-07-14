@@ -115,12 +115,7 @@ class VideoWorkerEngine {
 	}
 
 	public static inputSettings(data: VideoBusInputDataSettings): void {
-		if (data.fps === 1) {
-			// Unlimited*
-			VideoWorkerEngine.framesPerMillisecond = 1;
-		} else {
-			VideoWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
-		}
+		VideoWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
 		VideoWorkerEngine.grid = data.grid;
 		VideoWorkerEngine.settingsNew = true;
 		VideoWorkerEngine.tableSizeX = data.tableSizeX;
@@ -136,7 +131,8 @@ class VideoWorkerEngine {
 	private static render(timestampNow: number): void {}
 
 	private static renderBinder(): boolean {
-		let cacheCanvasCell: OffscreenCanvas,
+		let cache: boolean,
+			cacheCanvasCell: OffscreenCanvas,
 			cacheCanvasCellAlive: OffscreenCanvas = new OffscreenCanvas(1, 1),
 			cacheCanvasCellAliveCtx: OffscreenCanvasRenderingContext2D,
 			cacheCanvasCellDead: OffscreenCanvas = new OffscreenCanvas(1, 1),
@@ -197,6 +193,7 @@ class VideoWorkerEngine {
 			if (VideoWorkerEngine.dataNew) {
 				VideoWorkerEngine.dataNew = false;
 
+				cache = false;
 				data = VideoWorkerEngine.data;
 			}
 
@@ -204,6 +201,7 @@ class VideoWorkerEngine {
 				VideoWorkerEngine.resized = false;
 				VideoWorkerEngine.settingsNew = false;
 
+				cache = false;
 				grid = VideoWorkerEngine.grid;
 				pxHeight = VideoWorkerEngine.ctxHeight;
 				pxWidth = VideoWorkerEngine.ctxWidth;
@@ -211,15 +209,18 @@ class VideoWorkerEngine {
 				tableSizeY = VideoWorkerEngine.tableSizeY;
 
 				pxCellSize = Math.max(1, Math.round(pxWidth / tableSizeX));
+				if (grid && pxWidth / tableSizeX < 3) {
+					grid = false;
+				}
 
 				cacheCanvasCellAlive.height = pxCellSize;
 				cacheCanvasCellAlive.width = pxCellSize;
-				cacheCanvasCellAliveCtx.fillStyle = 'green';
+				cacheCanvasCellAliveCtx.fillStyle = 'rgb(0,255,0)';
 				cacheCanvasCellAliveCtx.fillRect(0, 0, pxCellSize, pxCellSize);
 
 				cacheCanvasCellDead.height = pxCellSize;
 				cacheCanvasCellDead.width = pxCellSize;
-				cacheCanvasCellDeadCtx.fillStyle = 'red';
+				cacheCanvasCellDeadCtx.fillStyle = 'rgb(0,64,0)';
 				cacheCanvasCellDeadCtx.fillRect(0, 0, pxCellSize, pxCellSize);
 
 				cacheCanvasGridHorizontal.height = 1;
@@ -236,22 +237,12 @@ class VideoWorkerEngine {
 			/**
 			 * Render data at frames per ms rate
 			 */
-			if (frameTimestampDelta > VideoWorkerEngine.framesPerMillisecond) {
+			if (!cache && frameTimestampDelta > VideoWorkerEngine.framesPerMillisecond) {
 				frameTimestampThen = timestampNow - (frameTimestampDelta % VideoWorkerEngine.framesPerMillisecond);
 				frameCount++;
 
 				// Clear
 				canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);
-
-				// Grid: Horizontal
-				for (y = 0; y < pxHeight; y += pxCellSize) {
-					canvasOffscreenContext.drawImage(cacheCanvasGridHorizontal, 0, y);
-				}
-
-				// Grid: Vertical
-				for (x = 0; x < pxWidth; x += pxCellSize) {
-					canvasOffscreenContext.drawImage(cacheCanvasGridVertical, x, 0);
-				}
 
 				// Cells
 				for (xy of data) {
@@ -261,6 +252,20 @@ class VideoWorkerEngine {
 					cacheCanvasCell = (xy & xyMaskAlive) !== 0 ? cacheCanvasCellAlive : cacheCanvasCellDead;
 					canvasOffscreenContext.drawImage(cacheCanvasCell, x * pxCellSize, y * pxCellSize);
 				}
+
+				// Grid: Horizontal
+				if (grid) {
+					for (y = 0; y < pxHeight; y += pxCellSize) {
+						canvasOffscreenContext.drawImage(cacheCanvasGridHorizontal, 0, y);
+					}
+
+					// Grid: Vertical
+					for (x = 0; x < pxWidth; x += pxCellSize) {
+						canvasOffscreenContext.drawImage(cacheCanvasGridVertical, x, 0);
+					}
+				}
+
+				cache = true;
 			}
 
 			/**

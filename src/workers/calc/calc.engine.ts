@@ -94,12 +94,7 @@ class CalcWorkerEngine {
 	}
 
 	public static inputSettings(data: CalcBusInputDataSettings): void {
-		if (data.fps === 1) {
-			// Unlimited*
-			CalcWorkerEngine.framesPerMillisecond = 1;
-		} else {
-			CalcWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
-		}
+		CalcWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
 		CalcWorkerEngine.iterationsPerMillisecond = Math.max(data.iterationsPerSecond, 1) / 1000;
 		CalcWorkerEngine.tableSizeX = data.tableSizeX;
 		CalcWorkerEngine.tableSizeY = (data.tableSizeX * 9) / 16;

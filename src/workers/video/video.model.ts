@@ -37,8 +37,6 @@ export enum VideoBusInputDataSettingsFPS {
 	_30 = 30,
 	_40 = 40,
 	_60 = 60,
-	_120 = 120,
-	_UNLIMITED = 1,
 }
 
 export interface VideoBusInputPayload {

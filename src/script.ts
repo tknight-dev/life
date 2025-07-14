@@ -47,7 +47,7 @@ class Life {
 	private static elementStatsCPSAll: HTMLElement;
 	private static elementWebGLNotSupported: HTMLElement;
 	private static settingsCalc: CalcBusInputDataSettings;
-	private static settingsCalcIPSMax: number = 20000;
+	private static settingsCalcIPSMax: number = 1024;
 	private static settingsVideo: VideoBusInputDataSettings;
 
 	private static initializeDOM(): void {
@@ -252,18 +252,18 @@ class Life {
 		let data: Set<number> = new Set<number>(),
 			tableSizeX: number = Life.settingsCalc.tableSizeX,
 			tableSizeY: number = (Life.settingsCalc.tableSizeX * 9) / 16,
-			xMiddle: number = Math.round(tableSizeX / 2),
+			x: number,
 			xyMaskAlive: number = 0x40000000, // 0x40000000 is 1 << 30 (alive)
-			yMiddle: number = Math.round(tableSizeY / 2);
+			y: number;
 
-		// Flyer
-		data.add(((xMiddle - 1) << 15) | (yMiddle - 1) | xyMaskAlive);
-
-		data.add((xMiddle << 15) | yMiddle | xyMaskAlive);
-		data.add(((xMiddle + 1) << 15) | yMiddle | xyMaskAlive);
-
-		data.add(((xMiddle - 1) << 15) | (yMiddle + 1) | xyMaskAlive);
-		data.add((xMiddle << 15) | (yMiddle + 1) | xyMaskAlive);
+		// Random
+		for (x = 0; x < tableSizeX; x++) {
+			for (y = 0; y < tableSizeY; y++) {
+				if (Math.random() > 0.5) {
+					data.add((x << 15) | y | xyMaskAlive);
+				}
+			}
+		}
 
 		// The array buffer must be passed to each web worker independently
 		return [Uint32Array.from(data), Uint32Array.from(data)];
@@ -280,7 +280,7 @@ class Life {
 			fps: VideoBusInputDataSettingsFPS._60,
 			grid: true,
 			resolution: null, // Native
-			tableSizeX: 48,
+			tableSizeX: 112,
 		};
 
 		if (Life.isMobileOrTablet()) {
@@ -293,7 +293,7 @@ class Life {
 		 */
 		Life.settingsCalc = {
 			fps: Life.settingsVideo.fps,
-			iterationsPerSecond: 1, // 1 is min
+			iterationsPerSecond: 8, // 1 is min
 			tableSizeX: Life.settingsVideo.tableSizeX,
 		};
 	}
