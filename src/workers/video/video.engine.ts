@@ -40,9 +40,10 @@ class VideoWorkerEngine {
 	private static data: Uint32Array;
 	private static dataNew: boolean;
 	private static devicePixelRatioEff: number;
+	private static drawDeadCells: boolean;
+	private static drawGrid: boolean;
 	private static frameRequest: number;
 	private static framesPerMillisecond: number;
-	private static grid: boolean;
 	private static resized: boolean;
 	private static self: Window & typeof globalThis;
 	private static settingsNew: boolean;
@@ -109,14 +110,12 @@ class VideoWorkerEngine {
 		VideoWorkerEngine.ctxWidth = width;
 		VideoWorkerEngine.devicePixelRatioEff = Math.round((1 / devicePixelRatio) * 1000) / 1000;
 		VideoWorkerEngine.resized = true;
-
-		VideoWorkerEngine.canvasOffscreen.height = height;
-		VideoWorkerEngine.canvasOffscreen.width = width;
 	}
 
 	public static inputSettings(data: VideoBusInputDataSettings): void {
+		VideoWorkerEngine.drawDeadCells = data.drawDeadCells;
+		VideoWorkerEngine.drawGrid = data.drawGrid;
 		VideoWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
-		VideoWorkerEngine.grid = data.grid;
 		VideoWorkerEngine.settingsNew = true;
 		VideoWorkerEngine.tableSizeX = data.tableSizeX;
 		VideoWorkerEngine.tableSizeY = (data.tableSizeX * 9) / 16;
@@ -139,8 +138,11 @@ class VideoWorkerEngine {
 			cacheCanvasCellDeadCtx: OffscreenCanvasRenderingContext2D,
 			cacheCanvasGridHorizontal: OffscreenCanvas = new OffscreenCanvas(1, 1),
 			cacheCanvasGridHorizontalCtx: OffscreenCanvasRenderingContext2D,
+			cacheCanvasGrids: OffscreenCanvas = new OffscreenCanvas(1, 1),
+			cacheCanvasGridsCtx: OffscreenCanvasRenderingContext2D,
 			cacheCanvasGridVertical: OffscreenCanvas = new OffscreenCanvas(1, 1),
 			cacheCanvasGridVerticalCtx: OffscreenCanvasRenderingContext2D,
+			canvasOffscreen: OffscreenCanvas = VideoWorkerEngine.canvasOffscreen,
 			canvasOffscreenContext: OffscreenCanvasRenderingContext2D = VideoWorkerEngine.canvasOffscreenContext,
 			contextOptionsNoAlpha = {
 				alpha: false,
@@ -151,7 +153,8 @@ class VideoWorkerEngine {
 				preserveDrawingBuffer: true,
 			},
 			data: Uint32Array,
-			grid: boolean,
+			drawDeadCells: boolean,
+			drawGrid: boolean,
 			frameCount: number = 0,
 			frameTimestampDelta: number = 0,
 			frameTimestampFPSThen: number = 0,
@@ -179,6 +182,13 @@ class VideoWorkerEngine {
 		cacheCanvasGridHorizontalCtx.imageSmoothingEnabled = false;
 		cacheCanvasGridHorizontalCtx.shadowBlur = 0;
 
+		cacheCanvasGridsCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasGrids.getContext('2d', {
+			...contextOptionsNoAlpha,
+			alpha: true,
+		});
+		cacheCanvasGridsCtx.imageSmoothingEnabled = false;
+		cacheCanvasGridsCtx.shadowBlur = 0;
+
 		cacheCanvasGridVerticalCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasGridVertical.getContext('2d', contextOptionsNoAlpha);
 		cacheCanvasGridVerticalCtx.imageSmoothingEnabled = false;
 		cacheCanvasGridVerticalCtx.shadowBlur = 0;
@@ -193,25 +203,30 @@ class VideoWorkerEngine {
 			if (VideoWorkerEngine.dataNew) {
 				VideoWorkerEngine.dataNew = false;
 
-				cache = false;
 				data = VideoWorkerEngine.data;
+
+				// TODO create differential from previous to new.. and only draw the new information ... yesss... dead cells are the most expensive to draw
 			}
 
 			if (VideoWorkerEngine.resized || VideoWorkerEngine.settingsNew) {
 				VideoWorkerEngine.resized = false;
 				VideoWorkerEngine.settingsNew = false;
 
-				cache = false;
-				grid = VideoWorkerEngine.grid;
+				drawDeadCells = VideoWorkerEngine.drawDeadCells;
+				drawGrid = VideoWorkerEngine.drawGrid;
 				pxHeight = VideoWorkerEngine.ctxHeight;
 				pxWidth = VideoWorkerEngine.ctxWidth;
 				tableSizeX = VideoWorkerEngine.tableSizeX;
 				tableSizeY = VideoWorkerEngine.tableSizeY;
 
-				pxCellSize = Math.max(1, Math.round(pxWidth / tableSizeX));
-				if (grid && pxWidth / tableSizeX < 3) {
-					grid = false;
+				// pxCellSize = Math.max(1, Math.round(pxWidth / tableSizeX));
+				pxCellSize = pxWidth / tableSizeX;
+				if (drawGrid && pxWidth / tableSizeX < 3) {
+					drawGrid = false;
 				}
+
+				canvasOffscreen.height = pxHeight;
+				canvasOffscreen.width = pxWidth;
 
 				cacheCanvasCellAlive.height = pxCellSize;
 				cacheCanvasCellAlive.width = pxCellSize;
@@ -223,21 +238,35 @@ class VideoWorkerEngine {
 				cacheCanvasCellDeadCtx.fillStyle = 'rgb(0,64,0)';
 				cacheCanvasCellDeadCtx.fillRect(0, 0, pxCellSize, pxCellSize);
 
-				cacheCanvasGridHorizontal.height = 1;
-				cacheCanvasGridHorizontal.width = pxWidth;
-				cacheCanvasGridHorizontalCtx.fillStyle = 'rgba(255,255,255,0.25)';
-				cacheCanvasGridHorizontalCtx.fillRect(0, 0, pxWidth, 1);
+				if (drawGrid) {
+					cacheCanvasGridHorizontal.height = 1;
+					cacheCanvasGridHorizontal.width = pxWidth;
+					cacheCanvasGridHorizontalCtx.fillStyle = 'rgba(255,255,255,0.25)';
+					cacheCanvasGridHorizontalCtx.fillRect(0, 0, pxWidth, 1);
 
-				cacheCanvasGridVertical.height = pxHeight;
-				cacheCanvasGridVertical.width = 1;
-				cacheCanvasGridVerticalCtx.fillStyle = cacheCanvasGridHorizontalCtx.fillStyle;
-				cacheCanvasGridVerticalCtx.fillRect(0, 0, 1, pxHeight);
+					cacheCanvasGridVertical.height = pxHeight;
+					cacheCanvasGridVertical.width = 1;
+					cacheCanvasGridVerticalCtx.fillStyle = cacheCanvasGridHorizontalCtx.fillStyle;
+					cacheCanvasGridVerticalCtx.fillRect(0, 0, 1, pxHeight);
+
+					cacheCanvasGrids.height = pxHeight;
+					cacheCanvasGrids.width = pxWidth;
+
+					for (y = 0; y < pxHeight; y += pxCellSize) {
+						cacheCanvasGridsCtx.drawImage(cacheCanvasGridHorizontal, 0, y);
+					}
+
+					// Grid: Vertical
+					for (x = 0; x < pxWidth; x += pxCellSize) {
+						cacheCanvasGridsCtx.drawImage(cacheCanvasGridVertical, x, 0);
+					}
+				}
 			}
 
 			/**
 			 * Render data at frames per ms rate
 			 */
-			if (!cache && frameTimestampDelta > VideoWorkerEngine.framesPerMillisecond) {
+			if (frameTimestampDelta > VideoWorkerEngine.framesPerMillisecond) {
 				frameTimestampThen = timestampNow - (frameTimestampDelta % VideoWorkerEngine.framesPerMillisecond);
 				frameCount++;
 
@@ -249,23 +278,18 @@ class VideoWorkerEngine {
 					x = (xy >> 15) & 0x7fff;
 					y = xy & 0x7fff;
 
-					cacheCanvasCell = (xy & xyMaskAlive) !== 0 ? cacheCanvasCellAlive : cacheCanvasCellDead;
-					canvasOffscreenContext.drawImage(cacheCanvasCell, x * pxCellSize, y * pxCellSize);
+					if (drawDeadCells) {
+						cacheCanvasCell = (xy & xyMaskAlive) !== 0 ? cacheCanvasCellAlive : cacheCanvasCellDead;
+						canvasOffscreenContext.drawImage(cacheCanvasCell, x * pxCellSize, y * pxCellSize);
+					} else if ((xy & xyMaskAlive) !== 0) {
+						canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
+					}
 				}
 
 				// Grid: Horizontal
-				if (grid) {
-					for (y = 0; y < pxHeight; y += pxCellSize) {
-						canvasOffscreenContext.drawImage(cacheCanvasGridHorizontal, 0, y);
-					}
-
-					// Grid: Vertical
-					for (x = 0; x < pxWidth; x += pxCellSize) {
-						canvasOffscreenContext.drawImage(cacheCanvasGridVertical, x, 0);
-					}
+				if (drawGrid) {
+					canvasOffscreenContext.drawImage(cacheCanvasGrids, 0, 0);
 				}
-
-				cache = true;
 			}
 
 			/**

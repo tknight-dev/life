@@ -106,12 +106,12 @@ export class VideoBusEngine {
 		);
 	}
 
-	public static outputResolution(resolution: null | 256 | 384 | 512 | 640 | 1280 | 1920): void {
-		VideoBusEngine.resolution = resolution;
-		VideoBusEngine.resized(false, true);
-	}
-
 	public static outputSettings(data: VideoBusInputDataSettings): void {
+		if (VideoBusEngine.resolution !== data.resolution) {
+			VideoBusEngine.resolution = data.resolution;
+			VideoBusEngine.resized(false, true);
+		}
+
 		VideoBusEngine.worker.postMessage({
 			cmd: VideoBusInputCmd.SETTINGS,
 			data: data,

@@ -38,8 +38,9 @@ class Life {
 	private static elementSettings: HTMLElement;
 	private static elementSettingsApply: HTMLButtonElement;
 	private static elementSettingsCancel: HTMLButtonElement;
+	private static elementSettingsValueDrawDeadCells: HTMLInputElement;
 	private static elementSettingsValueFPS: HTMLInputElement;
-	private static elementSettingsValueGrid: HTMLInputElement;
+	private static elementSettingsValueDrawGrid: HTMLInputElement;
 	private static elementSettingsValueIPS: HTMLInputElement;
 	private static elementSettingsValueResolution: HTMLInputElement;
 	private static elementSettingsValueTableSize: HTMLInputElement;
@@ -218,8 +219,9 @@ class Life {
 			};
 
 			Life.settingsVideo = {
+				drawDeadCells: Boolean(Life.elementSettingsValueDrawDeadCells.checked),
+				drawGrid: Boolean(Life.elementSettingsValueDrawGrid.checked),
 				fps: Life.settingsCalc.fps,
-				grid: Boolean(Life.elementSettingsValueGrid.checked),
 				resolution: <any>(
 					(Life.elementSettingsValueResolution.value === 'null' ? null : Number(Life.elementSettingsValueResolution.value))
 				),
@@ -242,8 +244,9 @@ class Life {
 		Life.elementSettingsCancel.onclick = () => {
 			Life.elementSettings.style.display = 'none';
 		};
+		Life.elementSettingsValueDrawDeadCells = <HTMLInputElement>document.getElementById('settings-value-draw-dead-cells');
 		Life.elementSettingsValueFPS = <HTMLInputElement>document.getElementById('settings-value-fps');
-		Life.elementSettingsValueGrid = <HTMLInputElement>document.getElementById('settings-value-grid');
+		Life.elementSettingsValueDrawGrid = <HTMLInputElement>document.getElementById('settings-value-draw-grid');
 		Life.elementSettingsValueIPS = <HTMLInputElement>document.getElementById('settings-value-ips');
 		Life.elementSettingsValueResolution = <HTMLInputElement>document.getElementById('settings-value-resolution');
 		Life.elementSettingsValueTableSize = <HTMLInputElement>document.getElementById('settings-value-table-size');
@@ -278,10 +281,11 @@ class Life {
 		 * Video
 		 */
 		Life.settingsVideo = {
+			drawDeadCells: true,
+			drawGrid: true,
 			fps: VideoBusInputDataSettingsFPS._60,
-			grid: true,
 			resolution: null, // Native
-			tableSizeX: 112,
+			tableSizeX: 240, // def: 112 (240 for testing)
 		};
 
 		if (Life.isMobileOrTablet()) {
@@ -294,7 +298,7 @@ class Life {
 		 */
 		Life.settingsCalc = {
 			fps: Life.settingsVideo.fps,
-			iterationsPerSecond: 8, // 1 is min
+			iterationsPerSecond: 64, // 1 is min - def is 8 (64 for testing)
 			tableSizeX: Life.settingsVideo.tableSizeX,
 		};
 	}

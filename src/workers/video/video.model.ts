@@ -27,8 +27,9 @@ export interface VideoBusInputDataResize {
 }
 
 export interface VideoBusInputDataSettings {
+	drawDeadCells: boolean;
+	drawGrid: boolean;
 	fps: VideoBusInputDataSettingsFPS;
-	grid: boolean;
 	resolution: null | 256 | 384 | 512 | 640 | 1280 | 1920;
 	tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
 }
