@@ -12,7 +12,7 @@ $life-logo: url('data:image/svg+xml,<%3Fxml version="1.0" encoding="UTF-8"%3F><s
 $life-logo-width: 152px;
 
 .life-icon {
-	background-color: #bbbbbb;
+	background-color: #eeeeee;
 	bottom: 5px;
 	min-height: 40px;
 	height: 40px;
@@ -233,7 +233,7 @@ $life-logo-width: 152px;
 
 			.buttons {
 				align-items: center;
-				background-color: rgba(0, 0, 0, 0.6);
+				background-color: rgba(0, 0, 0, 0.85);
 				bottom: 0;
 				display: flex;
 				height: 40px;
@@ -250,7 +250,7 @@ $life-logo-width: 152px;
 			}
 
 			.body {
-				background-color: rgba(0, 0, 0, 0.6);
+				background-color: rgba(0, 0, 0, 0.85);
 				bottom: 40px;
 				overflow-y: auto;
 				padding: 20px;

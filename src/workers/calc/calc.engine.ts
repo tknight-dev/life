@@ -294,7 +294,6 @@ class CalcWorkerEngine {
 					 * 2. Any live cell with two or three live neighbors		- Stays alive
 					 * 3. Any live cell with more than three live neighbors		- Dies (overpopulation)
 					 * 4. Any dead cell with exactly three live neighbors		- Becomes alive (reproduction)
-
 					 */
 					alive = 0;
 					for (xy of data) {

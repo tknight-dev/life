@@ -5,6 +5,7 @@ import { Orientation, OrientationEngine } from './engines/orientation.engine';
 import { VideoBusEngine } from './workers/video/video.bus';
 import { VideoBusInputDataSettings, VideoBusInputDataSettingsFPS } from './workers/video/video.model';
 import { VisibilityEngine } from './engines/visibility.engine';
+import packageJSON from '../package.json';
 
 /**
  * @author tknight-dev
@@ -47,6 +48,7 @@ class Life {
 	private static elementStatsC: HTMLElement;
 	private static elementStatsCPS: HTMLElement;
 	private static elementStatsCPSAll: HTMLElement;
+	private static elementVersion: HTMLElement;
 	private static elementWebGLNotSupported: HTMLElement;
 	private static settingsCalc: CalcBusInputDataSettings;
 	private static settingsCalcIPSMax: number = 1024;
@@ -91,6 +93,8 @@ class Life {
 		Life.elementStatsCPS = <HTMLElement>document.getElementById('cps');
 		Life.elementStatsCPSAll = <HTMLElement>document.getElementById('cps-all');
 
+		Life.elementVersion = <HTMLElement>document.getElementById('version');
+		Life.elementVersion.innerText = `v${packageJSON.version}`;
 		Life.elementWebGLNotSupported = <HTMLElement>document.getElementById('webgl-not-supported');
 
 		/**

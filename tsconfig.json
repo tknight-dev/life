@@ -1,10 +1,11 @@
 {
     "compilerOptions": {
-        "baseUrl": "./",
         "esModuleInterop": true,
         "module": "ESNext",
+        "moduleResolution": "node",
         "noEmit": true,
         "pretty": true,
+        "resolveJsonModule": true,
         "skipLibCheck": true,
         "strict": true,
         "strictPropertyInitialization": false,

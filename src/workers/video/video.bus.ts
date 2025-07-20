@@ -22,6 +22,7 @@ export class VideoBusEngine {
 	private static complete: boolean;
 	private static game: HTMLElement;
 	private static resolution: null | 256 | 384 | 512 | 640 | 1280 | 1920;
+	private static tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
 	private static worker: Worker;
 
 	/**
@@ -39,6 +40,7 @@ export class VideoBusEngine {
 		VideoBusEngine.canvasOffscreen = canvas.transferControlToOffscreen();
 		VideoBusEngine.game = game;
 		VideoBusEngine.resolution = settings.resolution;
+		VideoBusEngine.tableSizeX = settings.tableSizeX;
 
 		// Config
 		ResizeEngine.initialize();
@@ -107,8 +109,9 @@ export class VideoBusEngine {
 	}
 
 	public static outputSettings(data: VideoBusInputDataSettings): void {
-		if (VideoBusEngine.resolution !== data.resolution) {
+		if (VideoBusEngine.resolution !== data.resolution || VideoBusEngine.tableSizeX !== data.tableSizeX) {
 			VideoBusEngine.resolution = data.resolution;
+			VideoBusEngine.tableSizeX = data.tableSizeX;
 			VideoBusEngine.resized(false, true);
 		}
 
@@ -125,6 +128,7 @@ export class VideoBusEngine {
 			domRect: DOMRect = VideoBusEngine.game.getBoundingClientRect(),
 			height: number,
 			scaler: number,
+			tableSizeX: number = VideoBusEngine.tableSizeX,
 			width: null | number = VideoBusEngine.resolution;
 
 		switch (width) {
@@ -155,7 +159,13 @@ export class VideoBusEngine {
 				break;
 		}
 
-		if (VideoBusEngine.resolution !== null) {
+		// Canvas cells must be atleast 1 px in size
+		if (tableSizeX > width) {
+			height = (tableSizeX * 9) / 16;
+			width = tableSizeX;
+
+			scaler = Math.round((domRect.width / width) * 1000) / 1000;
+		} else if (VideoBusEngine.resolution !== null) {
 			scaler = Math.round(((devicePixelRatioEff * domRect.width) / width) * 1000) / 1000;
 		} else {
 			scaler = devicePixelRatioEff;
@@ -168,7 +178,6 @@ export class VideoBusEngine {
 			devicePixelRatio: devicePixelRatio,
 			force: force,
 			height: Math.round(height),
-			scaler: Math.round((domRect.width / width / devicePixelRatioEff) * 1000) / 1000,
 			width: Math.round(width),
 		};
 

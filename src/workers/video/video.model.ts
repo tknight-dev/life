@@ -19,10 +19,9 @@ export interface VideoBusInputDataInit extends VideoBusInputDataResize, VideoBus
 }
 
 export interface VideoBusInputDataResize {
-	devicePixelRatio: number; // precision 1
+	devicePixelRatio: number; // precision 3
 	force?: boolean;
 	height: number;
-	scaler: number;
 	width: number;
 }
 

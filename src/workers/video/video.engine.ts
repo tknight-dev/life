@@ -35,11 +35,9 @@ class VideoWorkerEngine {
 	private static canvasOffscreen: OffscreenCanvas;
 	private static canvasOffscreenContext: OffscreenCanvasRenderingContext2D;
 	private static ctxHeight: number;
-	private static ctxScaler: number;
 	private static ctxWidth: number;
 	private static data: Uint32Array;
 	private static dataNew: boolean;
-	private static devicePixelRatioEff: number;
 	private static drawDeadCells: boolean;
 	private static drawGrid: boolean;
 	private static frameRequest: number;
@@ -106,9 +104,7 @@ class VideoWorkerEngine {
 			width: number = Math.floor(data.width * devicePixelRatio);
 
 		VideoWorkerEngine.ctxHeight = height;
-		VideoWorkerEngine.ctxScaler = data.scaler;
 		VideoWorkerEngine.ctxWidth = width;
-		VideoWorkerEngine.devicePixelRatioEff = Math.round((1 / devicePixelRatio) * 1000) / 1000;
 		VideoWorkerEngine.resized = true;
 	}
 
@@ -162,9 +158,7 @@ class VideoWorkerEngine {
 			pxCellSize: number,
 			pxHeight: number,
 			pxWidth: number,
-			resized: boolean,
 			tableSizeX: number,
-			tableSizeY: number,
 			x: number,
 			xy: number,
 			xyMaskAlive: number = 0x40000000, // 0x40000000 is 1 << 30 (alive)
@@ -203,27 +197,33 @@ class VideoWorkerEngine {
 			if (VideoWorkerEngine.dataNew) {
 				VideoWorkerEngine.dataNew = false;
 
+				cache = false;
 				data = VideoWorkerEngine.data;
 
-				// TODO create differential from previous to new.. and only draw the new information ... yesss... dead cells are the most expensive to draw
+				// TODO create differential from previous to new.. and only draw the new information ... yesss... dead cells are the most expensive to draw (lots of ram)
+				// idea: draw dead as one large rect and then use clearRects to remove them as required (can only improve performance with random value starts)
 			}
 
 			if (VideoWorkerEngine.resized || VideoWorkerEngine.settingsNew) {
 				VideoWorkerEngine.resized = false;
 				VideoWorkerEngine.settingsNew = false;
 
+				cache = false;
 				drawDeadCells = VideoWorkerEngine.drawDeadCells;
 				drawGrid = VideoWorkerEngine.drawGrid;
 				pxHeight = VideoWorkerEngine.ctxHeight;
 				pxWidth = VideoWorkerEngine.ctxWidth;
 				tableSizeX = VideoWorkerEngine.tableSizeX;
-				tableSizeY = VideoWorkerEngine.tableSizeY;
 
 				// pxCellSize = Math.max(1, Math.round(pxWidth / tableSizeX));
 				pxCellSize = pxWidth / tableSizeX;
 				if (drawGrid && pxWidth / tableSizeX < 3) {
 					drawGrid = false;
 				}
+
+				// console.log('pxCellSize', pxCellSize);
+				// console.log('pxHeight', pxHeight);
+				// console.log('pxWidth', pxWidth);
 
 				canvasOffscreen.height = pxHeight;
 				canvasOffscreen.width = pxWidth;
@@ -266,7 +266,7 @@ class VideoWorkerEngine {
 			/**
 			 * Render data at frames per ms rate
 			 */
-			if (frameTimestampDelta > VideoWorkerEngine.framesPerMillisecond) {
+			if (!cache && frameTimestampDelta > VideoWorkerEngine.framesPerMillisecond) {
 				frameTimestampThen = timestampNow - (frameTimestampDelta % VideoWorkerEngine.framesPerMillisecond);
 				frameCount++;
 
@@ -290,6 +290,8 @@ class VideoWorkerEngine {
 				if (drawGrid) {
 					canvasOffscreenContext.drawImage(cacheCanvasGrids, 0, 0);
 				}
+
+				cache = true;
 			}
 
 			/**
