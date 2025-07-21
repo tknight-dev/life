@@ -15,6 +15,7 @@ import { VideoBusEngine } from '../video/video.bus';
 
 export class CalcBusEngine {
 	private static callbackGameOver: () => void;
+	private static callbackHomeostatic: () => void;
 	private static callbackInitComplete: () => void;
 	private static callbackPS: (data: CalcBusOutputDataPS) => void;
 	private static callbackSpinOut: () => void;
@@ -66,6 +67,9 @@ export class CalcBusEngine {
 				switch (payloads[i].cmd) {
 					case CalcBusOutputCmd.GAME_OVER:
 						CalcBusEngine.callbackGameOver();
+						break;
+					case CalcBusOutputCmd.HOMEOSTATIC:
+						CalcBusEngine.callbackHomeostatic();
 						break;
 					case CalcBusOutputCmd.INIT_COMPLETE:
 						CalcBusEngine.callbackInitComplete();
@@ -134,6 +138,10 @@ export class CalcBusEngine {
 
 	public static setCallbackGameOver(callbackGameOver: () => void): void {
 		CalcBusEngine.callbackGameOver = callbackGameOver;
+	}
+
+	public static setCallbackHomeostatic(callbackHomeostatic: () => void): void {
+		CalcBusEngine.callbackHomeostatic = callbackHomeostatic;
 	}
 
 	public static setCallbackPS(callbackPS: (data: CalcBusOutputDataPS) => void): void {

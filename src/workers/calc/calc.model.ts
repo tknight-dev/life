@@ -24,13 +24,6 @@ masks.xyValueAlive = 0x1 << (xyWidthBits * 2);
 masks.xyValueDead = 0x1 << (xyWidthBits * 2 + 1);
 masks.yMask = Math.pow(2, xyWidthBits) - 1;
 
-// masks.xMask = 0x7ff << 11;
-// masks.xShifted1 = 0x1 << 11;
-// masks.xyMask = (0x7ff << 11) | 0x7ff;
-// masks.xyValueAlive = 0x1 << 22;
-// masks.xyValueDead = 0x1 << 23;
-// masks.yMask = 0x7ff;
-
 /*
  * Inputs
  */
@@ -50,6 +43,7 @@ export interface CalcBusInputDataInit extends CalcBusInputDataSettings {
 
 export interface CalcBusInputDataSettings {
 	cpuSpinOutProtection: boolean;
+	homeostaticPause: boolean;
 	fps: VideoBusInputDataSettingsFPS;
 	iterationsPerSecond: number;
 	tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032;
@@ -66,6 +60,7 @@ export interface CalcBusInputPayload {
 
 export enum CalcBusOutputCmd {
 	GAME_OVER,
+	HOMEOSTATIC,
 	INIT_COMPLETE,
 	PS,
 	POSITIONS,

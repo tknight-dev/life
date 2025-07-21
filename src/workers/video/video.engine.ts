@@ -143,7 +143,6 @@ class VideoWorkerEngine {
 
 	private static renderBinder(): boolean {
 		let cache: boolean,
-			cacheCanvasCell: OffscreenCanvas,
 			cacheCanvasCellAlive: OffscreenCanvas = new OffscreenCanvas(1, 1),
 			cacheCanvasCellAliveCtx: OffscreenCanvasRenderingContext2D,
 			cacheCanvasCellDead: OffscreenCanvas = new OffscreenCanvas(1, 1),
@@ -296,6 +295,7 @@ class VideoWorkerEngine {
 				frameTimestampThen = timestampNow - (frameTimestampDelta % VideoWorkerEngine.framesPerMillisecond);
 				frameCount++;
 
+				// Process Data
 				if (VideoWorkerEngine.dataNew) {
 					VideoWorkerEngine.dataNew = false;
 
@@ -317,6 +317,7 @@ class VideoWorkerEngine {
 					}
 				}
 
+				// Draw Data
 				if (!cache) {
 					// Background
 					if (drawDeadCells && drawDeadCellsInversion) {

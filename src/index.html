@@ -62,6 +62,7 @@
 						</div>
 					</div>
 					<div class="game-over" id="game-over">Game Over</div>
+					<div class="homeostatic" id="homeostatic"><span>Homeostatic</span></div>
 					<div class="fps" id="fps"></div>
 					<div class="ips-requested" id="ips-requested"></div>
 					<div class="rules" id="rules">
@@ -83,7 +84,7 @@
 								<ul>
 									<li>Iterations per Second (<i>i/s</i>)
 										<ul>
-											<li>Max: 20,000</li>
+											<li>Max: 1,024</li>
 											<li>Min: 1</li>
 										</ul>
 									</li>
@@ -117,6 +118,10 @@
 										<tr>
 											<td>Draw: Grid</td>
 											<td><input autocomplete="off" id="settings-value-draw-grid" type="checkbox" checked /></td>
+										</tr>
+										<tr>
+											<td>Homeostatic: Pause on stasis</td>
+											<td><input autocomplete="off" id="settings-value-homeostatic-pause" type="checkbox" /></td>
 										</tr>
 										<tr>
 											<td>FPS</td>

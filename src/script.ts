@@ -26,6 +26,7 @@ class Life {
 	private static elementDataContainer: HTMLElement;
 	private static elementGame: HTMLElement;
 	private static elementGameOver: HTMLElement;
+	private static elementHomeostatic: HTMLElement;
 	private static elementFPS: HTMLElement;
 	private static elementFullscreen: HTMLElement;
 	private static elementIPSRequested: HTMLElement;
@@ -41,6 +42,7 @@ class Life {
 	private static elementSettingsCancel: HTMLButtonElement;
 	private static elementSettingsValueCPUSpinOutProtection: HTMLInputElement;
 	private static elementSettingsValueDrawDeadCells: HTMLInputElement;
+	private static elementSettingsValueHomeostaticPause: HTMLInputElement;
 	private static elementSettingsValueFPS: HTMLInputElement;
 	private static elementSettingsValueDrawGrid: HTMLInputElement;
 	private static elementSettingsValueIPS: HTMLInputElement;
@@ -70,6 +72,7 @@ class Life {
 		Life.elementDead = <HTMLCanvasElement>document.getElementById('dead');
 		Life.elementGame = <HTMLElement>document.getElementById('game');
 		Life.elementGameOver = <HTMLElement>document.getElementById('game-over');
+		Life.elementHomeostatic = <HTMLElement>document.getElementById('homeostatic');
 		Life.elementFPS = <HTMLElement>document.getElementById('fps');
 		Life.elementFullscreen = <HTMLElement>document.getElementById('fullscreen');
 		Life.elementFullscreen.onclick = async () => {
@@ -176,10 +179,12 @@ class Life {
 			Life.elementControlsPause.style.display = 'none';
 
 			Life.elementGameOver.classList.remove('show');
+			Life.elementHomeostatic.classList.remove('show');
 			Life.elementIPSRequested.style.display = 'flex';
 			Life.elementSpinout.classList.remove('show');
 			setTimeout(() => {
 				Life.elementGameOver.style.display = 'none';
+				Life.elementHomeostatic.style.display = 'none';
 				Life.elementSpinout.style.display = 'none';
 			}, 1000);
 			Life.elementStatsC.innerText = '0';
@@ -229,6 +234,7 @@ class Life {
 			 */
 			Life.settingsCalc = {
 				cpuSpinOutProtection: Boolean(Life.elementSettingsValueCPUSpinOutProtection.checked),
+				homeostaticPause: Boolean(Life.elementSettingsValueHomeostaticPause.checked),
 				fps: Number(Life.elementSettingsValueFPS.value),
 				iterationsPerSecond: Math.round(Math.max(1, Math.min(Life.settingsCalcIPSMax, Number(Life.elementSettingsValueIPS.value)))),
 				tableSizeX: <any>Number(Life.elementSettingsValueTableSize.value),
@@ -262,6 +268,7 @@ class Life {
 		};
 		Life.elementSettingsValueCPUSpinOutProtection = <HTMLInputElement>document.getElementById('settings-value-cpu-spin-out-protection');
 		Life.elementSettingsValueDrawDeadCells = <HTMLInputElement>document.getElementById('settings-value-draw-dead-cells');
+		Life.elementSettingsValueHomeostaticPause = <HTMLInputElement>document.getElementById('settings-value-homeostatic-pause');
 		Life.elementSettingsValueFPS = <HTMLInputElement>document.getElementById('settings-value-fps');
 		Life.elementSettingsValueDrawGrid = <HTMLInputElement>document.getElementById('settings-value-draw-grid');
 		Life.elementSettingsValueIPS = <HTMLInputElement>document.getElementById('settings-value-ips');
@@ -316,6 +323,7 @@ class Life {
 		 */
 		Life.settingsCalc = {
 			cpuSpinOutProtection: true,
+			homeostaticPause: false,
 			fps: Life.settingsVideo.fps,
 			iterationsPerSecond: 16, // def: 16
 			tableSizeX: Life.settingsVideo.tableSizeX,
@@ -340,7 +348,15 @@ class Life {
 
 				Life.elementIPSRequested.classList.remove('show');
 				Life.elementGameOver.style.display = 'flex';
-				Life.elementGameOver.classList.add('show');
+				setTimeout(() => {
+					Life.elementGameOver.classList.add('show');
+				});
+			});
+			CalcBusEngine.setCallbackHomeostatic(() => {
+				Life.elementHomeostatic.style.display = 'block';
+				setTimeout(() => {
+					Life.elementHomeostatic.classList.add('show');
+				});
 			});
 			CalcBusEngine.setCallbackPS((data: CalcBusOutputDataPS) => {
 				Life.elementAlive.innerText = data.alive.toLocaleString('en-US');

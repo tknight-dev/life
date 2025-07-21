@@ -130,15 +130,6 @@ $life-logo-width: 152px;
 			z-index: 2;
 		}
 
-		.rules,
-		.settings {
-			align-items: center;
-			display: flex;
-			bottom: 60px;
-			justify-content: center;
-			top: 40px;
-		}
-
 		.controls {
 			align-items: center;
 			background-color: rgba(0, 0, 0, 0.5);
@@ -175,10 +166,6 @@ $life-logo-width: 152px;
 					}
 				}
 			}
-
-			.middle {
-			}
-
 			.right {
 				.life-icon {
 					&:not(:first-child) {
@@ -186,10 +173,6 @@ $life-logo-width: 152px;
 					}
 				}
 			}
-		}
-
-		.game-over {
-			z-index: 3;
 		}
 
 		.game-over,
@@ -212,6 +195,28 @@ $life-logo-width: 152px;
 			}
 		}
 
+		.game-over {
+			z-index: 3;
+		}
+
+		.homeostatic {
+			display: none;
+			font-size: 20px;
+			font-weight: bold;
+			position: absolute;
+			right: 10px;
+			top: 60px;
+			z-index: 2;
+
+			span {
+				background-color: rgba(0, 0, 0, 0.85);
+				border-radius: 20px;
+				box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.5);
+				color: yellow;
+				padding: 10px;
+			}
+		}
+
 		.ips-requested {
 			z-index: 2;
 		}
@@ -226,8 +231,12 @@ $life-logo-width: 152px;
 
 		.rules,
 		.settings {
+			align-items: center;
+			bottom: 60px;
 			display: none;
-			z-index: 2;
+			justify-content: center;
+			top: 0;
+			z-index: 3;
 
 			.buttons,
 			.body,
@@ -246,10 +255,11 @@ $life-logo-width: 152px;
 				justify-content: space-evenly;
 
 				button {
-					background-color: rgba(255, 255, 255, 0.25);
+					background-color: rgba(255, 255, 255, 0.75);
 					border: none;
-					border-radius: 0;
-					color: white;
+					border-radius: 5px;
+					color: black;
+					font-weight: bold;
 					outline: none;
 					width: 40%;
 				}
@@ -293,10 +303,8 @@ $life-logo-width: 152px;
 
 			.header {
 				align-items: center;
-				background-color: rgba(0, 0, 0, 0.8);
+				background-color: rgba(0, 0, 0, 0.5);
 				border-bottom: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
-				border-bottom-left-radius: 5px;
-				border-bottom-right-radius: 5px;
 				display: flex;
 				font-weight: bold;
 				height: 40px;

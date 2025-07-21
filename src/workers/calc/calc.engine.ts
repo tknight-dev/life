@@ -49,6 +49,7 @@ interface CellMeta {
 class CalcWorkerEngine {
 	private static calcRequest: number;
 	private static cpuSpinOutProtection: boolean;
+	private static homeostaticPause: boolean;
 	private static framesPerMillisecond: number;
 	private static life: Uint32Array;
 	private static lifeAvailable: boolean;
@@ -106,6 +107,7 @@ class CalcWorkerEngine {
 
 	public static inputSettings(data: CalcBusInputDataSettings): void {
 		CalcWorkerEngine.cpuSpinOutProtection = data.cpuSpinOutProtection;
+		CalcWorkerEngine.homeostaticPause = data.homeostaticPause;
 		CalcWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
 		CalcWorkerEngine.iterationsPerMillisecond = Math.max(data.iterationsPerSecond, 1) / 1000;
 
@@ -132,7 +134,7 @@ class CalcWorkerEngine {
 		let calcCount: number = 0,
 			calcCountTotal: number = 0,
 			calcIterations: number = 0,
-			calcTimestampFPSThen: number = Math.round(performance.now()),
+			calcTimestampFPSThen: number = performance.now() | 0,
 			calcTimestampIPSDelta: number = 0,
 			calcTimestampIPSThen: number = calcTimestampFPSThen,
 			calcTimestampThen: number = 0,
@@ -141,6 +143,10 @@ class CalcWorkerEngine {
 			countDead: number = 0,
 			data: Map<number, CellMeta> = new Map<number, CellMeta>(),
 			dataNew: boolean,
+			homeostatic: boolean,
+			homeostaticDataMax: number = 15,
+			homeostaticData: any[] = new Array(homeostaticDataMax),
+			homeostaticDataIndex: number = 0,
 			positions: Uint32Array,
 			spinOut: boolean = false,
 			tableSizeX: number = CalcWorkerEngine.tableSizeX,
@@ -169,6 +175,13 @@ class CalcWorkerEngine {
 			return Uint32Array.from(array);
 		};
 
+		for (x = 0; x < homeostaticDataMax; x++) {
+			homeostaticData[x] = {
+				alive: 0,
+				dead: 0,
+			};
+		}
+
 		const calc = (timestampNow: number) => {
 			timestampNow |= 0;
 
@@ -184,6 +197,7 @@ class CalcWorkerEngine {
 
 				calcCount = 0;
 				calcCountTotal = 0;
+				homeostatic = false;
 				spinOut = false;
 
 				for (x = 0; x < tableSizeX; x++) {
@@ -314,6 +328,10 @@ class CalcWorkerEngine {
 				while (calcIterations !== 0) {
 					calcIterations--;
 
+					if (CalcWorkerEngine.reset || !CalcWorkerEngine.play) {
+						break;
+					}
+
 					if (CalcWorkerEngine.cpuSpinOutProtection && performance.now() - timestampNow > 2000) {
 						spinOut = true;
 						CalcWorkerEngine.post([
@@ -416,6 +434,66 @@ class CalcWorkerEngine {
 						}
 
 						cellMeta.neighbors = 0;
+					}
+
+					// Homeostasis
+					if (!homeostatic) {
+						homeostaticData[homeostaticDataIndex].alive = countAlive;
+						homeostaticData[homeostaticDataIndex].dead = countAlive;
+						homeostaticDataIndex = (homeostaticDataIndex + 1) % homeostaticDataMax;
+
+						for (x = 0; x < homeostaticDataMax - 1; x++) {
+							if (
+								homeostaticData[x].alive !== homeostaticData[x + 1].alive ||
+								homeostaticData[x].dead !== homeostaticData[x + 1].dead
+							) {
+								break;
+							}
+						}
+						if (x === homeostaticDataMax - 1) {
+							homeostatic = true;
+
+							// Post
+							CalcWorkerEngine.post([
+								{
+									cmd: CalcBusOutputCmd.HOMEOSTATIC,
+									data: undefined,
+								},
+							]);
+
+							if (CalcWorkerEngine.homeostaticPause) {
+								CalcWorkerEngine.play = false;
+
+								// Post postions
+								positions = dataTransform();
+								CalcWorkerEngine.post(
+									[
+										{
+											cmd: CalcBusOutputCmd.POSITIONS,
+											data: positions,
+										},
+									],
+									[positions.buffer],
+								);
+
+								// Post stats
+								CalcWorkerEngine.post([
+									{
+										cmd: CalcBusOutputCmd.PS,
+										data: {
+											alive: countAlive,
+											dead: countDead,
+											ips: calcCount,
+											ipsDeltaInMS: calcTimestampIPSDelta,
+											ipsTotal: calcCountTotal - homeostaticDataMax,
+										},
+									},
+								]);
+								calcCount = 0;
+								calcCountTotal = 0;
+								return;
+							}
+						}
 					}
 
 					if (countAlive === 0) {
