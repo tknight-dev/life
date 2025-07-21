@@ -5,8 +5,9 @@ import {
 	CalcBusInputPayload,
 	CalcBusOutputCmd,
 	CalcBusOutputPayload,
+	masks,
+	xyWidthBits,
 } from './calc.model';
-import { VideoBusInputDataSettingsFPS } from '../video/video.model';
 
 /**
  * FPS determines how often data must be outputted from this webworker to the video webworker
@@ -137,19 +138,18 @@ class CalcWorkerEngine {
 			tableSizeX: number,
 			tableSizeY: number,
 			x: number,
-			xMask: number,
-			xMask1: number = 0x1 << 11,
 			xMaskPlus1: number,
 			xMaskSub1: number,
 			xMax: number,
+			xShifted: number,
 			xy: number,
-			xyMaskAlive: number = 0x1 << 22,
-			xyMaskDead: number = 0x1 << 23,
 			xyWorking: number,
 			y: number,
 			yMaskPlus1: number,
 			yMaskSub1: number,
 			yMax: number;
+
+		const { xMask, xMask1, xyMaskAlive, yMask } = masks;
 
 		const calc = (timestampNow: number) => {
 			timestampNow |= 0;
@@ -188,11 +188,11 @@ class CalcWorkerEngine {
 				tableSizeY = CalcWorkerEngine.tableSizeY;
 
 				for (xy of data) {
-					y = xy & 0x7ff;
+					y = xy & yMask;
 					if (y > tableSizeY) {
 						data.delete(xy);
 					} else {
-						x = (xy >> 11) & 0x7ff;
+						x = (xy >> xyWidthBits) & yMask;
 						if (x > tableSizeX) {
 							data.delete(xy);
 						}
@@ -282,15 +282,15 @@ class CalcWorkerEngine {
 						}
 
 						// Decode x & y
-						xMask = xy & 0x3ff800; // 0x3FF800 is 0x7ff << 11
-						x = xMask >> 11;
-						y = xy & 0x7ff;
+						xShifted = xy & xMask;
+						x = xMask >> xyWidthBits;
+						y = xy & yMask;
 
 						// Neighbors: Middle
 						if (y !== yMax) {
 							// Neighbors: Above
 							yMaskPlus1 = y + 1;
-							xyWorking = xMask | yMaskPlus1;
+							xyWorking = xShifted | yMaskPlus1;
 							dataNeighbors.set(xyWorking, (dataNeighbors.get(xyWorking) || 0) + 1);
 						} else {
 							yMaskPlus1 = 0;
@@ -299,7 +299,7 @@ class CalcWorkerEngine {
 						if (y !== 0) {
 							// Neighbors: Below
 							yMaskSub1 = y - 1;
-							xyWorking = xMask | yMaskSub1;
+							xyWorking = xShifted | yMaskSub1;
 							dataNeighbors.set(xyWorking, (dataNeighbors.get(xyWorking) || 0) + 1);
 						} else {
 							yMaskSub1 = 0;
@@ -307,7 +307,7 @@ class CalcWorkerEngine {
 
 						// Neighbors: Left
 						if (x !== 0) {
-							xMaskSub1 = xMask - xMask1;
+							xMaskSub1 = xShifted - xMask1;
 
 							// Neighbors: Above
 							if (yMaskPlus1 !== 0) {
@@ -328,7 +328,7 @@ class CalcWorkerEngine {
 
 						// Neighbors: Right
 						if (x !== xMax) {
-							xMaskPlus1 = xMask + xMask1;
+							xMaskPlus1 = xShifted + xMask1;
 
 							// Neighbors: Above
 							if (yMaskPlus1 !== 0) {

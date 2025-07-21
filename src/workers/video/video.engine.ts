@@ -7,6 +7,7 @@ import {
 	VideoBusOutputCmd,
 	VideoBusOutputPayload,
 } from './video.model';
+import { masks, xyWidthBits } from '../calc/calc.model';
 
 /**
  * @author tknight-dev
@@ -180,8 +181,9 @@ class VideoWorkerEngine {
 			x: number,
 			xy: number,
 			xyOnly: number,
-			xyMaskAlive: number = 1 << 22, // See calc.engine.ts
 			y: number;
+
+		const { xyMask, xyMaskAlive, yMask } = masks;
 
 		cacheCanvasCellAliveCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasCellAlive.getContext('2d', contextOptionsNoAlpha);
 		cacheCanvasCellAliveCtx.imageSmoothingEnabled = false;
@@ -303,7 +305,7 @@ class VideoWorkerEngine {
 					// Update the effective and record new changes
 					for (xy of data) {
 						cellState = (xy & xyMaskAlive) !== 0 ? CellState.ALIVE : CellState.DEAD;
-						xyOnly = xy & 0x3fffff; // 0x3FFfff is 0x7ff << 11 & 0x7ff
+						xyOnly = xy & xyMask;
 
 						dataEff.set(xyOnly, cellState);
 					}
@@ -329,8 +331,8 @@ class VideoWorkerEngine {
 						if (drawDeadCells) {
 							if (drawDeadCellsInversion) {
 								// Draw alive cells and clear non-dead cells
-								x = (xy >> 11) & 0x7ff;
-								y = xy & 0x7ff;
+								x = (xy >> xyWidthBits) & yMask;
+								y = xy & yMask;
 
 								if (cellState === CellState.ALIVE) {
 									canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
@@ -339,8 +341,8 @@ class VideoWorkerEngine {
 								}
 							} else if (cellState !== CellState.NONE) {
 								// Draw dead or alive cells
-								x = (xy >> 11) & 0x7ff;
-								y = xy & 0x7ff;
+								x = (xy >> xyWidthBits) & yMask;
+								y = xy & yMask;
 
 								canvasOffscreenContext.drawImage(
 									cellState === CellState.ALIVE ? cacheCanvasCellAlive : cacheCanvasCellDead,
@@ -350,8 +352,8 @@ class VideoWorkerEngine {
 							}
 						} else if (cellState === CellState.ALIVE) {
 							// Draw alive
-							x = (xy >> 11) & 0x7ff;
-							y = xy & 0x7ff;
+							x = (xy >> xyWidthBits) & yMask;
+							y = xy & yMask;
 							canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
 						}
 					}

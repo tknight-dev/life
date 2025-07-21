@@ -1,5 +1,5 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
-import { CalcBusInputDataSettings, CalcBusOutputDataPS } from './workers/calc/calc.model';
+import { CalcBusInputDataSettings, CalcBusOutputDataPS, masks, xyWidthBits } from './workers/calc/calc.model';
 import { FullscreenEngine } from './engines/fullscreen.engine';
 import { Orientation, OrientationEngine } from './engines/orientation.engine';
 import { VideoBusEngine } from './workers/video/video.bus';
@@ -274,14 +274,15 @@ class Life {
 			tableSizeX: number = Life.settingsCalc.tableSizeX,
 			tableSizeY: number = (Life.settingsCalc.tableSizeX * 9) / 16,
 			x: number,
-			xyMaskAlive: number = 1 << 22, // See calc.engine.ts
 			y: number;
+
+		const { xyMaskAlive } = masks;
 
 		// Random
 		for (x = 0; x < tableSizeX; x++) {
 			for (y = 0; y < tableSizeY; y++) {
 				if (Math.random() > 0.5) {
-					data.add((x << 11) | y | xyMaskAlive);
+					data.add((x << xyWidthBits) | y | xyMaskAlive);
 				}
 			}
 		}

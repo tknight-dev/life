@@ -5,6 +5,26 @@ import { VideoBusInputDataSettingsFPS } from '../video/video.model';
  */
 
 /*
+ * Masks
+ */
+export const masks = {
+	xMask: 0,
+	xMask1: 0,
+	xyMask: 0,
+	xyMaskAlive: 0,
+	xyMaskDead: 0,
+	yMask: 0,
+};
+export const xyWidthBits: number = 11;
+
+masks.xMask = (Math.pow(2, xyWidthBits) - 1) << xyWidthBits;
+masks.xMask1 = 0x1 << xyWidthBits;
+masks.xyMask = ((Math.pow(2, xyWidthBits) - 1) << xyWidthBits) | (Math.pow(2, xyWidthBits) - 1);
+masks.xyMaskAlive = 0x1 << (xyWidthBits * 2);
+masks.xyMaskDead = 0x1 << (xyWidthBits * 2 + 1);
+masks.yMask = Math.pow(2, xyWidthBits) - 1;
+
+/*
  * Inputs
  */
 
