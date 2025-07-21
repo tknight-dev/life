@@ -127,13 +127,13 @@ class CalcWorkerEngine {
 			positions: Uint32Array,
 			x: number,
 			xMask: number,
-			xMask1: number = 0x8000, // 0x8000 is 1 << 15
+			xMask1: number = 0x1 << 11,
 			xMaskPlus1: number,
 			xMaskSub1: number,
 			xMax: number,
 			xy: number,
-			xyMaskAlive: number = 0x40000000, // 0x40000000 is 1 << 30 (alive)
-			xyMaskDead: number = 0x80000000, // 0x80000000 is 1 << 31 (dead)
+			xyMaskAlive: number = 0x1 << 22,
+			xyMaskDead: number = 0x1 << 23,
 			xyWorking: number,
 			y: number,
 			yMaskPlus1: number,
@@ -221,9 +221,9 @@ class CalcWorkerEngine {
 						}
 
 						// Decode x & y
-						xMask = xy & 0x3fff8000; // 0x3FFF8000 is 0x7fff << 15
-						x = xMask >> 15;
-						y = xy & 0x7fff;
+						xMask = xy & 0x3ff800; // 0x3FF800 is 0x7ff << 11
+						x = xMask >> 11;
+						y = xy & 0x7ff;
 
 						// Neighbors: Middle
 						if (y !== yMax) {

@@ -24,7 +24,7 @@ export interface CalcBusInputDataInit extends CalcBusInputDataSettings {
 export interface CalcBusInputDataSettings {
 	fps: VideoBusInputDataSettingsFPS;
 	iterationsPerSecond: number;
-	tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
+	tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032;
 }
 
 export interface CalcBusInputPayload {

@@ -261,14 +261,14 @@ class Life {
 			tableSizeX: number = Life.settingsCalc.tableSizeX,
 			tableSizeY: number = (Life.settingsCalc.tableSizeX * 9) / 16,
 			x: number,
-			xyMaskAlive: number = 0x40000000, // 0x40000000 is 1 << 30 (alive)
+			xyMaskAlive: number = 1 << 22, // See calc.engine.ts
 			y: number;
 
 		// Random
 		for (x = 0; x < tableSizeX; x++) {
 			for (y = 0; y < tableSizeY; y++) {
 				if (Math.random() > 0.5) {
-					data.add((x << 15) | y | xyMaskAlive);
+					data.add((x << 11) | y | xyMaskAlive);
 				}
 			}
 		}

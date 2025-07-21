@@ -30,7 +30,7 @@ export interface VideoBusInputDataSettings {
 	drawGrid: boolean;
 	fps: VideoBusInputDataSettingsFPS;
 	resolution: null | 256 | 384 | 512 | 640 | 1280 | 1920;
-	tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
+	tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032;
 }
 
 export enum VideoBusInputDataSettingsFPS {

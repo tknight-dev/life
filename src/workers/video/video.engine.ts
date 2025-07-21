@@ -161,7 +161,7 @@ class VideoWorkerEngine {
 			tableSizeX: number,
 			x: number,
 			xy: number,
-			xyMaskAlive: number = 0x40000000, // 0x40000000 is 1 << 30 (alive)
+			xyMaskAlive: number = 1 << 22, // See calc.engine.ts
 			y: number;
 
 		cacheCanvasCellAliveCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasCellAlive.getContext('2d', contextOptionsNoAlpha);
@@ -201,7 +201,9 @@ class VideoWorkerEngine {
 				data = VideoWorkerEngine.data;
 
 				// TODO create differential from previous to new.. and only draw the new information ... yesss... dead cells are the most expensive to draw (lots of ram)
+
 				// idea: draw dead as one large rect and then use clearRects to remove them as required (can only improve performance with random value starts)
+				// if data.size > tableX * tableY / 2 ... then use clearRect else draw dead cell .... how do we clearRect unknown positions (not in data array)
 			}
 
 			if (VideoWorkerEngine.resized || VideoWorkerEngine.settingsNew) {
@@ -275,8 +277,8 @@ class VideoWorkerEngine {
 
 				// Cells
 				for (xy of data) {
-					x = (xy >> 15) & 0x7fff;
-					y = xy & 0x7fff;
+					x = (xy >> 11) & 0x7ff;
+					y = xy & 0x7ff;
 
 					if (drawDeadCells) {
 						cacheCanvasCell = (xy & xyMaskAlive) !== 0 ? cacheCanvasCellAlive : cacheCanvasCellDead;
@@ -286,7 +288,7 @@ class VideoWorkerEngine {
 					}
 				}
 
-				// Grid: Horizontal
+				// Grid
 				if (drawGrid) {
 					canvasOffscreenContext.drawImage(cacheCanvasGrids, 0, 0);
 				}
