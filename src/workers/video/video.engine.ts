@@ -213,7 +213,7 @@ class VideoWorkerEngine {
 			VideoWorkerEngine.frameRequest = requestAnimationFrame(render);
 			frameTimestampDelta = timestampNow - frameTimestampThen;
 
-			if (VideoWorkerEngine.reset || (VideoWorkerEngine.settingsNew && tableSizeX !== VideoWorkerEngine.tableSizeX)) {
+			if (VideoWorkerEngine.reset || tableSizeX !== VideoWorkerEngine.tableSizeX) {
 				VideoWorkerEngine.reset = false;
 				dataEff.clear();
 
@@ -222,27 +222,6 @@ class VideoWorkerEngine {
 					for (y = 0; y < VideoWorkerEngine.tableSizeY; y++) {
 						dataEff.set((x << 11) | y, CellState.NONE);
 					}
-				}
-			}
-
-			if (VideoWorkerEngine.dataNew) {
-				VideoWorkerEngine.dataNew = false;
-
-				cache = false;
-				data = VideoWorkerEngine.data;
-
-				// Update the effective and record new changes
-				for (xy of data) {
-					cellState = (xy & xyMaskAlive) !== 0 ? CellState.ALIVE : CellState.DEAD;
-					xyOnly = xy & 0x3fffff; // 0x3FFfff is 0x7ff << 11 & 0x7ff
-
-					dataEff.set(xyOnly, cellState);
-				}
-
-				if (data.length > dataEff.size / 2) {
-					drawDeadCellsInversion = true;
-				} else {
-					drawDeadCellsInversion = false;
 				}
 			}
 
@@ -308,56 +287,79 @@ class VideoWorkerEngine {
 			/**
 			 * Render data at frames per ms rate
 			 */
-			if (!cache && frameTimestampDelta > VideoWorkerEngine.framesPerMillisecond) {
+			if (frameTimestampDelta > VideoWorkerEngine.framesPerMillisecond) {
 				frameTimestampThen = timestampNow - (frameTimestampDelta % VideoWorkerEngine.framesPerMillisecond);
 				frameCount++;
 
-				// Background
-				if (drawDeadCells && drawDeadCellsInversion) {
-					canvasOffscreenContext.fillStyle = 'rgb(0,64,0)';
-					canvasOffscreenContext.fillRect(0, 0, pxWidth, pxHeight);
-				} else {
-					canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);
-				}
+				if (VideoWorkerEngine.dataNew) {
+					VideoWorkerEngine.dataNew = false;
 
-				// Cells
-				for ([xy, cellState] of dataEff) {
-					if (drawDeadCells) {
-						if (drawDeadCellsInversion) {
-							// Draw alive cells and clear non-dead cells
-							x = (xy >> 11) & 0x7ff;
-							y = xy & 0x7ff;
+					cache = false;
+					data = VideoWorkerEngine.data;
 
-							if (cellState === CellState.ALIVE) {
-								canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
-							} else if (cellState === CellState.NONE) {
-								canvasOffscreenContext.clearRect(x * pxCellSize, y * pxCellSize, pxCellSize, pxCellSize);
-							}
-						} else if (cellState !== CellState.NONE) {
-							// Draw dead or alive cells
-							x = (xy >> 11) & 0x7ff;
-							y = xy & 0x7ff;
+					// Update the effective and record new changes
+					for (xy of data) {
+						cellState = (xy & xyMaskAlive) !== 0 ? CellState.ALIVE : CellState.DEAD;
+						xyOnly = xy & 0x3fffff; // 0x3FFfff is 0x7ff << 11 & 0x7ff
 
-							canvasOffscreenContext.drawImage(
-								cellState === CellState.ALIVE ? cacheCanvasCellAlive : cacheCanvasCellDead,
-								x * pxCellSize,
-								y * pxCellSize,
-							);
-						}
-					} else if (cellState === CellState.ALIVE) {
-						// Draw alive
-						x = (xy >> 11) & 0x7ff;
-						y = xy & 0x7ff;
-						canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
+						dataEff.set(xyOnly, cellState);
+					}
+
+					if (data.length > dataEff.size / 2) {
+						drawDeadCellsInversion = true;
+					} else {
+						drawDeadCellsInversion = false;
 					}
 				}
 
-				// Grid
-				if (drawGrid) {
-					canvasOffscreenContext.drawImage(cacheCanvasGrids, 0, 0);
-				}
+				if (!cache) {
+					// Background
+					if (drawDeadCells && drawDeadCellsInversion) {
+						canvasOffscreenContext.fillStyle = 'rgb(0,64,0)';
+						canvasOffscreenContext.fillRect(0, 0, pxWidth, pxHeight);
+					} else {
+						canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);
+					}
 
-				cache = true;
+					// Cells
+					for ([xy, cellState] of dataEff) {
+						if (drawDeadCells) {
+							if (drawDeadCellsInversion) {
+								// Draw alive cells and clear non-dead cells
+								x = (xy >> 11) & 0x7ff;
+								y = xy & 0x7ff;
+
+								if (cellState === CellState.ALIVE) {
+									canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
+								} else if (cellState === CellState.NONE) {
+									canvasOffscreenContext.clearRect(x * pxCellSize, y * pxCellSize, pxCellSize, pxCellSize);
+								}
+							} else if (cellState !== CellState.NONE) {
+								// Draw dead or alive cells
+								x = (xy >> 11) & 0x7ff;
+								y = xy & 0x7ff;
+
+								canvasOffscreenContext.drawImage(
+									cellState === CellState.ALIVE ? cacheCanvasCellAlive : cacheCanvasCellDead,
+									x * pxCellSize,
+									y * pxCellSize,
+								);
+							}
+						} else if (cellState === CellState.ALIVE) {
+							// Draw alive
+							x = (xy >> 11) & 0x7ff;
+							y = xy & 0x7ff;
+							canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
+						}
+					}
+
+					// Grid
+					if (drawGrid) {
+						canvasOffscreenContext.drawImage(cacheCanvasGrids, 0, 0);
+					}
+
+					cache = true;
+				}
 			}
 
 			/**
