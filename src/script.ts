@@ -289,7 +289,7 @@ class Life {
 			drawGrid: true,
 			fps: VideoBusInputDataSettingsFPS._60,
 			resolution: null, // Native
-			tableSizeX: 240, // def: 112 (240 for testing)
+			tableSizeX: 112,
 		};
 
 		if (Life.isMobileOrTablet()) {
@@ -302,7 +302,7 @@ class Life {
 		 */
 		Life.settingsCalc = {
 			fps: Life.settingsVideo.fps,
-			iterationsPerSecond: 64, // 1 is min - def is 8 (64 for testing)
+			iterationsPerSecond: 8,
 			tableSizeX: Life.settingsVideo.tableSizeX,
 		};
 	}
