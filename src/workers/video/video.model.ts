@@ -9,6 +9,7 @@
 export enum VideoBusInputCmd {
 	DATA,
 	INIT,
+	RESET,
 	RESIZE,
 	SETTINGS,
 }

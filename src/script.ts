@@ -111,8 +111,10 @@ class Life {
 			Life.elementIPSRequested.innerText = Life.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
 			Life.elementIPSRequested.style.display = 'flex';
 			Life.elementIPSRequested.classList.add('show');
+			Life.elementSpinout.classList.remove('show');
 			setTimeout(() => {
 				Life.elementIPSRequested.classList.remove('show');
+				Life.elementSpinout.classList.add('show');
 			}, 1000);
 
 			CalcBusEngine.outputSettings(Life.settingsCalc);
@@ -125,8 +127,10 @@ class Life {
 			Life.elementIPSRequested.innerText = Life.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
 			Life.elementIPSRequested.style.display = 'flex';
 			Life.elementIPSRequested.classList.add('show');
+			Life.elementSpinout.classList.remove('show');
 			setTimeout(() => {
 				Life.elementIPSRequested.classList.remove('show');
+				Life.elementSpinout.classList.add('show');
 			}, 1000);
 
 			CalcBusEngine.outputSettings(Life.settingsCalc);
@@ -160,7 +164,7 @@ class Life {
 		Life.elementControlsReset = <HTMLElement>document.getElementById('reset');
 		Life.elementControlsReset.onclick = () => {
 			const data: Uint32Array[] = Life.initializeLife();
-			VideoBusEngine.outputData(data[0]);
+			VideoBusEngine.outputReset(data[0]);
 			CalcBusEngine.outputReset(data[1]);
 
 			Life.elementAlive.innerText = '';

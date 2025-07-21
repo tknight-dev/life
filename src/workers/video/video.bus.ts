@@ -108,6 +108,16 @@ export class VideoBusEngine {
 		);
 	}
 
+	public static outputReset(data: Uint32Array): void {
+		VideoBusEngine.worker.postMessage(
+			{
+				cmd: VideoBusInputCmd.RESET,
+				data: data,
+			},
+			[data.buffer],
+		);
+	}
+
 	public static outputSettings(data: VideoBusInputDataSettings): void {
 		if (VideoBusEngine.resolution !== data.resolution || VideoBusEngine.tableSizeX !== data.tableSizeX) {
 			VideoBusEngine.resolution = data.resolution;

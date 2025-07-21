@@ -22,6 +22,9 @@ self.onmessage = (event: MessageEvent) => {
 		case VideoBusInputCmd.INIT:
 			VideoWorkerEngine.initialize(self, <VideoBusInputDataInit>videoBusInputPayload.data);
 			break;
+		case VideoBusInputCmd.RESET:
+			VideoWorkerEngine.inputReset(<Uint32Array>videoBusInputPayload.data);
+			break;
 		case VideoBusInputCmd.RESIZE:
 			VideoWorkerEngine.inputResize(<VideoBusInputDataResize>videoBusInputPayload.data);
 			break;
@@ -30,6 +33,12 @@ self.onmessage = (event: MessageEvent) => {
 			break;
 	}
 };
+
+enum CellState {
+	ALIVE = 0,
+	DEAD = 1,
+	NONE = 2,
+}
 
 class VideoWorkerEngine {
 	private static canvasOffscreen: OffscreenCanvas;
@@ -42,6 +51,7 @@ class VideoWorkerEngine {
 	private static drawGrid: boolean;
 	private static frameRequest: number;
 	private static framesPerMillisecond: number;
+	private static reset: boolean;
 	private static resized: boolean;
 	private static self: Window & typeof globalThis;
 	private static settingsNew: boolean;
@@ -98,6 +108,11 @@ class VideoWorkerEngine {
 		VideoWorkerEngine.dataNew = true;
 	}
 
+	public static inputReset(data: Uint32Array): void {
+		VideoWorkerEngine.inputData(data);
+		VideoWorkerEngine.reset = true;
+	}
+
 	public static inputResize(data: VideoBusInputDataResize): void {
 		let devicePixelRatio: number = data.devicePixelRatio,
 			height: number = Math.floor(data.height * devicePixelRatio),
@@ -140,6 +155,7 @@ class VideoWorkerEngine {
 			cacheCanvasGridVerticalCtx: OffscreenCanvasRenderingContext2D,
 			canvasOffscreen: OffscreenCanvas = VideoWorkerEngine.canvasOffscreen,
 			canvasOffscreenContext: OffscreenCanvasRenderingContext2D = VideoWorkerEngine.canvasOffscreenContext,
+			cellState: CellState,
 			contextOptionsNoAlpha = {
 				alpha: false,
 				antialias: false,
@@ -149,7 +165,9 @@ class VideoWorkerEngine {
 				preserveDrawingBuffer: true,
 			},
 			data: Uint32Array,
+			dataEff: Map<number, CellState> = new Map(),
 			drawDeadCells: boolean,
+			drawDeadCellsInversion: boolean, // true means remove non dead cells via clearRect
 			drawGrid: boolean,
 			frameCount: number = 0,
 			frameTimestampDelta: number = 0,
@@ -161,6 +179,7 @@ class VideoWorkerEngine {
 			tableSizeX: number,
 			x: number,
 			xy: number,
+			xyOnly: number,
 			xyMaskAlive: number = 1 << 22, // See calc.engine.ts
 			y: number;
 
@@ -194,16 +213,37 @@ class VideoWorkerEngine {
 			VideoWorkerEngine.frameRequest = requestAnimationFrame(render);
 			frameTimestampDelta = timestampNow - frameTimestampThen;
 
+			if (VideoWorkerEngine.reset || (VideoWorkerEngine.settingsNew && tableSizeX !== VideoWorkerEngine.tableSizeX)) {
+				VideoWorkerEngine.reset = false;
+				dataEff.clear();
+
+				// Initialize effective data set for all possible positions and set to none
+				for (x = 0; x < VideoWorkerEngine.tableSizeX; x++) {
+					for (y = 0; y < VideoWorkerEngine.tableSizeY; y++) {
+						dataEff.set((x << 11) | y, CellState.NONE);
+					}
+				}
+			}
+
 			if (VideoWorkerEngine.dataNew) {
 				VideoWorkerEngine.dataNew = false;
 
 				cache = false;
 				data = VideoWorkerEngine.data;
 
-				// TODO create differential from previous to new.. and only draw the new information ... yesss... dead cells are the most expensive to draw (lots of ram)
+				// Update the effective and record new changes
+				for (xy of data) {
+					cellState = (xy & xyMaskAlive) !== 0 ? CellState.ALIVE : CellState.DEAD;
+					xyOnly = xy & 0x3fffff; // 0x3FFfff is 0x7ff << 11 & 0x7ff
 
-				// idea: draw dead as one large rect and then use clearRects to remove them as required (can only improve performance with random value starts)
-				// if data.size > tableX * tableY / 2 ... then use clearRect else draw dead cell .... how do we clearRect unknown positions (not in data array)
+					dataEff.set(xyOnly, cellState);
+				}
+
+				if (data.length > dataEff.size / 2) {
+					drawDeadCellsInversion = true;
+				} else {
+					drawDeadCellsInversion = false;
+				}
 			}
 
 			if (VideoWorkerEngine.resized || VideoWorkerEngine.settingsNew) {
@@ -272,18 +312,42 @@ class VideoWorkerEngine {
 				frameTimestampThen = timestampNow - (frameTimestampDelta % VideoWorkerEngine.framesPerMillisecond);
 				frameCount++;
 
-				// Clear
-				canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);
+				// Background
+				if (drawDeadCells && drawDeadCellsInversion) {
+					canvasOffscreenContext.fillStyle = 'rgb(0,64,0)';
+					canvasOffscreenContext.fillRect(0, 0, pxWidth, pxHeight);
+				} else {
+					canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);
+				}
 
 				// Cells
-				for (xy of data) {
-					x = (xy >> 11) & 0x7ff;
-					y = xy & 0x7ff;
-
+				for ([xy, cellState] of dataEff) {
 					if (drawDeadCells) {
-						cacheCanvasCell = (xy & xyMaskAlive) !== 0 ? cacheCanvasCellAlive : cacheCanvasCellDead;
-						canvasOffscreenContext.drawImage(cacheCanvasCell, x * pxCellSize, y * pxCellSize);
-					} else if ((xy & xyMaskAlive) !== 0) {
+						if (drawDeadCellsInversion) {
+							// Draw alive cells and clear non-dead cells
+							x = (xy >> 11) & 0x7ff;
+							y = xy & 0x7ff;
+
+							if (cellState === CellState.ALIVE) {
+								canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
+							} else if (cellState === CellState.NONE) {
+								canvasOffscreenContext.clearRect(x * pxCellSize, y * pxCellSize, pxCellSize, pxCellSize);
+							}
+						} else if (cellState !== CellState.NONE) {
+							// Draw dead or alive cells
+							x = (xy >> 11) & 0x7ff;
+							y = xy & 0x7ff;
+
+							canvasOffscreenContext.drawImage(
+								cellState === CellState.ALIVE ? cacheCanvasCellAlive : cacheCanvasCellDead,
+								x * pxCellSize,
+								y * pxCellSize,
+							);
+						}
+					} else if (cellState === CellState.ALIVE) {
+						// Draw alive
+						x = (xy >> 11) & 0x7ff;
+						y = xy & 0x7ff;
 						canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
 					}
 				}

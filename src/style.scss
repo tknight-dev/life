@@ -189,7 +189,7 @@ $life-logo-width: 152px;
 		}
 
 		.game-over {
-			z-index: 2;
+			z-index: 3;
 		}
 
 		.game-over,
@@ -210,6 +210,10 @@ $life-logo-width: 152px;
 			&.show {
 				opacity: 1;
 			}
+		}
+
+		.ips-requested {
+			z-index: 2;
 		}
 
 		.fps {
