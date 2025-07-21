@@ -214,8 +214,11 @@ class VideoWorkerEngine {
 			frameTimestampDelta = timestampNow - frameTimestampThen;
 
 			if (VideoWorkerEngine.reset || tableSizeX !== VideoWorkerEngine.tableSizeX) {
+				VideoWorkerEngine.dataNew = true;
 				VideoWorkerEngine.reset = false;
+
 				dataEff.clear();
+				frameTimestampDelta = VideoWorkerEngine.framesPerMillisecond + 1;
 
 				// Initialize effective data set for all possible positions and set to none
 				for (x = 0; x < VideoWorkerEngine.tableSizeX; x++) {
