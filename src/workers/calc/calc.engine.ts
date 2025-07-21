@@ -48,6 +48,7 @@ class CalcWorkerEngine {
 	private static play: boolean;
 	private static reset: boolean;
 	private static self: Window & typeof globalThis;
+	private static tableSizeReduced: boolean;
 	private static tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
 	private static tableSizeY: number;
 
@@ -96,6 +97,11 @@ class CalcWorkerEngine {
 	public static inputSettings(data: CalcBusInputDataSettings): void {
 		CalcWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
 		CalcWorkerEngine.iterationsPerMillisecond = Math.max(data.iterationsPerSecond, 1) / 1000;
+
+		if (CalcWorkerEngine.tableSizeX > data.tableSizeX) {
+			CalcWorkerEngine.tableSizeReduced = true;
+		}
+
 		CalcWorkerEngine.tableSizeX = data.tableSizeX;
 		CalcWorkerEngine.tableSizeY = (data.tableSizeX * 9) / 16;
 	}
@@ -125,6 +131,8 @@ class CalcWorkerEngine {
 			dataNew: boolean,
 			neighbors: number,
 			positions: Uint32Array,
+			tableSizeX: number,
+			tableSizeY: number,
 			x: number,
 			xMask: number,
 			xMask1: number = 0x1 << 11,
@@ -164,6 +172,42 @@ class CalcWorkerEngine {
 
 				CalcWorkerEngine.lifeAvailable = true;
 				return;
+			}
+
+			/**
+			 * Gameboard: size reduced
+			 */
+			if (CalcWorkerEngine.tableSizeReduced) {
+				CalcWorkerEngine.tableSizeReduced = false;
+
+				tableSizeX = CalcWorkerEngine.tableSizeX;
+				tableSizeY = CalcWorkerEngine.tableSizeY;
+
+				for (xy of data) {
+					y = xy & 0x7ff;
+					if (y > tableSizeY) {
+						data.delete(xy);
+					} else {
+						x = (xy >> 11) & 0x7ff;
+						if (x > tableSizeX) {
+							data.delete(xy);
+						}
+					}
+				}
+
+				if (!CalcWorkerEngine.play) {
+					// Post postions
+					positions = Uint32Array.from(data.keys());
+					CalcWorkerEngine.post(
+						[
+							{
+								cmd: CalcBusOutputCmd.POSITIONS,
+								data: positions,
+							},
+						],
+						[positions.buffer],
+					);
+				}
 			}
 
 			/**
