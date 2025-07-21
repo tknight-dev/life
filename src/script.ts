@@ -276,13 +276,13 @@ class Life {
 			x: number,
 			y: number;
 
-		const { xyMaskAlive } = masks;
+		const { xyValueAlive } = masks;
 
 		// Random
 		for (x = 0; x < tableSizeX; x++) {
 			for (y = 0; y < tableSizeY; y++) {
 				if (Math.random() > 0.5) {
-					data.add((x << xyWidthBits) | y | xyMaskAlive);
+					data.add((x << xyWidthBits) | y | xyValueAlive);
 				}
 			}
 		}

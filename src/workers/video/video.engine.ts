@@ -183,7 +183,7 @@ class VideoWorkerEngine {
 			xyOnly: number,
 			y: number;
 
-		const { xyMask, xyMaskAlive, yMask } = masks;
+		const { xyMask, xyValueAlive, yMask } = masks;
 
 		cacheCanvasCellAliveCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasCellAlive.getContext('2d', contextOptionsNoAlpha);
 		cacheCanvasCellAliveCtx.imageSmoothingEnabled = false;
@@ -304,7 +304,7 @@ class VideoWorkerEngine {
 
 					// Update the effective and record new changes
 					for (xy of data) {
-						cellState = (xy & xyMaskAlive) !== 0 ? CellState.ALIVE : CellState.DEAD;
+						cellState = (xy & xyValueAlive) !== 0 ? CellState.ALIVE : CellState.DEAD;
 						xyOnly = xy & xyMask;
 
 						dataEff.set(xyOnly, cellState);
