@@ -17,6 +17,7 @@ export class CalcBusEngine {
 	private static callbackGameOver: () => void;
 	private static callbackInitComplete: () => void;
 	private static callbackPS: (data: CalcBusOutputDataPS) => void;
+	private static callbackSpinOut: () => void;
 	private static worker: Worker;
 
 	/**
@@ -74,6 +75,9 @@ export class CalcBusEngine {
 						break;
 					case CalcBusOutputCmd.POSITIONS:
 						VideoBusEngine.outputData(<Uint32Array>payloads[i].data);
+						break;
+					case CalcBusOutputCmd.SPIN_OUT:
+						CalcBusEngine.callbackSpinOut();
 						break;
 				}
 			}
@@ -134,5 +138,9 @@ export class CalcBusEngine {
 
 	public static setCallbackPS(callbackPS: (data: CalcBusOutputDataPS) => void): void {
 		CalcBusEngine.callbackPS = callbackPS;
+	}
+
+	public static setCallbackSpinOut(callbackSpinOut: () => void): void {
+		CalcBusEngine.callbackSpinOut = callbackSpinOut;
 	}
 }

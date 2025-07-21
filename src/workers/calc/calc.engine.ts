@@ -41,6 +41,7 @@ self.onmessage = (event: MessageEvent) => {
 
 class CalcWorkerEngine {
 	private static calcRequest: number;
+	private static cpuSpinOutProtection: boolean;
 	private static framesPerMillisecond: number;
 	private static life: Uint32Array;
 	private static lifeAvailable: boolean;
@@ -95,6 +96,7 @@ class CalcWorkerEngine {
 	}
 
 	public static inputSettings(data: CalcBusInputDataSettings): void {
+		CalcWorkerEngine.cpuSpinOutProtection = data.cpuSpinOutProtection;
 		CalcWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
 		CalcWorkerEngine.iterationsPerMillisecond = Math.max(data.iterationsPerSecond, 1) / 1000;
 
@@ -131,6 +133,7 @@ class CalcWorkerEngine {
 			dataNew: boolean,
 			neighbors: number,
 			positions: Uint32Array,
+			spinOut: boolean = false,
 			tableSizeX: number,
 			tableSizeY: number,
 			x: number,
@@ -165,6 +168,7 @@ class CalcWorkerEngine {
 				calcCountTotal = 0;
 				data.clear();
 				dataNeighbors.clear();
+				spinOut = false;
 
 				calcTimestampFPSThen = timestampNow;
 				calcTimestampIPSThen = timestampNow;
@@ -229,6 +233,7 @@ class CalcWorkerEngine {
 				calcTimestampFPSThen = timestampNow;
 				calcTimestampIPSThen = timestampNow;
 				calcTimestampThen = timestampNow;
+				spinOut = false;
 				return;
 			}
 
@@ -236,7 +241,7 @@ class CalcWorkerEngine {
 			 * timestampNow is based on ms
 			 */
 			calcIterations = ((timestampNow - calcTimestampThen) * CalcWorkerEngine.iterationsPerMillisecond) | 0;
-			if (calcIterations !== 0) {
+			if (calcIterations !== 0 && !spinOut) {
 				calcTimestampThen = timestampNow;
 				dataNew = true;
 
@@ -251,6 +256,18 @@ class CalcWorkerEngine {
 				// Calc
 				while (calcIterations !== 0) {
 					calcIterations--;
+
+					if (CalcWorkerEngine.cpuSpinOutProtection && performance.now() - timestampNow > 2000) {
+						spinOut = true;
+						CalcWorkerEngine.post([
+							{
+								cmd: CalcBusOutputCmd.SPIN_OUT,
+								data: undefined,
+							},
+						]);
+						CalcWorkerEngine.inputPause();
+						break;
+					}
 
 					/**
 					 * Neighbors

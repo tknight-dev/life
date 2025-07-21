@@ -1,23 +1,22 @@
 {
-  "author": "tknight-dev",
-  "description": "A multithreaded game of life",
-  "name": "life",
-  "scripts": {
-    "dev": "rimraf dist && node esbuild.mjs dev",
-    "lint": "prettier esbuild.mjs src/. --write",
-    "prod": "rimraf dist && node esbuild.mjs"
-  },
-  "type": "module",
-  "version": "0.2.0",
-  "dependencies": {
-  },
-  "devDependencies": {
-    "@jgoz/esbuild-plugin-typecheck": "^4.0.0",
-    "esbuild": "^0.25.5",
-    "esbuild-sass-plugin": "^3.0.0",
-    "open": "^10.0.0",
-    "prettier": "^3.0.0",
-    "rimraf": "^6.0.0",
-    "typescript": "^5.0.0"
-  }
+    "author": "tknight-dev",
+    "description": "A multithreaded game of life",
+    "name": "life",
+    "scripts": {
+        "dev": "rimraf dist && node esbuild.mjs dev",
+        "lint": "prettier esbuild.mjs src/. --write",
+        "prod": "rimraf dist && node esbuild.mjs"
+    },
+    "type": "module",
+    "version": "0.3.0",
+    "dependencies": {},
+    "devDependencies": {
+        "@jgoz/esbuild-plugin-typecheck": "^4.0.0",
+        "esbuild": "^0.25.5",
+        "esbuild-sass-plugin": "^3.0.0",
+        "open": "^10.0.0",
+        "prettier": "^3.0.0",
+        "rimraf": "^6.0.0",
+        "typescript": "^5.0.0"
+    }
 }

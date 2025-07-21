@@ -22,6 +22,7 @@ export interface CalcBusInputDataInit extends CalcBusInputDataSettings {
 }
 
 export interface CalcBusInputDataSettings {
+	cpuSpinOutProtection: boolean;
 	fps: VideoBusInputDataSettingsFPS;
 	iterationsPerSecond: number;
 	tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032;
@@ -41,6 +42,7 @@ export enum CalcBusOutputCmd {
 	INIT_COMPLETE,
 	PS,
 	POSITIONS,
+	SPIN_OUT,
 }
 
 export interface CalcBusOutputDataPS {

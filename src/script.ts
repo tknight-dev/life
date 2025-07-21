@@ -39,12 +39,14 @@ class Life {
 	private static elementSettings: HTMLElement;
 	private static elementSettingsApply: HTMLButtonElement;
 	private static elementSettingsCancel: HTMLButtonElement;
+	private static elementSettingsValueCPUSpinOutProtection: HTMLInputElement;
 	private static elementSettingsValueDrawDeadCells: HTMLInputElement;
 	private static elementSettingsValueFPS: HTMLInputElement;
 	private static elementSettingsValueDrawGrid: HTMLInputElement;
 	private static elementSettingsValueIPS: HTMLInputElement;
 	private static elementSettingsValueResolution: HTMLInputElement;
 	private static elementSettingsValueTableSize: HTMLInputElement;
+	private static elementSpinout: HTMLElement;
 	private static elementStatsC: HTMLElement;
 	private static elementStatsCPS: HTMLElement;
 	private static elementStatsCPSAll: HTMLElement;
@@ -88,6 +90,7 @@ class Life {
 			}
 		};
 		Life.elementIPSRequested = <HTMLElement>document.getElementById('ips-requested');
+		Life.elementSpinout = <HTMLElement>document.getElementById('spinout');
 
 		Life.elementStatsC = <HTMLElement>document.getElementById('c');
 		Life.elementStatsCPS = <HTMLElement>document.getElementById('cps');
@@ -146,8 +149,10 @@ class Life {
 			Life.elementStatsCPS.style.display = 'block';
 			Life.elementIPSRequested.innerText = Life.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
 			Life.elementIPSRequested.classList.add('show');
+			Life.elementSpinout.classList.remove('show');
 			setTimeout(() => {
 				Life.elementIPSRequested.classList.remove('show');
+				Life.elementSpinout.style.display = 'none';
 			}, 1000);
 
 			CalcBusEngine.outputPlay();
@@ -168,8 +173,10 @@ class Life {
 
 			Life.elementGameOver.classList.remove('show');
 			Life.elementIPSRequested.style.display = 'flex';
+			Life.elementSpinout.classList.remove('show');
 			setTimeout(() => {
 				Life.elementGameOver.style.display = 'none';
+				Life.elementSpinout.style.display = 'none';
 			}, 1000);
 			Life.elementStatsC.innerText = '0';
 		};
@@ -217,6 +224,7 @@ class Life {
 			 * HTML -> JS
 			 */
 			Life.settingsCalc = {
+				cpuSpinOutProtection: Boolean(Life.elementSettingsValueCPUSpinOutProtection.checked),
 				fps: Number(Life.elementSettingsValueFPS.value),
 				iterationsPerSecond: Math.round(Math.max(1, Math.min(Life.settingsCalcIPSMax, Number(Life.elementSettingsValueIPS.value)))),
 				tableSizeX: <any>Number(Life.elementSettingsValueTableSize.value),
@@ -248,6 +256,7 @@ class Life {
 		Life.elementSettingsCancel.onclick = () => {
 			Life.elementSettings.style.display = 'none';
 		};
+		Life.elementSettingsValueCPUSpinOutProtection = <HTMLInputElement>document.getElementById('settings-value-cpu-spin-out-protection');
 		Life.elementSettingsValueDrawDeadCells = <HTMLInputElement>document.getElementById('settings-value-draw-dead-cells');
 		Life.elementSettingsValueFPS = <HTMLInputElement>document.getElementById('settings-value-fps');
 		Life.elementSettingsValueDrawGrid = <HTMLInputElement>document.getElementById('settings-value-draw-grid');
@@ -289,7 +298,7 @@ class Life {
 			drawGrid: true,
 			fps: VideoBusInputDataSettingsFPS._60,
 			resolution: null, // Native
-			tableSizeX: 112,
+			tableSizeX: 112, // def: 112y
 		};
 
 		if (Life.isMobileOrTablet()) {
@@ -301,8 +310,9 @@ class Life {
 		 * Calc
 		 */
 		Life.settingsCalc = {
+			cpuSpinOutProtection: true,
 			fps: Life.settingsVideo.fps,
-			iterationsPerSecond: 16,
+			iterationsPerSecond: 16, // def: 16
 			tableSizeX: Life.settingsVideo.tableSizeX,
 		};
 	}
@@ -345,6 +355,13 @@ class Life {
 				} else {
 					Life.elementStatsCPS.style.color = 'green';
 				}
+			});
+			CalcBusEngine.setCallbackSpinOut(() => {
+				Life.elementControlsPause.click();
+				Life.elementSpinout.style.display = 'flex';
+				setTimeout(() => {
+					Life.elementSpinout.classList.add('show');
+				});
 			});
 			CalcBusEngine.initialize(data[0], Life.settingsCalc, () => {
 				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
