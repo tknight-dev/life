@@ -302,7 +302,7 @@ class Life {
 		 */
 		Life.settingsCalc = {
 			fps: Life.settingsVideo.fps,
-			iterationsPerSecond: 8,
+			iterationsPerSecond: 16,
 			tableSizeX: Life.settingsVideo.tableSizeX,
 		};
 	}
