@@ -510,6 +510,11 @@ class Life {
 				Life.elementControlsBackward.click();
 			}
 		});
+		KeyboardEngine.register(KeyCommon.R, (keyAction: KeyAction) => {
+			if (keyAction.down) {
+				Life.elementControlsReset.click();
+			}
+		});
 		KeyboardEngine.register(KeyCommon.RIGHT, (keyAction: KeyAction) => {
 			if (keyAction.down) {
 				Life.elementControlsForward.click();
