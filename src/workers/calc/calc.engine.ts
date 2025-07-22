@@ -144,7 +144,7 @@ class CalcWorkerEngine {
 			data: Map<number, CellMeta> = new Map<number, CellMeta>(),
 			dataNew: boolean,
 			homeostatic: boolean,
-			homeostaticDataMax: number = 8, // 8 is the smallest size that still catches 3 period oscillators
+			homeostaticDataMax: number = 20, // is enough to catch a 10 period oscillation
 			homeostaticData: any[] = new Array(homeostaticDataMax),
 			homeostaticDataIndex: number = 0,
 			positions: Uint32Array,
@@ -183,10 +183,9 @@ class CalcWorkerEngine {
 		}
 
 		const calc = (timestampNow: number) => {
-			timestampNow |= 0;
-
 			// Start the request for the next frame
 			CalcWorkerEngine.calcRequest = requestAnimationFrame(calc);
+			timestampNow |= 0;
 
 			/**
 			 * Reset
@@ -442,29 +441,20 @@ class CalcWorkerEngine {
 						homeostaticData[homeostaticDataIndex].dead = countDead;
 						homeostaticDataIndex = (homeostaticDataIndex + 1) % homeostaticDataMax;
 
-						// Check: 1 (Osciallation period of 1)
-						for (x = 0; x < homeostaticDataMax - 1; x++) {
-							if (
-								homeostaticData[x].alive !== homeostaticData[x + 1].alive ||
-								homeostaticData[x].dead !== homeostaticData[x + 1].dead
-							) {
-								break;
-							}
-						}
-						if (x === homeostaticDataMax - 1) {
-							homeostatic = true;
-						} else {
-							// Check: 2 (Osciallation period of 3)
-							for (x = 0; x < homeostaticDataMax - 3; x++) {
+						// Check all osciallation periods allowable within the dataset's size
+						xy = (homeostaticDataMax / 2) | 0;
+						for (y = 1; y < xy; y++) {
+							for (x = 0; x < homeostaticDataMax - y; x++) {
 								if (
-									homeostaticData[x].alive !== homeostaticData[x + 3].alive ||
-									homeostaticData[x].dead !== homeostaticData[x + 3].dead
+									homeostaticData[x].alive !== homeostaticData[x + y].alive ||
+									homeostaticData[x].dead !== homeostaticData[x + y].dead
 								) {
 									break;
 								}
 							}
-							if (x === homeostaticDataMax - 3) {
+							if (x === homeostaticDataMax - y) {
 								homeostatic = true;
+								break;
 							}
 						}
 
