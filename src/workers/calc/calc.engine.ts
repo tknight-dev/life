@@ -453,19 +453,19 @@ class CalcWorkerEngine {
 						}
 						if (x === homeostaticDataMax - 1) {
 							homeostatic = true;
-						}
-
-						// Check: 2 (Osciallation period of 3)
-						for (x = 0; x < homeostaticDataMax - 3; x++) {
-							if (
-								homeostaticData[x].alive !== homeostaticData[x + 3].alive ||
-								homeostaticData[x].dead !== homeostaticData[x + 3].dead
-							) {
-								break;
+						} else {
+							// Check: 2 (Osciallation period of 3)
+							for (x = 0; x < homeostaticDataMax - 3; x++) {
+								if (
+									homeostaticData[x].alive !== homeostaticData[x + 3].alive ||
+									homeostaticData[x].dead !== homeostaticData[x + 3].dead
+								) {
+									break;
+								}
 							}
-						}
-						if (x === homeostaticDataMax - 3) {
-							homeostatic = true;
+							if (x === homeostaticDataMax - 3) {
+								homeostatic = true;
+							}
 						}
 
 						if (homeostatic) {

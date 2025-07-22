@@ -65,6 +65,7 @@ class Life {
 	private static timeoutControlBackward: ReturnType<typeof setTimeout>;
 	private static timeoutControlForward: ReturnType<typeof setTimeout>;
 	private static timeoutFullscreenFade: ReturnType<typeof setTimeout>;
+	private static timeoutReset: ReturnType<typeof setTimeout>;
 
 	private static initializeDOM(): void {
 		Life.elementAlive = <HTMLCanvasElement>document.getElementById('alive');
@@ -178,7 +179,7 @@ class Life {
 			Life.elementHomeostatic.classList.remove('show');
 			Life.elementIPSRequested.style.display = 'flex';
 			Life.elementSpinout.classList.remove('show');
-			setTimeout(() => {
+			Life.timeoutReset = setTimeout(() => {
 				Life.elementGameOver.style.display = 'none';
 				Life.elementHomeostatic.style.display = 'none';
 				Life.elementSpinout.style.display = 'none';
@@ -425,9 +426,13 @@ class Life {
 				});
 			});
 			CalcBusEngine.setCallbackHomeostatic(() => {
-				Life.elementHomeostatic.style.display = 'block';
+				clearTimeout(Life.timeoutReset);
+
 				setTimeout(() => {
-					Life.elementHomeostatic.classList.add('show');
+					Life.elementHomeostatic.style.display = 'block';
+					setTimeout(() => {
+						Life.elementHomeostatic.classList.add('show');
+					});
 				});
 			});
 			CalcBusEngine.setCallbackPS((data: CalcBusOutputDataPS) => {
