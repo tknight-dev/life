@@ -128,6 +128,15 @@ $life-logo-width: 152px;
 			font-family: monospace;
 			pointer-events: none;
 			z-index: 2;
+
+			&.fullscreen {
+				bottom: 0;
+				transition: bottom 1s linear;
+
+				&.adjust {
+					bottom: 65px;
+				}
+			}
 		}
 
 		.controls,

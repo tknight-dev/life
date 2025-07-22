@@ -24,6 +24,7 @@ class Life {
 	private static elementControlsPause: HTMLElement;
 	private static elementControlsPlay: HTMLElement;
 	private static elementControlsReset: HTMLElement;
+	private static elementCounts: HTMLElement;
 	private static elementDead: HTMLElement;
 	private static elementDataContainer: HTMLElement;
 	private static elementGame: HTMLElement;
@@ -75,6 +76,7 @@ class Life {
 			Life.elementRules.style.display = 'none';
 		};
 
+		Life.elementCounts = <HTMLElement>document.getElementById('counts');
 		Life.elementDataContainer = <HTMLElement>document.getElementById('data-container');
 		Life.elementDead = <HTMLCanvasElement>document.getElementById('dead');
 		Life.elementFPS = <HTMLElement>document.getElementById('fps');
@@ -193,6 +195,7 @@ class Life {
 			if (FullscreenEngine.isOpen()) {
 				await FullscreenEngine.close();
 				Life.elementControls.classList.remove('fullscreen');
+				Life.elementCounts.classList.remove('fullscreen');
 				Life.elementStats.classList.remove('fullscreen');
 
 				Life.elementFullscreen.classList.remove('fullscreen-exit');
@@ -202,6 +205,8 @@ class Life {
 				await FullscreenEngine.open(Life.elementGame);
 				Life.elementControls.classList.add('fullscreen');
 				Life.elementControls.classList.add('show');
+				Life.elementCounts.classList.add('fullscreen');
+				Life.elementCounts.classList.add('adjust');
 				Life.elementStats.classList.add('fullscreen');
 				Life.elementStats.classList.add('show');
 
@@ -217,6 +222,7 @@ class Life {
 		document.addEventListener('click', () => {
 			if (FullscreenEngine.isOpen()) {
 				Life.elementControls.classList.add('show');
+				Life.elementCounts.classList.add('adjust');
 				Life.elementStats.classList.add('show');
 
 				fullscreenFader();
@@ -226,16 +232,19 @@ class Life {
 			clearTimeout(Life.timeoutFullscreenFade);
 			Life.timeoutFullscreenFade = setTimeout(() => {
 				Life.elementControls.classList.remove('show');
+				Life.elementCounts.classList.remove('adjust');
 				Life.elementStats.classList.remove('show');
 			}, 3000);
 		};
 		Life.elementControls.onmouseenter = () => {
 			Life.elementControls.classList.add('show');
+			Life.elementCounts.classList.add('adjust');
 			Life.elementStats.classList.add('show');
 			clearTimeout(Life.timeoutFullscreenFade);
 		};
 		Life.elementStats.onmouseenter = () => {
 			Life.elementControls.classList.add('show');
+			Life.elementCounts.classList.add('adjust');
 			Life.elementStats.classList.add('show');
 			clearTimeout(Life.timeoutFullscreenFade);
 		};
@@ -487,6 +496,9 @@ class Life {
 		FullscreenEngine.setCallback((state: boolean) => {
 			if (!state) {
 				Life.elementControls.classList.remove('fullscreen');
+				Life.elementCounts.classList.remove('fullscreen');
+				Life.elementStats.classList.remove('fullscreen');
+
 				Life.elementFullscreen.classList.remove('fullscreen-exit');
 				Life.elementFullscreen.classList.add('fullscreen');
 				OrientationEngine.unlock();
