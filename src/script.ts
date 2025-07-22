@@ -1,6 +1,7 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
 import { CalcBusInputDataSettings, CalcBusOutputDataPS, masks, xyWidthBits } from './workers/calc/calc.model';
 import { FullscreenEngine } from './engines/fullscreen.engine';
+import { KeyboardEngine, KeyAction, KeyCommon } from './engines/keyboard.engine';
 import { Orientation, OrientationEngine } from './engines/orientation.engine';
 import { VideoBusEngine } from './workers/video/video.bus';
 import { VideoBusInputDataSettings, VideoBusInputDataSettingsFPS } from './workers/video/video.model';
@@ -57,10 +58,12 @@ class Life {
 	private static elementStatsCPSAll: HTMLElement;
 	private static elementVersion: HTMLElement;
 	private static elementWebGLNotSupported: HTMLElement;
-	private static fullscreenFadeTimeout: ReturnType<typeof setTimeout>;
 	private static settingsCalc: CalcBusInputDataSettings;
 	private static settingsCalcIPSMax: number = 1024;
 	private static settingsVideo: VideoBusInputDataSettings;
+	private static timeoutControlBackward: ReturnType<typeof setTimeout>;
+	private static timeoutControlForward: ReturnType<typeof setTimeout>;
+	private static timeoutFullscreenFade: ReturnType<typeof setTimeout>;
 
 	private static initializeDOM(): void {
 		Life.elementAlive = <HTMLCanvasElement>document.getElementById('alive');
@@ -102,7 +105,9 @@ class Life {
 			Life.elementIPSRequested.style.display = 'flex';
 			Life.elementIPSRequested.classList.add('show');
 			Life.elementSpinout.classList.remove('show');
-			setTimeout(() => {
+
+			clearTimeout(Life.timeoutControlBackward);
+			Life.timeoutControlBackward = setTimeout(() => {
 				Life.elementIPSRequested.classList.remove('show');
 				Life.elementSpinout.classList.add('show');
 			}, 1000);
@@ -118,7 +123,9 @@ class Life {
 			Life.elementIPSRequested.style.display = 'flex';
 			Life.elementIPSRequested.classList.add('show');
 			Life.elementSpinout.classList.remove('show');
-			setTimeout(() => {
+
+			clearTimeout(Life.timeoutControlForward);
+			Life.timeoutControlForward = setTimeout(() => {
 				Life.elementIPSRequested.classList.remove('show');
 				Life.elementSpinout.classList.add('show');
 			}, 1000);
@@ -216,8 +223,8 @@ class Life {
 			}
 		});
 		const fullscreenFader = () => {
-			clearTimeout(Life.fullscreenFadeTimeout);
-			Life.fullscreenFadeTimeout = setTimeout(() => {
+			clearTimeout(Life.timeoutFullscreenFade);
+			Life.timeoutFullscreenFade = setTimeout(() => {
 				Life.elementControls.classList.remove('show');
 				Life.elementStats.classList.remove('show');
 			}, 3000);
@@ -225,12 +232,12 @@ class Life {
 		Life.elementControls.onmouseenter = () => {
 			Life.elementControls.classList.add('show');
 			Life.elementStats.classList.add('show');
-			clearTimeout(Life.fullscreenFadeTimeout);
+			clearTimeout(Life.timeoutFullscreenFade);
 		};
 		Life.elementStats.onmouseenter = () => {
 			Life.elementControls.classList.add('show');
 			Life.elementStats.classList.add('show');
-			clearTimeout(Life.fullscreenFadeTimeout);
+			clearTimeout(Life.timeoutFullscreenFade);
 		};
 		Life.elementControls.onmouseleave = () => {
 			fullscreenFader();
@@ -483,6 +490,26 @@ class Life {
 				Life.elementFullscreen.classList.remove('fullscreen-exit');
 				Life.elementFullscreen.classList.add('fullscreen');
 				OrientationEngine.unlock();
+			}
+		});
+		KeyboardEngine.initialize();
+		KeyboardEngine.register(KeyCommon.LEFT, (keyAction: KeyAction) => {
+			if (keyAction.down) {
+				Life.elementControlsBackward.click();
+			}
+		});
+		KeyboardEngine.register(KeyCommon.RIGHT, (keyAction: KeyAction) => {
+			if (keyAction.down) {
+				Life.elementControlsForward.click();
+			}
+		});
+		KeyboardEngine.register(KeyCommon.SPACE_BAR, (keyAction: KeyAction) => {
+			if (keyAction.down) {
+				if (Life.elementControlsPlay.style.display === 'none') {
+					Life.elementControlsPause.click();
+				} else {
+					Life.elementControlsPlay.click();
+				}
 			}
 		});
 		OrientationEngine.initialize();
