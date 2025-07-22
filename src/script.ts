@@ -68,7 +68,7 @@ class Life {
 
 	private static initializeDOM(): void {
 		Life.elementAlive = <HTMLCanvasElement>document.getElementById('alive');
-		Life.elementCanvas = <HTMLCanvasElement>document.getElementById('cavnas');
+		Life.elementCanvas = <HTMLCanvasElement>document.getElementById('canvas');
 
 		Life.elementRules = <HTMLButtonElement>document.getElementById('rules');
 		Life.elementRulesClose = <HTMLButtonElement>document.getElementById('rules-close');
@@ -219,13 +219,19 @@ class Life {
 				});
 			}
 		};
-		document.addEventListener('click', () => {
+		document.addEventListener('click', (event) => {
 			if (FullscreenEngine.isOpen()) {
-				Life.elementControls.classList.add('show');
-				Life.elementCounts.classList.add('adjust');
-				Life.elementStats.classList.add('show');
+				if ((event.target as HTMLElement).id === 'canvas' && Life.elementControls.classList.contains('show')) {
+					Life.elementControls.classList.remove('show');
+					Life.elementCounts.classList.remove('adjust');
+					Life.elementStats.classList.remove('show');
+				} else {
+					Life.elementControls.classList.add('show');
+					Life.elementCounts.classList.add('adjust');
+					Life.elementStats.classList.add('show');
 
-				fullscreenFader();
+					fullscreenFader();
+				}
 			}
 		});
 		const fullscreenFader = () => {

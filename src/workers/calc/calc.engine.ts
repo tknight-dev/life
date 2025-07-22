@@ -144,7 +144,7 @@ class CalcWorkerEngine {
 			data: Map<number, CellMeta> = new Map<number, CellMeta>(),
 			dataNew: boolean,
 			homeostatic: boolean,
-			homeostaticDataMax: number = 15,
+			homeostaticDataMax: number = 8, // 8 is the smallest size that still catches 3 period oscillators
 			homeostaticData: any[] = new Array(homeostaticDataMax),
 			homeostaticDataIndex: number = 0,
 			positions: Uint32Array,
@@ -439,9 +439,10 @@ class CalcWorkerEngine {
 					// Homeostasis
 					if (!homeostatic) {
 						homeostaticData[homeostaticDataIndex].alive = countAlive;
-						homeostaticData[homeostaticDataIndex].dead = countAlive;
+						homeostaticData[homeostaticDataIndex].dead = countDead;
 						homeostaticDataIndex = (homeostaticDataIndex + 1) % homeostaticDataMax;
 
+						// Check: 1 (Osciallation period of 1)
 						for (x = 0; x < homeostaticDataMax - 1; x++) {
 							if (
 								homeostaticData[x].alive !== homeostaticData[x + 1].alive ||
@@ -452,7 +453,22 @@ class CalcWorkerEngine {
 						}
 						if (x === homeostaticDataMax - 1) {
 							homeostatic = true;
+						}
 
+						// Check: 2 (Osciallation period of 3)
+						for (x = 0; x < homeostaticDataMax - 3; x++) {
+							if (
+								homeostaticData[x].alive !== homeostaticData[x + 3].alive ||
+								homeostaticData[x].dead !== homeostaticData[x + 3].dead
+							) {
+								break;
+							}
+						}
+						if (x === homeostaticDataMax - 3) {
+							homeostatic = true;
+						}
+
+						if (homeostatic) {
 							// Post
 							CalcWorkerEngine.post([
 								{
