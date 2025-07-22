@@ -168,6 +168,10 @@ $life-logo-width: 152px;
 						background-color: white;
 						cursor: pointer;
 					}
+					&:active {
+						background-color: #999999;
+						margin-top: 1px;
+					}
 				}
 			}
 
