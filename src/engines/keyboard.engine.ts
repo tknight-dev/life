@@ -9,6 +9,7 @@ export interface KeyAction {
 
 export enum KeyCommon {
 	ESC = 27,
+	F = 70,
 	LEFT = 37,
 	R = 82,
 	RIGHT = 39,

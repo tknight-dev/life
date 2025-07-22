@@ -505,6 +505,11 @@ class Life {
 			}
 		});
 		KeyboardEngine.initialize();
+		KeyboardEngine.register(KeyCommon.F, (keyAction: KeyAction) => {
+			if (keyAction.down) {
+				Life.elementFullscreen.click();
+			}
+		});
 		KeyboardEngine.register(KeyCommon.LEFT, (keyAction: KeyAction) => {
 			if (keyAction.down) {
 				Life.elementControlsBackward.click();
