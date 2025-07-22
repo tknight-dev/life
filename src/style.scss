@@ -130,6 +130,18 @@ $life-logo-width: 152px;
 			z-index: 2;
 		}
 
+		.controls,
+		.stats {
+			&.fullscreen {
+				opacity: 0;
+				transition: opacity 1s linear;
+
+				&.show {
+					opacity: 1;
+				}
+			}
+		}
+
 		.controls {
 			align-items: center;
 			background-color: rgba(0, 0, 0, 0.5);

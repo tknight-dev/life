@@ -17,6 +17,7 @@ new EventSource('/esbuild').addEventListener('change', () => location.reload());
 class Life {
 	private static elementAlive: HTMLElement;
 	private static elementCanvas: HTMLCanvasElement;
+	private static elementControls: HTMLElement;
 	private static elementControlsBackward: HTMLElement;
 	private static elementControlsForward: HTMLElement;
 	private static elementControlsPause: HTMLElement;
@@ -44,16 +45,19 @@ class Life {
 	private static elementSettingsValueDrawDeadCells: HTMLInputElement;
 	private static elementSettingsValueHomeostaticPause: HTMLInputElement;
 	private static elementSettingsValueFPS: HTMLInputElement;
+	private static elementSettingsValueFPSShow: HTMLInputElement;
 	private static elementSettingsValueDrawGrid: HTMLInputElement;
 	private static elementSettingsValueIPS: HTMLInputElement;
 	private static elementSettingsValueResolution: HTMLInputElement;
 	private static elementSettingsValueTableSize: HTMLInputElement;
 	private static elementSpinout: HTMLElement;
+	private static elementStats: HTMLElement;
 	private static elementStatsC: HTMLElement;
 	private static elementStatsCPS: HTMLElement;
 	private static elementStatsCPSAll: HTMLElement;
 	private static elementVersion: HTMLElement;
 	private static elementWebGLNotSupported: HTMLElement;
+	private static fullscreenFadeTimeout: ReturnType<typeof setTimeout>;
 	private static settingsCalc: CalcBusInputDataSettings;
 	private static settingsCalcIPSMax: number = 1024;
 	private static settingsVideo: VideoBusInputDataSettings;
@@ -70,35 +74,17 @@ class Life {
 
 		Life.elementDataContainer = <HTMLElement>document.getElementById('data-container');
 		Life.elementDead = <HTMLCanvasElement>document.getElementById('dead');
+		Life.elementFPS = <HTMLElement>document.getElementById('fps');
+		Life.elementFullscreen = <HTMLElement>document.getElementById('fullscreen');
 		Life.elementGame = <HTMLElement>document.getElementById('game');
 		Life.elementGameOver = <HTMLElement>document.getElementById('game-over');
 		Life.elementHomeostatic = <HTMLElement>document.getElementById('homeostatic');
-		Life.elementFPS = <HTMLElement>document.getElementById('fps');
-		Life.elementFullscreen = <HTMLElement>document.getElementById('fullscreen');
-		Life.elementFullscreen.onclick = async () => {
-			Life.elementControlsPause.click();
-
-			if (FullscreenEngine.isOpen()) {
-				await FullscreenEngine.close();
-				Life.elementFullscreen.classList.remove('fullscreen-exit');
-				Life.elementFullscreen.classList.add('fullscreen');
-				OrientationEngine.unlock();
-			} else {
-				await FullscreenEngine.open(Life.elementGame);
-				Life.elementFullscreen.classList.remove('fullscreen');
-				Life.elementFullscreen.classList.add('fullscreen-exit');
-				setTimeout(() => {
-					OrientationEngine.lock(Orientation.LANDSCAPE);
-				});
-			}
-		};
 		Life.elementIPSRequested = <HTMLElement>document.getElementById('ips-requested');
 		Life.elementSpinout = <HTMLElement>document.getElementById('spinout');
-
+		Life.elementStats = <HTMLElement>document.getElementById('stats');
 		Life.elementStatsC = <HTMLElement>document.getElementById('c');
 		Life.elementStatsCPS = <HTMLElement>document.getElementById('cps');
 		Life.elementStatsCPSAll = <HTMLElement>document.getElementById('cps-all');
-
 		Life.elementVersion = <HTMLElement>document.getElementById('version');
 		Life.elementVersion.innerText = `v${packageJSON.version}`;
 		Life.elementWebGLNotSupported = <HTMLElement>document.getElementById('webgl-not-supported');
@@ -106,6 +92,7 @@ class Life {
 		/**
 		 * Controls
 		 */
+		Life.elementControls = <HTMLElement>document.getElementById('controls');
 		Life.elementControlsBackward = <HTMLElement>document.getElementById('backward');
 		Life.elementControlsBackward.onclick = () => {
 			Life.settingsCalc.iterationsPerSecond = Math.max(1, Math.round(Life.settingsCalc.iterationsPerSecond / 2));
@@ -191,6 +178,68 @@ class Life {
 		};
 
 		/**
+		 * Fullscreen
+		 */
+		Life.elementFullscreen.onclick = async () => {
+			Life.elementControlsPause.click();
+
+			if (FullscreenEngine.isOpen()) {
+				await FullscreenEngine.close();
+				Life.elementControls.classList.remove('fullscreen');
+				Life.elementStats.classList.remove('fullscreen');
+
+				Life.elementFullscreen.classList.remove('fullscreen-exit');
+				Life.elementFullscreen.classList.add('fullscreen');
+				OrientationEngine.unlock();
+			} else {
+				await FullscreenEngine.open(Life.elementGame);
+				Life.elementControls.classList.add('fullscreen');
+				Life.elementControls.classList.add('show');
+				Life.elementStats.classList.add('fullscreen');
+				Life.elementStats.classList.add('show');
+
+				Life.elementFullscreen.classList.remove('fullscreen');
+				Life.elementFullscreen.classList.add('fullscreen-exit');
+
+				fullscreenFader();
+				setTimeout(() => {
+					OrientationEngine.lock(Orientation.LANDSCAPE);
+				});
+			}
+		};
+		document.addEventListener('click', () => {
+			if (FullscreenEngine.isOpen()) {
+				Life.elementControls.classList.add('show');
+				Life.elementStats.classList.add('show');
+
+				fullscreenFader();
+			}
+		});
+		const fullscreenFader = () => {
+			clearTimeout(Life.fullscreenFadeTimeout);
+			Life.fullscreenFadeTimeout = setTimeout(() => {
+				Life.elementControls.classList.remove('show');
+				Life.elementStats.classList.remove('show');
+			}, 3000);
+		};
+		Life.elementControls.onmouseenter = () => {
+			Life.elementControls.classList.add('show');
+			Life.elementStats.classList.add('show');
+			clearTimeout(Life.fullscreenFadeTimeout);
+		};
+		Life.elementStats.onmouseenter = () => {
+			Life.elementControls.classList.add('show');
+			Life.elementStats.classList.add('show');
+			clearTimeout(Life.fullscreenFadeTimeout);
+		};
+		Life.elementControls.onmouseleave = () => {
+			fullscreenFader();
+		};
+		Life.elementStats.onmouseleave = () => {
+			fullscreenFader();
+		};
+
+		/**
 		 * Menu
 		 */
 		Life.elementMenu = <HTMLElement>document.getElementById('info-menu');
@@ -270,6 +319,7 @@ class Life {
 		Life.elementSettingsValueDrawDeadCells = <HTMLInputElement>document.getElementById('settings-value-draw-dead-cells');
 		Life.elementSettingsValueHomeostaticPause = <HTMLInputElement>document.getElementById('settings-value-homeostatic-pause');
 		Life.elementSettingsValueFPS = <HTMLInputElement>document.getElementById('settings-value-fps');
+		Life.elementSettingsValueFPSShow = <HTMLInputElement>document.getElementById('settings-value-fps-show');
 		Life.elementSettingsValueDrawGrid = <HTMLInputElement>document.getElementById('settings-value-draw-grid');
 		Life.elementSettingsValueIPS = <HTMLInputElement>document.getElementById('settings-value-ips');
 		Life.elementSettingsValueResolution = <HTMLInputElement>document.getElementById('settings-value-resolution');
@@ -392,14 +442,18 @@ class Life {
 				 */
 				then = performance.now();
 				VideoBusEngine.setCallbackFPS((fps: number) => {
-					Life.elementFPS.innerText = String(fps);
+					if (Life.elementSettingsValueFPSShow.checked) {
+						Life.elementFPS.innerText = String(fps);
 
-					if (fps < Life.settingsVideo.fps * 0.8) {
-						Life.elementFPS.style.color = 'red';
-					} else if (fps < Life.settingsVideo.fps * 0.9) {
-						Life.elementFPS.style.color = 'yellow';
+						if (fps < Life.settingsVideo.fps * 0.8) {
+							Life.elementFPS.style.color = 'red';
+						} else if (fps < Life.settingsVideo.fps * 0.9) {
+							Life.elementFPS.style.color = 'yellow';
+						} else {
+							Life.elementFPS.style.color = 'green';
+						}
 					} else {
-						Life.elementFPS.style.color = 'green';
+						Life.elementFPS.innerText = '';
 					}
 				});
 				VideoBusEngine.initialize(Life.elementCanvas, Life.elementDataContainer, data[1], Life.settingsVideo, (status: boolean) => {
@@ -423,7 +477,14 @@ class Life {
 
 		// Initialize: Engines
 		FullscreenEngine.initialize();
-		FullscreenEngine.setCallback((state: boolean) => {});
+		FullscreenEngine.setCallback((state: boolean) => {
+			if (!state) {
+				Life.elementControls.classList.remove('fullscreen');
+				Life.elementFullscreen.classList.remove('fullscreen-exit');
+				Life.elementFullscreen.classList.add('fullscreen');
+				OrientationEngine.unlock();
+			}
+		});
 		OrientationEngine.initialize();
 		OrientationEngine.setCallback((orientation: Orientation) => {});
 		VisibilityEngine.initialize();

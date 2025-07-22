@@ -47,7 +47,7 @@
 							</div>
 						</div>
 					</div>
-					<div class="controls">
+					<div class="controls" id="controls">
 						<div class="left">
 							<div class="life-icon reset" id="reset"></div>
 							<div class="life-icon fullscreen" id="fullscreen"></div>
@@ -134,6 +134,10 @@
 											</td>
 										</tr>
 										<tr>
+											<td>FPS: Show</td>
+											<td><input autocomplete="off" id="settings-value-fps-show" type="checkbox" checked /></td>
+										</tr>
+										<tr>
 											<td><i>i/s</i></td>
 											<td><input autocomplete="off" id="settings-value-ips" max="1024" min="1" type="number" value="16" /></td>
 										</tr>
@@ -174,7 +178,7 @@
 						</div>
 					</div>
 					<div class="spinout" id="spinout"><span>CPU Spin Out</span><br /><br /></div>
-					<div class="stats">
+					<div class="stats" id="stats">
 						<span id="cps-all"><span id="cps"></span>&nbsp;<sup>i/s</sup>&nbsp;|&nbsp;</span><span id="c"></span>&nbsp;<sup>i</sup>
 					</div>
 					<div class="webgl-not-supported" id="webgl-not-supported">WebGL Not Supported</div>
