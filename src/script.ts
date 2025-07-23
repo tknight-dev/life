@@ -397,6 +397,7 @@ class Life {
 		if (Life.isMobileOrTablet()) {
 			// Mobile devices utilize sub-pixel rendering with their canvas API implementations
 			Life.settingsVideo.resolution = 512;
+			Life.elementSettingsValueResolution.value = '512';
 		}
 
 		/*
