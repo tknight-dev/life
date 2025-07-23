@@ -235,6 +235,15 @@ $life-logo-width: 152px;
 			transition: opacity 1s linear;
 			z-index: 2;
 
+			&.fullscreen {
+				top: 0;
+				transition: top 1s linear;
+
+				&.adjust {
+					top: 60px;
+				}
+			}
+
 			&.show {
 				opacity: 1;
 			}

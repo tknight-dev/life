@@ -197,6 +197,7 @@ class Life {
 				await FullscreenEngine.close();
 				Life.elementControls.classList.remove('fullscreen');
 				Life.elementCounts.classList.remove('fullscreen');
+				Life.elementHomeostatic.classList.remove('fullscreen');
 				Life.elementStats.classList.remove('fullscreen');
 
 				Life.elementFullscreen.classList.remove('fullscreen-exit');
@@ -208,6 +209,8 @@ class Life {
 				Life.elementControls.classList.add('show');
 				Life.elementCounts.classList.add('fullscreen');
 				Life.elementCounts.classList.add('adjust');
+				Life.elementHomeostatic.classList.add('fullscreen');
+				Life.elementHomeostatic.classList.add('adjust');
 				Life.elementStats.classList.add('fullscreen');
 				Life.elementStats.classList.add('show');
 
@@ -225,10 +228,12 @@ class Life {
 				if ((event.target as HTMLElement).id === 'canvas' && Life.elementControls.classList.contains('show')) {
 					Life.elementControls.classList.remove('show');
 					Life.elementCounts.classList.remove('adjust');
+					Life.elementHomeostatic.classList.remove('adjust');
 					Life.elementStats.classList.remove('show');
 				} else {
 					Life.elementControls.classList.add('show');
 					Life.elementCounts.classList.add('adjust');
+					Life.elementHomeostatic.classList.add('adjust');
 					Life.elementStats.classList.add('show');
 
 					fullscreenFader();
@@ -240,18 +245,21 @@ class Life {
 			Life.timeoutFullscreenFade = setTimeout(() => {
 				Life.elementControls.classList.remove('show');
 				Life.elementCounts.classList.remove('adjust');
+				Life.elementHomeostatic.classList.remove('adjust');
 				Life.elementStats.classList.remove('show');
 			}, 3000);
 		};
 		Life.elementControls.onmouseenter = () => {
 			Life.elementControls.classList.add('show');
 			Life.elementCounts.classList.add('adjust');
+			Life.elementHomeostatic.classList.add('adjust');
 			Life.elementStats.classList.add('show');
 			clearTimeout(Life.timeoutFullscreenFade);
 		};
 		Life.elementStats.onmouseenter = () => {
 			Life.elementControls.classList.add('show');
 			Life.elementCounts.classList.add('adjust');
+			Life.elementHomeostatic.classList.add('adjust');
 			Life.elementStats.classList.add('show');
 			clearTimeout(Life.timeoutFullscreenFade);
 		};
@@ -508,6 +516,7 @@ class Life {
 			if (!state) {
 				Life.elementControls.classList.remove('fullscreen');
 				Life.elementCounts.classList.remove('fullscreen');
+				Life.elementHomeostatic.classList.remove('fullscreen');
 				Life.elementStats.classList.remove('fullscreen');
 
 				Life.elementFullscreen.classList.remove('fullscreen-exit');
