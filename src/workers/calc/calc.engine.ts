@@ -144,7 +144,7 @@ class CalcWorkerEngine {
 			data: Map<number, CellMeta> = new Map<number, CellMeta>(),
 			dataNew: boolean,
 			homeostatic: boolean,
-			homeostaticDataMax: number = 20, // is enough to catch a 10 period oscillation
+			homeostaticDataMax: number = 40, // is enough to catch a 20 period oscillation
 			homeostaticData: any[] = new Array(homeostaticDataMax),
 			homeostaticDataIndex: number = 0,
 			positions: Uint32Array,
@@ -177,8 +177,8 @@ class CalcWorkerEngine {
 
 		for (x = 0; x < homeostaticDataMax; x++) {
 			homeostaticData[x] = {
-				alive: 0,
-				dead: 0,
+				alive: x,
+				dead: x,
 			};
 		}
 
@@ -441,24 +441,30 @@ class CalcWorkerEngine {
 						homeostaticData[homeostaticDataIndex].dead = countDead;
 						homeostaticDataIndex = (homeostaticDataIndex + 1) % homeostaticDataMax;
 
-						// Check all osciallation periods allowable within the dataset's size
+						// Find a matching oscillation period within the first half of the dataset
 						xy = (homeostaticDataMax / 2) | 0;
 						for (y = 1; y < xy; y++) {
-							for (x = 0; x < homeostaticDataMax - y; x++) {
-								if (
-									homeostaticData[x].alive !== homeostaticData[x + y].alive ||
-									homeostaticData[x].dead !== homeostaticData[x + y].dead
-								) {
-									break;
-								}
-							}
-							if (x === homeostaticDataMax - y) {
-								homeostatic = true;
+							if (
+								homeostaticData[0].alive === homeostaticData[y].alive ||
+								homeostaticData[0].dead === homeostaticData[y].dead
+							) {
 								break;
 							}
 						}
 
-						if (homeostatic) {
+						// Check dataset to see if the period repeats
+						for (x = 0; x < homeostaticDataMax - y; x++) {
+							if (
+								homeostaticData[x].alive !== homeostaticData[x + y].alive ||
+								homeostaticData[x].dead !== homeostaticData[x + y].dead
+							) {
+								break;
+							}
+						}
+
+						if (x === homeostaticDataMax - y) {
+							homeostatic = true;
+
 							// Post
 							CalcWorkerEngine.post([
 								{
