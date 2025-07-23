@@ -62,8 +62,7 @@ class Life {
 	private static settingsCalc: CalcBusInputDataSettings;
 	private static settingsCalcIPSMax: number = 1024;
 	private static settingsVideo: VideoBusInputDataSettings;
-	private static timeoutControlBackward: ReturnType<typeof setTimeout>;
-	private static timeoutControlForward: ReturnType<typeof setTimeout>;
+	private static timeoutControl: ReturnType<typeof setTimeout>;
 	private static timeoutFullscreenFade: ReturnType<typeof setTimeout>;
 	private static timeoutReset: ReturnType<typeof setTimeout>;
 
@@ -109,8 +108,8 @@ class Life {
 			Life.elementIPSRequested.classList.add('show');
 			Life.elementSpinout.classList.remove('show');
 
-			clearTimeout(Life.timeoutControlBackward);
-			Life.timeoutControlBackward = setTimeout(() => {
+			clearTimeout(Life.timeoutControl);
+			Life.timeoutControl = setTimeout(() => {
 				Life.elementIPSRequested.classList.remove('show');
 				Life.elementSpinout.classList.add('show');
 			}, 1000);
@@ -127,8 +126,8 @@ class Life {
 			Life.elementIPSRequested.classList.add('show');
 			Life.elementSpinout.classList.remove('show');
 
-			clearTimeout(Life.timeoutControlForward);
-			Life.timeoutControlForward = setTimeout(() => {
+			clearTimeout(Life.timeoutControl);
+			Life.timeoutControl = setTimeout(() => {
 				Life.elementIPSRequested.classList.remove('show');
 				Life.elementSpinout.classList.add('show');
 			}, 1000);
