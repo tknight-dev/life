@@ -303,6 +303,7 @@ class CalcWorkerEngine {
 				calcTimestampFPSThen = timestampNow;
 				calcTimestampIPSThen = timestampNow;
 				calcTimestampThen = timestampNow;
+				homeostatic = false;
 				spinOut = false;
 				return;
 			}

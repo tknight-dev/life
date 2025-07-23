@@ -149,6 +149,7 @@ class Life {
 			Life.elementControlsPlay.style.display = 'none';
 			Life.elementControlsPause.style.display = 'block';
 
+			Life.elementHomeostatic.style.display = 'none';
 			Life.elementStatsCPS.style.display = 'block';
 			Life.elementIPSRequested.innerText = Life.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
 			Life.elementIPSRequested.classList.add('show');
@@ -433,6 +434,10 @@ class Life {
 				});
 			});
 			CalcBusEngine.setCallbackHomeostatic(() => {
+				if (Life.settingsCalc.homeostaticPause) {
+					Life.elementControlsPause.style.display = 'none';
+					Life.elementControlsPlay.style.display = 'block';
+				}
 				clearTimeout(Life.timeoutReset);
 
 				setTimeout(() => {
