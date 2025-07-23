@@ -492,6 +492,13 @@ $life-logo-width: 152px;
 				height: 100%;
 				width: 100%;
 			}
+
+			@media only screen and (max-width: 465px) {
+				&.open {
+					border-bottom: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
+					border-top: 2px solid transparent;
+				}
+			}
 		}
 	}
 }

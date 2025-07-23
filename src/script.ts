@@ -33,6 +33,7 @@ class Life {
 	private static elementFPS: HTMLElement;
 	private static elementFullscreen: HTMLElement;
 	private static elementIPSRequested: HTMLElement;
+	private static elementLogo: HTMLElement;
 	private static elementMenu: HTMLElement;
 	private static elementMenuContent: HTMLElement;
 	private static elementMenuInfo: HTMLElement;
@@ -85,6 +86,7 @@ class Life {
 		Life.elementGameOver = <HTMLElement>document.getElementById('game-over');
 		Life.elementHomeostatic = <HTMLElement>document.getElementById('homeostatic');
 		Life.elementIPSRequested = <HTMLElement>document.getElementById('ips-requested');
+		Life.elementLogo = <HTMLElement>document.getElementById('logo');
 		Life.elementSpinout = <HTMLElement>document.getElementById('spinout');
 		Life.elementStats = <HTMLElement>document.getElementById('stats');
 		Life.elementStatsC = <HTMLElement>document.getElementById('c');
@@ -275,6 +277,7 @@ class Life {
 		 */
 		Life.elementMenu = <HTMLElement>document.getElementById('info-menu');
 		Life.elementMenu.onclick = () => {
+			Life.elementLogo.classList.toggle('open');
 			Life.elementMenuContent.classList.toggle('open');
 		};
 		Life.elementMenuContent = <HTMLElement>document.getElementById('menu-content');
@@ -390,7 +393,7 @@ class Life {
 			drawDeadCells: true,
 			drawGrid: true,
 			fps: VideoBusInputDataSettingsFPS._60,
-			resolution: null, // Native
+			resolution: null, // Native is null
 			tableSizeX: 112, // def: 112y
 		};
 
