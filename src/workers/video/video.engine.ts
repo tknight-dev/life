@@ -105,6 +105,9 @@ class VideoWorkerEngine {
 	}
 
 	public static inputData(data: Uint32Array): void {
+		if (VideoWorkerEngine.reset) {
+			return;
+		}
 		VideoWorkerEngine.data = data;
 		VideoWorkerEngine.dataNew = true;
 	}
@@ -216,15 +219,15 @@ class VideoWorkerEngine {
 
 			if (VideoWorkerEngine.reset || tableSizeX !== VideoWorkerEngine.tableSizeX) {
 				VideoWorkerEngine.dataNew = true;
-				VideoWorkerEngine.reset = false;
 
+				cache = false;
 				dataEff.clear();
 				frameTimestampDelta = VideoWorkerEngine.framesPerMillisecond + 1;
 
 				// Initialize effective data set for all possible positions and set to none
 				for (x = 0; x < VideoWorkerEngine.tableSizeX; x++) {
 					for (y = 0; y < VideoWorkerEngine.tableSizeY; y++) {
-						dataEff.set((x << 11) | y, CellState.NONE);
+						dataEff.set((x << xyWidthBits) | y, CellState.NONE);
 					}
 				}
 			}
@@ -365,6 +368,7 @@ class VideoWorkerEngine {
 					}
 
 					cache = true;
+					VideoWorkerEngine.reset = false;
 				}
 			}
 

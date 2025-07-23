@@ -3,7 +3,6 @@ import {
 	VideoBusInputDataInit,
 	VideoBusInputDataResize,
 	VideoBusInputDataSettings,
-	VideoBusInputDataSettingsFPS,
 	VideoBusInputPayload,
 	VideoBusOutputCmd,
 	VideoBusOutputPayload,
@@ -174,7 +173,7 @@ export class VideoBusEngine {
 			height = (tableSizeX * 9) / 16;
 			width = tableSizeX;
 
-			scaler = Math.round((domRect.width / width) * 1000) / 1000;
+			scaler = Math.round(((devicePixelRatioEff * domRect.width) / width) * 1000) / 1000;
 		} else if (VideoBusEngine.resolution !== null) {
 			scaler = Math.round(((devicePixelRatioEff * domRect.width) / width) * 1000) / 1000;
 		} else {
