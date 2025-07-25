@@ -33,19 +33,20 @@ export class Edit {
 	protected static settingsVideo: VideoBusInputDataSettings;
 	protected static pxCellSize: number;
 
-	private static handler(down: boolean, move: boolean, position: MousePosition | TouchPosition): void {
-		if (Edit.mode === null) {
+	private static handler(down: boolean, move: boolean, position: MousePosition | TouchPosition, touch: boolean): void {
+		if (Edit.mode === null || !position) {
 			return;
 		}
 
 		const buffer = Edit.buffer,
+			devicePixelRatio: number = Math.round(window.devicePixelRatio * 1000) / 1000,
 			domRect: DOMRect = Edit.domRect,
 			elementEditStyle: CSSStyleDeclaration = Edit.elementEdit.style,
 			pxCellSize: number = Edit.pxCellSize;
 
 		let out: boolean = false,
-			px: number = position.x,
-			py: number = position.y,
+			px: number = position.x / devicePixelRatio,
+			py: number = position.y / devicePixelRatio,
 			tx: number,
 			ty: number;
 		if (px === 0 || py === 0 || px === domRect.width || py === domRect.height) {
@@ -65,10 +66,14 @@ export class Edit {
 					Edit.editActive = false;
 				}
 			} else {
-				elementEditStyle.display = 'block';
+				if (!touch) {
+					elementEditStyle.display = 'block';
 
-				elementEditStyle.left = px + 'px';
-				elementEditStyle.top = py + 'px';
+					elementEditStyle.left = px + 'px';
+					elementEditStyle.top = py + 'px';
+				} else {
+					elementEditStyle.display = 'none';
+				}
 
 				if (Edit.editActive) {
 					buffer.add((tx << xyWidthBits) | ty | (Edit.mode ? xyValueAlive : xyValueDead));
@@ -78,7 +83,9 @@ export class Edit {
 			Edit.editActive = down;
 
 			if (down) {
-				buffer.add((tx << xyWidthBits) | ty | (Edit.mode ? xyValueAlive : xyValueDead));
+				if (!touch) {
+					buffer.add((tx << xyWidthBits) | ty | (Edit.mode ? xyValueAlive : xyValueDead));
+				}
 
 				Edit.editInterval = setInterval(() => {
 					if (buffer.size) {
@@ -125,22 +132,22 @@ export class Edit {
 
 		MouseEngine.setCallback((action: MouseAction) => {
 			if (action.down === true) {
-				Edit.handler(true, false, action.position);
+				Edit.handler(true, false, action.position, false);
 			} else if (action.down === false) {
-				Edit.handler(false, false, action.position);
+				Edit.handler(false, false, action.position, false);
 			} else {
-				Edit.handler(false, true, action.position);
+				Edit.handler(false, true, action.position, false);
 			}
 		});
 		TouchEngine.setCallback((action: TouchAction) => {
 			if (action.cmd === TouchCmd.CLICK) {
 				if (action.down === true) {
-					Edit.handler(true, false, action.positions[0]);
+					Edit.handler(true, false, action.positions[0], true);
 				} else if (action.down === false) {
-					Edit.handler(false, false, action.positions[0]);
+					Edit.handler(false, false, action.positions[0], true);
 				}
 			} else if (action.cmd === TouchCmd.CLICK_MOVE) {
-				Edit.handler(false, true, action.positions[0]);
+				Edit.handler(false, true, action.positions[0], true);
 			}
 		});
 	}

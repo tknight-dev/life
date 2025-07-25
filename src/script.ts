@@ -221,8 +221,6 @@ class Life extends Edit {
 				Life.elementEdit.classList.add('add');
 				Life.elementEdit.classList.remove('remove');
 
-				Edit.elementEdit.style.display = 'block';
-
 				if (Life.elementControlsPause.style.display === 'block') {
 					Life.elementControlsPause.click();
 				}
@@ -251,8 +249,6 @@ class Life extends Edit {
 
 				Life.elementEdit.classList.remove('add');
 				Life.elementEdit.classList.add('remove');
-
-				Edit.elementEdit.style.display = 'block';
 
 				if (Life.elementControlsPause.style.display === 'block') {
 					Life.elementControlsPause.click();

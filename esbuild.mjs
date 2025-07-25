@@ -55,7 +55,7 @@ if (production) {
 
 	await esbuild.build(config);
 } else {
-	var host = 'localhost',
+	var host = '0.0.0.0',
 		port = 8080;
 
 	// Config: dev
