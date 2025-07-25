@@ -22,7 +22,9 @@ export class Edit {
 	protected static editActive: boolean;
 	protected static editInterval: ReturnType<typeof setInterval>;
 	protected static elementCanvas: HTMLCanvasElement;
+	protected static elementCanvasInteractive: HTMLCanvasElement;
 	protected static elementEdit: HTMLElement;
+	protected static gameover: boolean;
 	protected static mode: boolean | null = null;
 	protected static settingsCalc: CalcBusInputDataSettings;
 	protected static settingsCalcIPSMax: number = 1024;

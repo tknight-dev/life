@@ -84,6 +84,7 @@ $life-logo-width: 152px;
 
 		.alive,
 		.canvas,
+		.canvas-interactive,
 		.controls,
 		.game-over,
 		.fps,
@@ -97,6 +98,22 @@ $life-logo-width: 152px;
 			position: absolute;
 			right: 0;
 			z-index: 1;
+		}
+
+		.alive {
+			bottom: 65px;
+			font-family: monospace;
+			pointer-events: none;
+			z-index: 2;
+
+			&.fullscreen {
+				bottom: 0;
+				transition: bottom 1s linear;
+
+				&.adjust {
+					bottom: 65px;
+				}
+			}
 		}
 
 		.canvas {
@@ -159,20 +176,10 @@ $life-logo-width: 152px;
 			}
 		}
 
-		.alive {
-			bottom: 65px;
-			font-family: monospace;
-			pointer-events: none;
-			z-index: 2;
-
-			&.fullscreen {
-				bottom: 0;
-				transition: bottom 1s linear;
-
-				&.adjust {
-					bottom: 65px;
-				}
-			}
+		.canvas-interactive {
+			bottom: 60px;
+			top: 40px;
+			z-index: 4;
 		}
 
 		.controls,
@@ -303,7 +310,7 @@ $life-logo-width: 152px;
 			left: 10px;
 			right: auto;
 			top: 1px;
-			z-index: 3;
+			z-index: 4;
 		}
 
 		.rules,
@@ -389,7 +396,7 @@ $life-logo-width: 152px;
 
 			.header {
 				align-items: center;
-				background-color: rgba(0, 0, 0, 0.5);
+				background-color: rgba(0, 0, 0, 0.85);
 				border-bottom: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
 				display: flex;
 				font-weight: bold;

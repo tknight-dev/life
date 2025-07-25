@@ -47,10 +47,10 @@ export class MouseEngine {
 		};
 	}
 
-	public static async initialize(feedFitted: HTMLElement): Promise<void> {
+	public static async initialize(feedFitted: HTMLElement, restrictTo?: HTMLElement): Promise<void> {
 		MouseEngine.feedFitted = feedFitted;
 
-		document.addEventListener('click', (event: MouseEvent) => {
+		((restrictTo || document) as HTMLElement).addEventListener('click', (event: MouseEvent) => {
 			if (MouseEngine.callback && event.button === 0) {
 				// 0 is left click
 				MouseEngine.callback({
@@ -61,7 +61,7 @@ export class MouseEngine {
 				});
 			}
 		});
-		document.addEventListener('mousedown', (event: MouseEvent) => {
+		((restrictTo || document) as HTMLElement).addEventListener('mousedown', (event: MouseEvent) => {
 			if (MouseEngine.callback && event.button === 0) {
 				// 0 is left click
 				MouseEngine.callback({
@@ -72,7 +72,7 @@ export class MouseEngine {
 				});
 			}
 		});
-		document.addEventListener('mousemove', (event: MouseEvent) => {
+		((restrictTo || document) as HTMLElement).addEventListener('mousemove', (event: MouseEvent) => {
 			if (MouseEngine.callback) {
 				let timestamp = performance.now();
 
@@ -97,7 +97,7 @@ export class MouseEngine {
 				}
 			}
 		});
-		document.addEventListener('mouseup', (event: MouseEvent) => {
+		((restrictTo || document) as HTMLElement).addEventListener('mouseup', (event: MouseEvent) => {
 			if (MouseEngine.callback && event.button === 0) {
 				// 0 is left click
 				MouseEngine.callback({
@@ -108,7 +108,7 @@ export class MouseEngine {
 				});
 			}
 		});
-		document.addEventListener('wheel', (event: any) => {
+		((restrictTo || document) as HTMLElement).addEventListener('wheel', (event: any) => {
 			if (!MouseEngine.suspend && MouseEngine.callback) {
 				if (event.deltaY > 0) {
 					MouseEngine.callback({

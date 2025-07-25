@@ -73,6 +73,7 @@ class Life extends Edit {
 	private static initializeDOM(): void {
 		Life.elementAlive = <HTMLCanvasElement>document.getElementById('alive');
 		Edit.elementCanvas = <HTMLCanvasElement>document.getElementById('canvas');
+		Edit.elementCanvasInteractive = <HTMLCanvasElement>document.getElementById('canvas-interactive');
 
 		Life.elementRules = <HTMLButtonElement>document.getElementById('rules');
 		Life.elementRulesClose = <HTMLButtonElement>document.getElementById('rules-close');
@@ -142,7 +143,9 @@ class Life extends Edit {
 		Life.elementControlsPause = <HTMLElement>document.getElementById('pause');
 		Life.elementControlsPause.onclick = () => {
 			Life.elementControlsPause.style.display = 'none';
-			Life.elementControlsPlay.style.display = 'block';
+			if (!Edit.gameover) {
+				Life.elementControlsPlay.style.display = 'block';
+			}
 
 			Life.elementStatsCPS.style.display = 'none';
 
@@ -150,11 +153,12 @@ class Life extends Edit {
 		};
 		Life.elementControlsPause.style.display = 'none';
 		Life.elementControlsPlay = <HTMLElement>document.getElementById('play');
-		Life.elementControlsPlay.onclick = () => {
+		Life.elementControlsPlay.onclick = (event) => {
 			Life.elementControlsPlay.style.display = 'none';
 			Life.elementControlsPause.style.display = 'block';
 
 			Edit.mode = null;
+			Edit.elementEdit.style.display = 'none';
 			Life.elementEditAdd.classList.remove('active');
 			Life.elementEditNone.classList.add('active');
 			Life.elementEditRemove.classList.remove('active');
@@ -176,6 +180,7 @@ class Life extends Edit {
 			const data: Uint32Array[] = Life.initializeLife();
 			VideoBusEngine.outputReset(data[0]);
 			CalcBusEngine.outputReset(data[1]);
+			Edit.gameover = false;
 
 			Life.elementAlive.innerText = '';
 			Life.elementDead.innerText = '';
@@ -471,7 +476,7 @@ class Life extends Edit {
 	 */
 	private static initializeSettings(): void {
 		Edit.settingsFPSShow = true;
-		Edit.settingsSeedRandom = true;
+		Edit.settingsSeedRandom = false;
 
 		/*
 		 * Video
@@ -512,6 +517,7 @@ class Life extends Edit {
 			 */
 			CalcBusEngine.setCallbackGameOver(() => {
 				clearTimeout(Life.timeoutReset);
+				Edit.gameover = true;
 
 				Life.elementControlsBackward.style.display = 'none';
 				Life.elementControlsForward.style.display = 'none';
@@ -659,10 +665,10 @@ class Life extends Edit {
 				}
 			}
 		});
-		MouseEngine.initialize(Edit.elementCanvas);
+		MouseEngine.initialize(Edit.elementCanvas, Edit.elementCanvasInteractive);
 		OrientationEngine.initialize();
 		OrientationEngine.setCallback((orientation: Orientation) => {});
-		TouchEngine.initialize(Edit.elementCanvas);
+		TouchEngine.initialize(Edit.elementCanvas, Edit.elementCanvasInteractive);
 		VisibilityEngine.initialize();
 		VisibilityEngine.setCallback((state: boolean) => {
 			if (!state) {

@@ -72,10 +72,10 @@ export class TouchEngine {
 		return touchPositions;
 	}
 
-	public static async initialize(feedFitted: HTMLElement): Promise<void> {
+	public static async initialize(feedFitted: HTMLElement, restrictTo?: HTMLElement): Promise<void> {
 		TouchEngine.feedFitted = feedFitted;
 
-		document.addEventListener('touchcancel', (event: TouchEvent) => {
+		((restrictTo || document) as HTMLElement).addEventListener('touchcancel', (event: TouchEvent) => {
 			if (!TouchEngine.suspend && TouchEngine.callback && TouchEngine.cmdActiveStatus) {
 				TouchEngine.cmdActiveStatus = false;
 				TouchEngine.callback({
@@ -87,7 +87,7 @@ export class TouchEngine {
 			}
 		});
 
-		document.addEventListener('touchend', (event: TouchEvent) => {
+		((restrictTo || document) as HTMLElement).addEventListener('touchend', (event: TouchEvent) => {
 			if (!TouchEngine.suspend && TouchEngine.callback && TouchEngine.cmdActiveStatus) {
 				TouchEngine.cmdActiveStatus = false;
 				TouchEngine.callback({
@@ -99,7 +99,7 @@ export class TouchEngine {
 			}
 		});
 
-		document.addEventListener('touchmove', (event: TouchEvent) => {
+		((restrictTo || document) as HTMLElement).addEventListener('touchmove', (event: TouchEvent) => {
 			if (!TouchEngine.suspend && TouchEngine.callback && TouchEngine.cmdActiveStatus) {
 				let timestamp = performance.now();
 
@@ -125,7 +125,7 @@ export class TouchEngine {
 			}
 		});
 
-		document.addEventListener('touchstart', (event: TouchEvent) => {
+		((restrictTo || document) as HTMLElement).addEventListener('touchstart', (event: TouchEvent) => {
 			if (!TouchEngine.suspend && TouchEngine.callback && !TouchEngine.cmdActiveStatus) {
 				clearTimeout(TouchEngine.timeout);
 				TouchEngine.timeout = setTimeout(() => {
