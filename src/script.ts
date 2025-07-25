@@ -303,7 +303,7 @@ class Life extends Edit {
 		};
 		document.addEventListener('click', (event) => {
 			if (FullscreenEngine.isOpen()) {
-				if ((event.target as HTMLElement).id === 'canvas' && Life.elementControls.classList.contains('show')) {
+				if ((event.target as HTMLElement).id === 'canvas-interactive' && Life.elementControls.classList.contains('show')) {
 					Life.elementControls.classList.remove('show');
 					Life.elementCounts.classList.remove('adjust');
 					Life.elementHomeostatic.classList.remove('adjust');
