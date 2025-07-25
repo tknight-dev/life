@@ -444,6 +444,8 @@ class CalcWorkerEngine {
 							cellMeta.alive = xyValueAlive;
 							cellMeta.dead = 0;
 							countAlive++;
+						} else if (cellMeta.dead !== 0) {
+							countDead++;
 						}
 
 						cellMeta.neighbors = 0;
