@@ -57,6 +57,7 @@ class Life extends Edit {
 	private static elementSettingsValueDrawGrid: HTMLInputElement;
 	private static elementSettingsValueIPS: HTMLInputElement;
 	private static elementSettingsValueResolution: HTMLInputElement;
+	private static elementSettingsValueSeedRandom: HTMLInputElement;
 	private static elementSettingsValueTableSize: HTMLInputElement;
 	private static elementSpinout: HTMLElement;
 	private static elementStats: HTMLElement;
@@ -399,6 +400,12 @@ class Life extends Edit {
 				tableSizeX: Edit.settingsCalc.tableSizeX,
 			};
 
+			Edit.settingsFPSShow = Boolean(Life.elementSettingsValueFPSShow.checked);
+			if (!Edit.settingsFPSShow) {
+				Life.elementFPS.innerText = '';
+			}
+			Edit.settingsSeedRandom = Boolean(Life.elementSettingsValueSeedRandom.checked);
+
 			/**
 			 * Main thread -> workers
 			 */
@@ -408,11 +415,6 @@ class Life extends Edit {
 			/**
 			 * Done
 			 */
-			Edit.settingsFPSShow = Life.elementSettingsValueFPSShow.checked;
-			if (!Edit.settingsFPSShow) {
-				Life.elementFPS.innerText = '';
-			}
-
 			Life.elementSettings.style.display = 'none';
 			Life.elementSettingsValueIPS.value = String(Edit.settingsCalc.iterationsPerSecond);
 
@@ -430,29 +432,34 @@ class Life extends Edit {
 		Life.elementSettingsValueDrawGrid = <HTMLInputElement>document.getElementById('settings-value-draw-grid');
 		Life.elementSettingsValueIPS = <HTMLInputElement>document.getElementById('settings-value-ips');
 		Life.elementSettingsValueResolution = <HTMLInputElement>document.getElementById('settings-value-resolution');
+		Life.elementSettingsValueSeedRandom = <HTMLInputElement>document.getElementById('settings-value-seed-random');
 		Life.elementSettingsValueTableSize = <HTMLInputElement>document.getElementById('settings-value-table-size');
 	}
 
 	private static initializeLife(): Uint32Array[] {
-		let data: Set<number> = new Set<number>(),
-			tableSizeX: number = Edit.settingsCalc.tableSizeX,
-			tableSizeY: number = (Edit.settingsCalc.tableSizeX * 9) / 16,
-			x: number,
-			y: number;
+		if (Edit.settingsSeedRandom) {
+			let data: Set<number> = new Set<number>(),
+				tableSizeX: number = Edit.settingsCalc.tableSizeX,
+				tableSizeY: number = (Edit.settingsCalc.tableSizeX * 9) / 16,
+				x: number,
+				y: number;
 
-		const { xyValueAlive } = masks;
+			const { xyValueAlive } = masks;
 
-		// Random
-		for (x = 0; x < tableSizeX; x++) {
-			for (y = 0; y < tableSizeY; y++) {
-				if (Math.random() > 0.5) {
-					data.add((x << xyWidthBits) | y | xyValueAlive);
+			// Random
+			for (x = 0; x < tableSizeX; x++) {
+				for (y = 0; y < tableSizeY; y++) {
+					if (Math.random() > 0.5) {
+						data.add((x << xyWidthBits) | y | xyValueAlive);
+					}
 				}
 			}
-		}
 
-		// The array buffer must be passed to each web worker independently
-		return [Uint32Array.from(data), Uint32Array.from(data)];
+			// The array buffer must be passed to each web worker independently
+			return [Uint32Array.from(data), Uint32Array.from(data)];
+		} else {
+			return [new Uint32Array(), new Uint32Array()];
+		}
 	}
 
 	/**
@@ -467,7 +474,7 @@ class Life extends Edit {
 			drawGrid: true,
 			fps: VideoBusInputDataSettingsFPS._60,
 			resolution: null, // Native is null
-			tableSizeX: 48, // def: 112y
+			tableSizeX: 112, // def: 112y
 		};
 
 		if (Life.isMobileOrTablet()) {

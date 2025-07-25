@@ -27,6 +27,7 @@ export class Edit {
 	protected static settingsCalc: CalcBusInputDataSettings;
 	protected static settingsCalcIPSMax: number = 1024;
 	protected static settingsFPSShow: boolean = true;
+	protected static settingsSeedRandom: boolean = true;
 	protected static settingsVideo: VideoBusInputDataSettings;
 	protected static pxCellSize: number;
 
