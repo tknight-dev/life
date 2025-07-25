@@ -194,6 +194,10 @@ class Life extends Edit {
 			Life.elementEditNone.style.display = 'flex';
 			Life.elementEditRemove.style.display = 'flex';
 
+			if (!Edit.settingsSeedRandom) {
+				Life.elementEditAdd.click();
+			}
+
 			Life.elementGameOver.classList.remove('show');
 			Life.elementHomeostatic.classList.remove('show');
 			Life.elementIPSRequested.style.display = 'flex';
@@ -472,7 +476,7 @@ class Life extends Edit {
 	 */
 	private static initializeSettings(): void {
 		Edit.settingsFPSShow = true;
-		Edit.settingsSeedRandom = false;
+		Edit.settingsSeedRandom = true;
 
 		/*
 		 * Video
