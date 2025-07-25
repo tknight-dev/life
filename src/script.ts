@@ -67,7 +67,7 @@ class Life extends Edit {
 	private static elementVersion: HTMLElement;
 	private static elementWebGLNotSupported: HTMLElement;
 	private static timeoutControl: ReturnType<typeof setTimeout>;
-	private static timeoutFullscreenFade: ReturnType<typeof setTimeout>;
+	private static timeoutFullscreen: ReturnType<typeof setTimeout>;
 	private static timeoutReset: ReturnType<typeof setTimeout>;
 
 	private static initializeDOM(): void {
@@ -184,6 +184,10 @@ class Life extends Edit {
 			Life.elementControlsForward.style.display = 'block';
 			Life.elementControlsPlay.style.display = 'block';
 			Life.elementControlsPause.style.display = 'none';
+
+			Life.elementEditAdd.style.display = 'flex';
+			Life.elementEditNone.style.display = 'flex';
+			Life.elementEditRemove.style.display = 'flex';
 
 			Life.elementGameOver.classList.remove('show');
 			Life.elementHomeostatic.classList.remove('show');
@@ -310,8 +314,8 @@ class Life extends Edit {
 			}
 		});
 		const fullscreenFader = () => {
-			clearTimeout(Life.timeoutFullscreenFade);
-			Life.timeoutFullscreenFade = setTimeout(() => {
+			clearTimeout(Life.timeoutFullscreen);
+			Life.timeoutFullscreen = setTimeout(() => {
 				Life.elementControls.classList.remove('show');
 				Life.elementCounts.classList.remove('adjust');
 				Life.elementHomeostatic.classList.remove('adjust');
@@ -323,14 +327,14 @@ class Life extends Edit {
 			Life.elementCounts.classList.add('adjust');
 			Life.elementHomeostatic.classList.add('adjust');
 			Life.elementStats.classList.add('show');
-			clearTimeout(Life.timeoutFullscreenFade);
+			clearTimeout(Life.timeoutFullscreen);
 		};
 		Life.elementStats.onmouseenter = () => {
 			Life.elementControls.classList.add('show');
 			Life.elementCounts.classList.add('adjust');
 			Life.elementHomeostatic.classList.add('adjust');
 			Life.elementStats.classList.add('show');
-			clearTimeout(Life.timeoutFullscreenFade);
+			clearTimeout(Life.timeoutFullscreen);
 		};
 		Life.elementControls.onmouseleave = () => {
 			fullscreenFader();
@@ -466,6 +470,9 @@ class Life extends Edit {
 	 * Update the HTML defaults to match the values set here
 	 */
 	private static initializeSettings(): void {
+		Edit.settingsFPSShow = true;
+		Edit.settingsSeedRandom = true;
+
 		/*
 		 * Video
 		 */
@@ -504,10 +511,16 @@ class Life extends Edit {
 			 * Load Calc Engine
 			 */
 			CalcBusEngine.setCallbackGameOver(() => {
+				clearTimeout(Life.timeoutReset);
+
 				Life.elementControlsBackward.style.display = 'none';
 				Life.elementControlsForward.style.display = 'none';
 				Life.elementControlsPlay.style.display = 'none';
 				Life.elementControlsPause.style.display = 'none';
+
+				Life.elementEditAdd.style.display = 'none';
+				Life.elementEditNone.style.display = 'none';
+				Life.elementEditRemove.style.display = 'none';
 
 				Life.elementStatsCPSAll.style.display = 'none';
 

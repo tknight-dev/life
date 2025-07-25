@@ -26,8 +26,8 @@ export class Edit {
 	protected static mode: boolean | null = null;
 	protected static settingsCalc: CalcBusInputDataSettings;
 	protected static settingsCalcIPSMax: number = 1024;
-	protected static settingsFPSShow: boolean = true;
-	protected static settingsSeedRandom: boolean = true;
+	protected static settingsFPSShow: boolean;
+	protected static settingsSeedRandom: boolean;
 	protected static settingsVideo: VideoBusInputDataSettings;
 	protected static pxCellSize: number;
 
