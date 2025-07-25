@@ -304,10 +304,12 @@ class Life extends Edit {
 		document.addEventListener('click', (event) => {
 			if (FullscreenEngine.isOpen()) {
 				if ((event.target as HTMLElement).id === 'canvas-interactive' && Life.elementControls.classList.contains('show')) {
-					Life.elementControls.classList.remove('show');
-					Life.elementCounts.classList.remove('adjust');
-					Life.elementHomeostatic.classList.remove('adjust');
-					Life.elementStats.classList.remove('show');
+					if (Edit.mode === null) {
+						Life.elementControls.classList.remove('show');
+						Life.elementCounts.classList.remove('adjust');
+						Life.elementHomeostatic.classList.remove('adjust');
+						Life.elementStats.classList.remove('show');
+					}
 				} else {
 					Life.elementControls.classList.add('show');
 					Life.elementCounts.classList.add('adjust');
@@ -321,10 +323,14 @@ class Life extends Edit {
 		const fullscreenFader = () => {
 			clearTimeout(Life.timeoutFullscreen);
 			Life.timeoutFullscreen = setTimeout(() => {
-				Life.elementControls.classList.remove('show');
-				Life.elementCounts.classList.remove('adjust');
-				Life.elementHomeostatic.classList.remove('adjust');
-				Life.elementStats.classList.remove('show');
+				if (Edit.mode === null) {
+					Life.elementControls.classList.remove('show');
+					Life.elementCounts.classList.remove('adjust');
+					Life.elementHomeostatic.classList.remove('adjust');
+					Life.elementStats.classList.remove('show');
+				} else {
+					fullscreenFader();
+				}
 			}, 3000);
 		};
 		Life.elementControls.onmouseenter = () => {
