@@ -236,7 +236,7 @@ $life-logo-width: 152px;
 			z-index: 2;
 
 			&.fullscreen {
-				top: 0;
+				top: 20px;
 				transition: top 1s linear;
 
 				&.adjust {
