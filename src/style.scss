@@ -496,9 +496,11 @@ $life-logo-width: 152px;
 
 			.right {
 				justify-content: right;
+				white-space: nowrap;
 
 				#cps {
 					font-weight: bold;
+					white-space: nowrap;
 				}
 
 				#cps-all {
