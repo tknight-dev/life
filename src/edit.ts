@@ -30,6 +30,7 @@ export class Edit {
 	protected static settingsCalcIPSMax: number = 1024;
 	protected static settingsFPSShow: boolean;
 	protected static settingsSeedRandom: boolean;
+	protected static settingsStatsShowAliveDead: boolean;
 	protected static settingsVideo: VideoBusInputDataSettings;
 	protected static pxCellSize: number;
 

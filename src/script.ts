@@ -1,5 +1,5 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
-import { CalcBusInputDataSettings, CalcBusOutputDataPS, masks, xyWidthBits } from './workers/calc/calc.model';
+import { CalcBusOutputDataPS, masks, xyWidthBits } from './workers/calc/calc.model';
 import { Edit } from './edit';
 import { FullscreenEngine } from './engines/fullscreen.engine';
 import { KeyboardEngine, KeyAction, KeyCommon } from './engines/keyboard.engine';
@@ -7,7 +7,7 @@ import { MouseEngine } from './engines/mouse.engine';
 import { Orientation, OrientationEngine } from './engines/orientation.engine';
 import { TouchEngine } from './engines/touch.engine';
 import { VideoBusEngine } from './workers/video/video.bus';
-import { VideoBusInputDataSettings, VideoBusInputDataSettingsFPS } from './workers/video/video.model';
+import { VideoBusInputDataSettingsFPS } from './workers/video/video.model';
 import { VisibilityEngine } from './engines/visibility.engine';
 import packageJSON from '../package.json';
 
@@ -58,6 +58,7 @@ class Life extends Edit {
 	private static elementSettingsValueIPS: HTMLInputElement;
 	private static elementSettingsValueResolution: HTMLInputElement;
 	private static elementSettingsValueSeedRandom: HTMLInputElement;
+	private static elementSettingsValueStatsShowAliveDead: HTMLInputElement;
 	private static elementSettingsValueTableSize: HTMLInputElement;
 	private static elementSpinout: HTMLElement;
 	private static elementStats: HTMLElement;
@@ -420,6 +421,12 @@ class Life extends Edit {
 				Life.elementFPS.innerText = '';
 			}
 			Edit.settingsSeedRandom = Boolean(Life.elementSettingsValueSeedRandom.checked);
+			Edit.settingsStatsShowAliveDead = Boolean(Life.elementSettingsValueStatsShowAliveDead.checked);
+			if (Edit.settingsStatsShowAliveDead) {
+				Life.elementCounts.style.display = 'block';
+			} else {
+				Life.elementCounts.style.display = 'none';
+			}
 
 			/**
 			 * Main thread -> workers
@@ -448,6 +455,7 @@ class Life extends Edit {
 		Life.elementSettingsValueIPS = <HTMLInputElement>document.getElementById('settings-value-ips');
 		Life.elementSettingsValueResolution = <HTMLInputElement>document.getElementById('settings-value-resolution');
 		Life.elementSettingsValueSeedRandom = <HTMLInputElement>document.getElementById('settings-value-seed-random');
+		Life.elementSettingsValueStatsShowAliveDead = <HTMLInputElement>document.getElementById('settings-value-stats-show-alive-dead');
 		Life.elementSettingsValueTableSize = <HTMLInputElement>document.getElementById('settings-value-table-size');
 	}
 
@@ -483,6 +491,7 @@ class Life extends Edit {
 	private static initializeSettings(): void {
 		Edit.settingsFPSShow = true;
 		Edit.settingsSeedRandom = true;
+		Edit.settingsStatsShowAliveDead = true;
 
 		/*
 		 * Video
