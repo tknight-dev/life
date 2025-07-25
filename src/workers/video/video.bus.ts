@@ -7,7 +7,6 @@ import {
 	VideoBusOutputCmd,
 	VideoBusOutputPayload,
 } from './video.model';
-import { ResizeEngine } from '../../engines/resize.engine';
 
 /**
  * @author tknight-dev
@@ -40,10 +39,6 @@ export class VideoBusEngine {
 		VideoBusEngine.game = game;
 		VideoBusEngine.resolution = settings.resolution;
 		VideoBusEngine.tableSizeX = settings.tableSizeX;
-
-		// Config
-		ResizeEngine.initialize();
-		ResizeEngine.setCallback(VideoBusEngine.resized);
 
 		// Spawn Video thread
 		if (window.Worker) {

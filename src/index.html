@@ -2,6 +2,7 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
+		<link rel="icon" type="image/x-icon" href="./favicon.ico">
 		<link rel="preconnect" href="https://fonts.gstatic.com">		
 		<link rel="stylesheet" href="./style.css">
 		<link rel='stylesheet' href="https://fonts.googleapis.com/css?family=Lato:400,700" type='text/css'>
@@ -43,6 +44,7 @@
 							<div class="aspect-ratio2">
 								<div class="data-container" id="data-container">
 									<canvas class="data" id="canvas"></canvas>
+									<div class="edit" id="edit"></div>
 								</div>
 							</div>
 						</div>
@@ -179,7 +181,15 @@
 					</div>
 					<div class="spinout" id="spinout"><span>CPU Spin Out</span><br /><br /></div>
 					<div class="stats" id="stats">
-						<span id="cps-all"><span id="cps"></span>&nbsp;<sup>i/s</sup>&nbsp;|&nbsp;</span><span id="c"></span>&nbsp;<sup>i</sup>
+						<div class="left"></div>
+						<div class="middle">
+							<span class="button active" id="edit-none"><span class="life-icon none"></span></span>
+							<span class="button" id="edit-add"><span class="life-icon pencil"></span></span>
+							<span class="button" id="edit-remove"><span class="life-icon eraser"></span></span>
+						</div>
+						<div class="right">
+							<span id="cps-all"><span id="cps"></span>&nbsp;<sup>i/s</sup>&nbsp;|&nbsp;</span><span id="c"></span>&nbsp;<sup>i</sup>
+						</div>
 					</div>
 					<div class="webgl-not-supported" id="webgl-not-supported">WebGL Not Supported</div>
 				</div>

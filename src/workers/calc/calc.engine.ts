@@ -51,8 +51,7 @@ class CalcWorkerEngine {
 	private static cpuSpinOutProtection: boolean;
 	private static homeostaticPause: boolean;
 	private static framesPerMillisecond: number;
-	private static life: Uint32Array;
-	private static lifeAvailable: boolean;
+	private static life: Uint32Array[] = [];
 	private static iterationsPerMillisecond: number;
 	private static play: boolean;
 	private static reset: boolean;
@@ -85,8 +84,7 @@ class CalcWorkerEngine {
 	}
 
 	public static inputLife(data: Uint32Array): void {
-		CalcWorkerEngine.life = data;
-		CalcWorkerEngine.lifeAvailable = true;
+		CalcWorkerEngine.life.push(data);
 	}
 
 	public static inputPlay(): void {
@@ -143,6 +141,7 @@ class CalcWorkerEngine {
 			countDead: number = 0,
 			data: Map<number, CellMeta> = new Map<number, CellMeta>(),
 			dataNew: boolean,
+			life: Uint32Array[] = CalcWorkerEngine.life,
 			homeostatic: boolean,
 			homeostaticDataMax: number = 40, // is enough to catch a 20 period oscillation
 			homeostaticData: any[] = new Array(homeostaticDataMax),
@@ -221,8 +220,6 @@ class CalcWorkerEngine {
 				calcTimestampFPSThen = timestampNow;
 				calcTimestampIPSThen = timestampNow;
 				calcTimestampThen = timestampNow;
-
-				CalcWorkerEngine.lifeAvailable = true;
 				return;
 			}
 
@@ -284,14 +281,30 @@ class CalcWorkerEngine {
 			/**
 			 * Life: manually added by user
 			 */
-			if (CalcWorkerEngine.lifeAvailable) {
-				CalcWorkerEngine.lifeAvailable = false;
+			if (life.length) {
+				while (life.length) {
+					positions = <Uint32Array>life.pop();
 
-				for (xy of CalcWorkerEngine.life) {
-					cellMeta = <any>data.get(xy & xyMask);
-					cellMeta.alive = xyValueAlive;
-					cellMeta.dead = 0;
-					cellMeta.neighbors = 0;
+					for (xy of positions) {
+						cellMeta = <any>data.get(xy & xyMask);
+						cellMeta.alive = xy & xyValueAlive;
+						cellMeta.dead = xy & xyValueDead;
+						cellMeta.neighbors = 0;
+					}
+				}
+
+				if (!CalcWorkerEngine.play) {
+					// Post postions
+					positions = dataTransform();
+					CalcWorkerEngine.post(
+						[
+							{
+								cmd: CalcBusOutputCmd.POSITIONS,
+								data: positions,
+							},
+						],
+						[positions.buffer],
+					);
 				}
 			}
 

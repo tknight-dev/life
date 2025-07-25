@@ -1,8 +1,11 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
 import { CalcBusInputDataSettings, CalcBusOutputDataPS, masks, xyWidthBits } from './workers/calc/calc.model';
+import { Edit } from './edit';
 import { FullscreenEngine } from './engines/fullscreen.engine';
 import { KeyboardEngine, KeyAction, KeyCommon } from './engines/keyboard.engine';
+import { MouseEngine } from './engines/mouse.engine';
 import { Orientation, OrientationEngine } from './engines/orientation.engine';
+import { TouchEngine } from './engines/touch.engine';
 import { VideoBusEngine } from './workers/video/video.bus';
 import { VideoBusInputDataSettings, VideoBusInputDataSettingsFPS } from './workers/video/video.model';
 import { VisibilityEngine } from './engines/visibility.engine';
@@ -15,9 +18,8 @@ import packageJSON from '../package.json';
 // ESBuild live reloader
 new EventSource('/esbuild').addEventListener('change', () => location.reload());
 
-class Life {
+class Life extends Edit {
 	private static elementAlive: HTMLElement;
-	private static elementCanvas: HTMLCanvasElement;
 	private static elementControls: HTMLElement;
 	private static elementControlsBackward: HTMLElement;
 	private static elementControlsForward: HTMLElement;
@@ -27,6 +29,9 @@ class Life {
 	private static elementCounts: HTMLElement;
 	private static elementDead: HTMLElement;
 	private static elementDataContainer: HTMLElement;
+	private static elementEditAdd: HTMLElement;
+	private static elementEditNone: HTMLElement;
+	private static elementEditRemove: HTMLElement;
 	private static elementGame: HTMLElement;
 	private static elementGameOver: HTMLElement;
 	private static elementHomeostatic: HTMLElement;
@@ -60,16 +65,13 @@ class Life {
 	private static elementStatsCPSAll: HTMLElement;
 	private static elementVersion: HTMLElement;
 	private static elementWebGLNotSupported: HTMLElement;
-	private static settingsCalc: CalcBusInputDataSettings;
-	private static settingsCalcIPSMax: number = 1024;
-	private static settingsVideo: VideoBusInputDataSettings;
 	private static timeoutControl: ReturnType<typeof setTimeout>;
 	private static timeoutFullscreenFade: ReturnType<typeof setTimeout>;
 	private static timeoutReset: ReturnType<typeof setTimeout>;
 
 	private static initializeDOM(): void {
 		Life.elementAlive = <HTMLCanvasElement>document.getElementById('alive');
-		Life.elementCanvas = <HTMLCanvasElement>document.getElementById('canvas');
+		Edit.elementCanvas = <HTMLCanvasElement>document.getElementById('canvas');
 
 		Life.elementRules = <HTMLButtonElement>document.getElementById('rules');
 		Life.elementRulesClose = <HTMLButtonElement>document.getElementById('rules-close');
@@ -102,10 +104,10 @@ class Life {
 		Life.elementControls = <HTMLElement>document.getElementById('controls');
 		Life.elementControlsBackward = <HTMLElement>document.getElementById('backward');
 		Life.elementControlsBackward.onclick = () => {
-			Life.settingsCalc.iterationsPerSecond = Math.max(1, Math.round(Life.settingsCalc.iterationsPerSecond / 2));
+			Edit.settingsCalc.iterationsPerSecond = Math.max(1, Math.round(Edit.settingsCalc.iterationsPerSecond / 2));
 
-			Life.elementSettingsValueIPS.value = String(Life.settingsCalc.iterationsPerSecond);
-			Life.elementIPSRequested.innerText = Life.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
+			Life.elementSettingsValueIPS.value = String(Edit.settingsCalc.iterationsPerSecond);
+			Life.elementIPSRequested.innerText = Edit.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
 			Life.elementIPSRequested.style.display = 'flex';
 			Life.elementIPSRequested.classList.add('show');
 			Life.elementSpinout.classList.remove('show');
@@ -116,14 +118,14 @@ class Life {
 				Life.elementSpinout.classList.add('show');
 			}, 1000);
 
-			CalcBusEngine.outputSettings(Life.settingsCalc);
+			CalcBusEngine.outputSettings(Edit.settingsCalc);
 		};
 		Life.elementControlsForward = <HTMLElement>document.getElementById('forward');
 		Life.elementControlsForward.onclick = () => {
-			Life.settingsCalc.iterationsPerSecond = Math.min(Life.settingsCalcIPSMax, Life.settingsCalc.iterationsPerSecond * 2);
+			Edit.settingsCalc.iterationsPerSecond = Math.min(Edit.settingsCalcIPSMax, Edit.settingsCalc.iterationsPerSecond * 2);
 
-			Life.elementSettingsValueIPS.value = String(Life.settingsCalc.iterationsPerSecond);
-			Life.elementIPSRequested.innerText = Life.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
+			Life.elementSettingsValueIPS.value = String(Edit.settingsCalc.iterationsPerSecond);
+			Life.elementIPSRequested.innerText = Edit.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
 			Life.elementIPSRequested.style.display = 'flex';
 			Life.elementIPSRequested.classList.add('show');
 			Life.elementSpinout.classList.remove('show');
@@ -134,7 +136,7 @@ class Life {
 				Life.elementSpinout.classList.add('show');
 			}, 1000);
 
-			CalcBusEngine.outputSettings(Life.settingsCalc);
+			CalcBusEngine.outputSettings(Edit.settingsCalc);
 		};
 		Life.elementControlsPause = <HTMLElement>document.getElementById('pause');
 		Life.elementControlsPause.onclick = () => {
@@ -151,9 +153,14 @@ class Life {
 			Life.elementControlsPlay.style.display = 'none';
 			Life.elementControlsPause.style.display = 'block';
 
+			Edit.mode = null;
+			Life.elementEditAdd.classList.remove('active');
+			Life.elementEditNone.classList.add('active');
+			Life.elementEditRemove.classList.remove('active');
+
 			Life.elementHomeostatic.style.display = 'none';
 			Life.elementStatsCPS.style.display = 'block';
-			Life.elementIPSRequested.innerText = Life.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
+			Life.elementIPSRequested.innerText = Edit.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
 			Life.elementIPSRequested.classList.add('show');
 			Life.elementSpinout.classList.remove('show');
 			setTimeout(() => {
@@ -190,6 +197,60 @@ class Life {
 		};
 
 		/**
+		 * Edit
+		 */
+		Life.elementEditAdd = <HTMLElement>document.getElementById('edit-add');
+		Life.elementEditAdd.onclick = () => {
+			if (Edit.mode !== true) {
+				Edit.mode = true;
+
+				Life.elementEditAdd.classList.add('active');
+				Life.elementEditNone.classList.remove('active');
+				Life.elementEditRemove.classList.remove('active');
+
+				Life.elementEdit.classList.add('add');
+				Life.elementEdit.classList.remove('remove');
+
+				Edit.elementEdit.style.display = 'block';
+
+				if (Life.elementControlsPause.style.display === 'block') {
+					Life.elementControlsPause.click();
+				}
+			}
+		};
+		Life.elementEditNone = <HTMLElement>document.getElementById('edit-none');
+		Life.elementEditNone.onclick = () => {
+			if (Edit.mode !== null) {
+				Edit.mode = null;
+
+				Life.elementEditAdd.classList.remove('active');
+				Life.elementEditNone.classList.add('active');
+				Life.elementEditRemove.classList.remove('active');
+
+				Edit.elementEdit.style.display = 'none';
+			}
+		};
+		Life.elementEditRemove = <HTMLElement>document.getElementById('edit-remove');
+		Life.elementEditRemove.onclick = () => {
+			if (Edit.mode !== false) {
+				Edit.mode = false;
+
+				Life.elementEditAdd.classList.remove('active');
+				Life.elementEditNone.classList.remove('active');
+				Life.elementEditRemove.classList.add('active');
+
+				Life.elementEdit.classList.remove('add');
+				Life.elementEdit.classList.add('remove');
+
+				Edit.elementEdit.style.display = 'block';
+
+				if (Life.elementControlsPause.style.display === 'block') {
+					Life.elementControlsPause.click();
+				}
+			}
+		};
+
+		/**
 		 * Fullscreen
 		 */
 		Life.elementFullscreen.onclick = async () => {
@@ -204,7 +265,11 @@ class Life {
 
 				Life.elementFullscreen.classList.remove('fullscreen-exit');
 				Life.elementFullscreen.classList.add('fullscreen');
+
 				OrientationEngine.unlock();
+				setTimeout(() => {
+					Edit.pxSizeCalc();
+				}, 100);
 			} else {
 				await FullscreenEngine.open(Life.elementGame);
 				Life.elementControls.classList.add('fullscreen');
@@ -221,8 +286,9 @@ class Life {
 
 				fullscreenFader();
 				setTimeout(() => {
+					Edit.pxSizeCalc();
 					OrientationEngine.lock(Orientation.LANDSCAPE);
-				});
+				}, 100);
 			}
 		};
 		document.addEventListener('click', (event) => {
@@ -315,35 +381,42 @@ class Life {
 			/**
 			 * HTML -> JS
 			 */
-			Life.settingsCalc = {
+			Edit.settingsCalc = {
 				cpuSpinOutProtection: Boolean(Life.elementSettingsValueCPUSpinOutProtection.checked),
 				homeostaticPause: Boolean(Life.elementSettingsValueHomeostaticPause.checked),
 				fps: Number(Life.elementSettingsValueFPS.value),
-				iterationsPerSecond: Math.round(Math.max(1, Math.min(Life.settingsCalcIPSMax, Number(Life.elementSettingsValueIPS.value)))),
+				iterationsPerSecond: Math.round(Math.max(1, Math.min(Edit.settingsCalcIPSMax, Number(Life.elementSettingsValueIPS.value)))),
 				tableSizeX: <any>Number(Life.elementSettingsValueTableSize.value),
 			};
 
-			Life.settingsVideo = {
+			Edit.settingsVideo = {
 				drawDeadCells: Boolean(Life.elementSettingsValueDrawDeadCells.checked),
 				drawGrid: Boolean(Life.elementSettingsValueDrawGrid.checked),
-				fps: Life.settingsCalc.fps,
+				fps: Edit.settingsCalc.fps,
 				resolution: <any>(
 					(Life.elementSettingsValueResolution.value === 'null' ? null : Number(Life.elementSettingsValueResolution.value))
 				),
-				tableSizeX: Life.settingsCalc.tableSizeX,
+				tableSizeX: Edit.settingsCalc.tableSizeX,
 			};
 
 			/**
 			 * Main thread -> workers
 			 */
-			CalcBusEngine.outputSettings(Life.settingsCalc);
-			VideoBusEngine.outputSettings(Life.settingsVideo);
+			CalcBusEngine.outputSettings(Edit.settingsCalc);
+			VideoBusEngine.outputSettings(Edit.settingsVideo);
 
 			/**
 			 * Done
 			 */
+			Edit.settingsFPSShow = Life.elementSettingsValueFPSShow.checked;
+			if (!Edit.settingsFPSShow) {
+				Life.elementFPS.innerText = '';
+			}
+
 			Life.elementSettings.style.display = 'none';
-			Life.elementSettingsValueIPS.value = String(Life.settingsCalc.iterationsPerSecond);
+			Life.elementSettingsValueIPS.value = String(Edit.settingsCalc.iterationsPerSecond);
+
+			Edit.pxSizeCalc();
 		};
 		Life.elementSettingsCancel = <HTMLButtonElement>document.getElementById('settings-cancel');
 		Life.elementSettingsCancel.onclick = () => {
@@ -362,8 +435,8 @@ class Life {
 
 	private static initializeLife(): Uint32Array[] {
 		let data: Set<number> = new Set<number>(),
-			tableSizeX: number = Life.settingsCalc.tableSizeX,
-			tableSizeY: number = (Life.settingsCalc.tableSizeX * 9) / 16,
+			tableSizeX: number = Edit.settingsCalc.tableSizeX,
+			tableSizeY: number = (Edit.settingsCalc.tableSizeX * 9) / 16,
 			x: number,
 			y: number;
 
@@ -389,29 +462,29 @@ class Life {
 		/*
 		 * Video
 		 */
-		Life.settingsVideo = {
+		Edit.settingsVideo = {
 			drawDeadCells: true,
 			drawGrid: true,
 			fps: VideoBusInputDataSettingsFPS._60,
 			resolution: null, // Native is null
-			tableSizeX: 112, // def: 112y
+			tableSizeX: 48, // def: 112y
 		};
 
 		if (Life.isMobileOrTablet()) {
 			// Mobile devices utilize sub-pixel rendering with their canvas API implementations
-			Life.settingsVideo.resolution = 512;
+			Edit.settingsVideo.resolution = 512;
 			Life.elementSettingsValueResolution.value = '512';
 		}
 
 		/*
 		 * Calc
 		 */
-		Life.settingsCalc = {
+		Edit.settingsCalc = {
 			cpuSpinOutProtection: true,
 			homeostaticPause: false,
-			fps: Life.settingsVideo.fps,
+			fps: Edit.settingsVideo.fps,
 			iterationsPerSecond: 16, // def: 16
-			tableSizeX: Life.settingsVideo.tableSizeX,
+			tableSizeX: Edit.settingsVideo.tableSizeX,
 		};
 	}
 
@@ -438,7 +511,7 @@ class Life {
 				});
 			});
 			CalcBusEngine.setCallbackHomeostatic(() => {
-				if (Life.settingsCalc.homeostaticPause) {
+				if (Edit.settingsCalc.homeostaticPause) {
 					Life.elementControlsPause.style.display = 'none';
 					Life.elementControlsPlay.style.display = 'block';
 				}
@@ -462,9 +535,9 @@ class Life {
 				Life.elementStatsCPS.innerText = ipsEff.toLocaleString('en-US');
 				Life.elementStatsCPSAll.style.display = 'flex';
 
-				if (ipsEff < Life.settingsCalc.iterationsPerSecond * 0.8) {
+				if (ipsEff < Edit.settingsCalc.iterationsPerSecond * 0.8) {
 					Life.elementStatsCPS.style.color = 'red';
-				} else if (ipsEff < Life.settingsCalc.iterationsPerSecond * 0.9) {
+				} else if (ipsEff < Edit.settingsCalc.iterationsPerSecond * 0.9) {
 					Life.elementStatsCPS.style.color = 'yellow';
 				} else {
 					Life.elementStatsCPS.style.color = 'green';
@@ -477,7 +550,7 @@ class Life {
 					Life.elementSpinout.classList.add('show');
 				});
 			});
-			CalcBusEngine.initialize(data[0], Life.settingsCalc, () => {
+			CalcBusEngine.initialize(data[0], Edit.settingsCalc, () => {
 				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
 
 				/*
@@ -485,12 +558,12 @@ class Life {
 				 */
 				then = performance.now();
 				VideoBusEngine.setCallbackFPS((fps: number) => {
-					if (Life.elementSettingsValueFPSShow.checked) {
+					if (Edit.settingsFPSShow) {
 						Life.elementFPS.innerText = String(fps);
 
-						if (fps < Life.settingsVideo.fps * 0.8) {
+						if (fps < Edit.settingsVideo.fps * 0.8) {
 							Life.elementFPS.style.color = 'red';
-						} else if (fps < Life.settingsVideo.fps * 0.9) {
+						} else if (fps < Edit.settingsVideo.fps * 0.9) {
 							Life.elementFPS.style.color = 'yellow';
 						} else {
 							Life.elementFPS.style.color = 'green';
@@ -499,7 +572,7 @@ class Life {
 						Life.elementFPS.innerText = '';
 					}
 				});
-				VideoBusEngine.initialize(Life.elementCanvas, Life.elementDataContainer, data[1], Life.settingsVideo, (status: boolean) => {
+				VideoBusEngine.initialize(Edit.elementCanvas, Life.elementDataContainer, data[1], Edit.settingsVideo, (status: boolean) => {
 					if (status) {
 						console.log('Engine > Video: loaded in', performance.now() - then, 'ms');
 						resolve(true);
@@ -529,7 +602,11 @@ class Life {
 
 				Life.elementFullscreen.classList.remove('fullscreen-exit');
 				Life.elementFullscreen.classList.add('fullscreen');
+
 				OrientationEngine.unlock();
+				setTimeout(() => {
+					Edit.pxSizeCalc();
+				}, 100);
 			}
 		});
 		KeyboardEngine.initialize();
@@ -562,8 +639,10 @@ class Life {
 				}
 			}
 		});
+		MouseEngine.initialize(Edit.elementCanvas);
 		OrientationEngine.initialize();
 		OrientationEngine.setCallback((orientation: Orientation) => {});
+		TouchEngine.initialize(Edit.elementCanvas);
 		VisibilityEngine.initialize();
 		VisibilityEngine.setCallback((state: boolean) => {
 			if (!state) {
@@ -574,13 +653,8 @@ class Life {
 		if (await Life.initializeWorkers()) {
 			console.log('System Loaded in', performance.now() - then, 'ms');
 
-			// Initialize: Life Seed
-
-			// 1. Allow user to define starting cells (video integration)
-			// 2. Submit cells to calc
-			// 3. Draw cells in video
-
-			// Life.elementControlsReset.click(); // delete me, autostarts game for dev
+			// Last
+			Life.initializeEdit();
 		} else {
 			CalcBusEngine.outputPause();
 
