@@ -23,6 +23,8 @@ export class Edit {
 	protected static editInterval: ReturnType<typeof setInterval>;
 	protected static elementCanvas: HTMLCanvasElement;
 	protected static elementCanvasInteractive: HTMLCanvasElement;
+	protected static elementControlsBackward: HTMLElement;
+	protected static elementControlsForward: HTMLElement;
 	protected static elementEdit: HTMLElement;
 	protected static gameover: boolean;
 	protected static mode: boolean | null = null;
@@ -32,73 +34,130 @@ export class Edit {
 	protected static settingsSeedRandom: boolean;
 	protected static settingsStatsShowAliveDead: boolean;
 	protected static settingsVideo: VideoBusInputDataSettings;
+	protected static swipeLength: number;
+	protected static swipeLengthAccepted: number = 9;
+	protected static swipePositionPrevious: number;
 	protected static pxCellSize: number;
 
 	private static handler(down: boolean, move: boolean, position: MousePosition | TouchPosition, touch: boolean): void {
-		if (Edit.mode === null || !position) {
+		if (!position) {
 			return;
 		}
 
-		const buffer = Edit.buffer,
-			devicePixelRatio: number = Math.round(window.devicePixelRatio * 1000) / 1000,
-			domRect: DOMRect = Edit.domRect,
-			elementEditStyle: CSSStyleDeclaration = Edit.elementEdit.style,
-			pxCellSize: number = Edit.pxCellSize;
+		// Standard edit interaction
+		if (Edit.mode !== null) {
+			const buffer = Edit.buffer,
+				devicePixelRatio: number = Math.round(window.devicePixelRatio * 1000) / 1000,
+				domRect: DOMRect = Edit.domRect,
+				elementEditStyle: CSSStyleDeclaration = Edit.elementEdit.style,
+				pxCellSize: number = Edit.pxCellSize;
 
-		let out: boolean = false,
-			px: number = position.x / devicePixelRatio,
-			py: number = position.y / devicePixelRatio,
-			tx: number,
-			ty: number;
-		if (px === 0 || py === 0 || px === domRect.width || py === domRect.height) {
-			out = true;
-		}
-		tx = (px / pxCellSize) | 0;
-		ty = (py / pxCellSize) | 0;
-
-		px = tx * pxCellSize;
-		py = ty * pxCellSize;
-
-		if (move) {
-			if (out) {
-				elementEditStyle.display = 'none';
-
-				if (Edit.editActive) {
-					Edit.editActive = false;
-				}
-			} else {
-				if (!touch) {
-					elementEditStyle.display = 'block';
-
-					elementEditStyle.left = px + 'px';
-					elementEditStyle.top = py + 'px';
-				} else {
-					elementEditStyle.display = 'none';
-				}
-
-				if (Edit.editActive) {
-					buffer.add((tx << xyWidthBits) | ty | (Edit.mode ? xyValueAlive : xyValueDead));
-				}
+			let out: boolean = false,
+				px: number = position.x / devicePixelRatio,
+				py: number = position.y / devicePixelRatio,
+				tx: number,
+				ty: number;
+			if (px === 0 || py === 0 || px === domRect.width || py === domRect.height) {
+				out = true;
 			}
-		} else if (!out) {
-			Edit.editActive = down;
+			tx = (px / pxCellSize) | 0;
+			ty = (py / pxCellSize) | 0;
 
-			if (down) {
-				if (!touch) {
-					buffer.add((tx << xyWidthBits) | ty | (Edit.mode ? xyValueAlive : xyValueDead));
+			px = tx * pxCellSize;
+			py = ty * pxCellSize;
+
+			if (move) {
+				if (out) {
+					Edit.editActive = false;
+					elementEditStyle.display = 'none';
+				} else {
+					if (!touch) {
+						elementEditStyle.display = 'block';
+
+						elementEditStyle.left = px + 'px';
+						elementEditStyle.top = py + 'px';
+					} else {
+						elementEditStyle.display = 'none';
+					}
+
+					if (Edit.editActive) {
+						buffer.add((tx << xyWidthBits) | ty | (Edit.mode ? xyValueAlive : xyValueDead));
+					}
 				}
+			} else if (!out) {
+				Edit.editActive = down;
 
-				Edit.editInterval = setInterval(() => {
+				if (down) {
+					if (!touch) {
+						buffer.add((tx << xyWidthBits) | ty | (Edit.mode ? xyValueAlive : xyValueDead));
+					}
+
+					clearInterval(Edit.editInterval);
+					Edit.editInterval = setInterval(() => {
+						if (buffer.size) {
+							CalcBusEngine.outputLife(Uint32Array.from(buffer));
+							buffer.clear();
+						}
+					}, 40);
+				} else {
+					clearInterval(Edit.editInterval);
 					if (buffer.size) {
 						CalcBusEngine.outputLife(Uint32Array.from(buffer));
 						buffer.clear();
 					}
-				}, 40);
-			} else {
-				clearInterval(Edit.editInterval);
-				if (buffer.size) {
-					CalcBusEngine.outputLife(Uint32Array.from(buffer));
-					buffer.clear();
+				}
+			}
+		} else if (touch) {
+			// Swipe for speedup or speeddown
+			const domRect: DOMRect = Edit.domRect;
+
+			let out: boolean = false,
+				px: number = position.x / devicePixelRatio,
+				py: number = position.y / devicePixelRatio;
+
+			if (px === 0 || py === 0 || px === domRect.width || py === domRect.height) {
+				out = true;
+			}
+
+			if (move) {
+				if (out) {
+					Edit.editActive = false;
+				} else if (Edit.editActive) {
+					Edit.swipeLength = px - Edit.swipePositionPrevious;
+					Edit.swipePositionPrevious = px;
+				}
+			} else if (!out) {
+				Edit.editActive = down;
+
+				if (down) {
+					Edit.swipeLength = 0;
+					Edit.swipePositionPrevious = px;
+
+					clearInterval(Edit.editInterval);
+					Edit.editInterval = setInterval(() => {
+						if (Math.abs(Edit.swipeLength) > Edit.swipeLengthAccepted) {
+							if (Edit.swipeLength > 0) {
+								Edit.elementControlsForward.click();
+							} else {
+								Edit.elementControlsBackward.click();
+							}
+
+							Edit.swipeLength = 0;
+							Edit.swipePositionPrevious = px;
+						}
+					}, 120);
+				} else {
+					clearInterval(Edit.editInterval);
+					if (Math.abs(Edit.swipeLength) > Edit.swipeLengthAccepted) {
+						if (Edit.swipeLength > 0) {
+							Edit.elementControlsForward.click();
+						} else {
+							Edit.elementControlsBackward.click();
+						}
+
+						Edit.swipeLength = 0;
+						Edit.swipePositionPrevious = px;
+					}
 				}
 			}
 		}

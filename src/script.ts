@@ -21,8 +21,6 @@ new EventSource('/esbuild').addEventListener('change', () => location.reload());
 class Life extends Edit {
 	private static elementAlive: HTMLElement;
 	private static elementControls: HTMLElement;
-	private static elementControlsBackward: HTMLElement;
-	private static elementControlsForward: HTMLElement;
 	private static elementControlsPause: HTMLElement;
 	private static elementControlsPlay: HTMLElement;
 	private static elementControlsReset: HTMLElement;
@@ -105,8 +103,8 @@ class Life extends Edit {
 		 * Controls
 		 */
 		Life.elementControls = <HTMLElement>document.getElementById('controls');
-		Life.elementControlsBackward = <HTMLElement>document.getElementById('backward');
-		Life.elementControlsBackward.onclick = () => {
+		Edit.elementControlsBackward = <HTMLElement>document.getElementById('backward');
+		Edit.elementControlsBackward.onclick = () => {
 			Edit.settingsCalc.iterationsPerSecond = Math.max(1, Math.round(Edit.settingsCalc.iterationsPerSecond / 2));
 
 			Life.elementSettingsValueIPS.value = String(Edit.settingsCalc.iterationsPerSecond);
@@ -123,8 +121,8 @@ class Life extends Edit {
 
 			CalcBusEngine.outputSettings(Edit.settingsCalc);
 		};
-		Life.elementControlsForward = <HTMLElement>document.getElementById('forward');
-		Life.elementControlsForward.onclick = () => {
+		Edit.elementControlsForward = <HTMLElement>document.getElementById('forward');
+		Edit.elementControlsForward.onclick = () => {
 			Edit.settingsCalc.iterationsPerSecond = Math.min(Edit.settingsCalcIPSMax, Edit.settingsCalc.iterationsPerSecond * 2);
 
 			Life.elementSettingsValueIPS.value = String(Edit.settingsCalc.iterationsPerSecond);
@@ -186,8 +184,8 @@ class Life extends Edit {
 			Life.elementAlive.innerText = '';
 			Life.elementDead.innerText = '';
 
-			Life.elementControlsBackward.style.display = 'block';
-			Life.elementControlsForward.style.display = 'block';
+			Edit.elementControlsBackward.style.display = 'block';
+			Edit.elementControlsForward.style.display = 'block';
 			Life.elementControlsPlay.style.display = 'block';
 			Life.elementControlsPause.style.display = 'none';
 
@@ -534,8 +532,8 @@ class Life extends Edit {
 				clearTimeout(Life.timeoutReset);
 				Edit.gameover = true;
 
-				Life.elementControlsBackward.style.display = 'none';
-				Life.elementControlsForward.style.display = 'none';
+				Edit.elementControlsBackward.style.display = 'none';
+				Edit.elementControlsForward.style.display = 'none';
 				Life.elementControlsPlay.style.display = 'none';
 				Life.elementControlsPause.style.display = 'none';
 
@@ -658,7 +656,7 @@ class Life extends Edit {
 		});
 		KeyboardEngine.register(KeyCommon.LEFT, (keyAction: KeyAction) => {
 			if (keyAction.down) {
-				Life.elementControlsBackward.click();
+				Edit.elementControlsBackward.click();
 			}
 		});
 		KeyboardEngine.register(KeyCommon.R, (keyAction: KeyAction) => {
@@ -668,7 +666,7 @@ class Life extends Edit {
 		});
 		KeyboardEngine.register(KeyCommon.RIGHT, (keyAction: KeyAction) => {
 			if (keyAction.down) {
-				Life.elementControlsForward.click();
+				Edit.elementControlsForward.click();
 			}
 		});
 		KeyboardEngine.register(KeyCommon.SPACE_BAR, (keyAction: KeyAction) => {
@@ -702,8 +700,8 @@ class Life extends Edit {
 			Life.elementWebGLNotSupported.style.display = 'flex';
 			Life.elementWebGLNotSupported.classList.add('show');
 
-			Life.elementControlsBackward.style.display = 'none';
-			Life.elementControlsForward.style.display = 'none';
+			Edit.elementControlsBackward.style.display = 'none';
+			Edit.elementControlsForward.style.display = 'none';
 			Life.elementControlsPlay.style.display = 'none';
 			Life.elementControlsPause.style.display = 'none';
 			Life.elementControlsReset.style.display = 'none';
