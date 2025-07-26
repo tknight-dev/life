@@ -1,6 +1,6 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
 import { CalcBusInputDataSettings, masks, xyWidthBits } from './workers/calc/calc.model';
-import { MouseAction, MouseEngine, MousePosition } from './engines/mouse.engine';
+import { MouseAction, MouseCmd, MouseEngine, MousePosition } from './engines/mouse.engine';
 import { TouchAction, TouchCmd, TouchEngine, TouchPosition } from './engines/touch.engine';
 import { ResizeEngine } from './engines/resize.engine';
 import { VideoBusEngine } from './workers/video/video.bus';
@@ -191,12 +191,20 @@ export class Edit {
 		});
 
 		MouseEngine.setCallback((action: MouseAction) => {
-			if (action.down === true) {
-				Edit.handler(true, false, action.position, false);
-			} else if (action.down === false) {
-				Edit.handler(false, false, action.position, false);
+			if (action.cmd === MouseCmd.WHEEL) {
+				if (action.down) {
+					Edit.elementControlsBackward.click();
+				} else {
+					Edit.elementControlsForward.click();
+				}
 			} else {
-				Edit.handler(false, true, action.position, false);
+				if (action.down === true) {
+					Edit.handler(true, false, action.position, false);
+				} else if (action.down === false) {
+					Edit.handler(false, false, action.position, false);
+				} else {
+					Edit.handler(false, true, action.position, false);
+				}
 			}
 		});
 		TouchEngine.setCallback((action: TouchAction) => {
