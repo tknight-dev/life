@@ -39,7 +39,6 @@ class Life extends Edit {
 	private static elementLogo: HTMLElement;
 	private static elementMenu: HTMLElement;
 	private static elementMenuContent: HTMLElement;
-	private static elementMenuInfo: HTMLElement;
 	private static elementMenuRules: HTMLElement;
 	private static elementMenuSettings: HTMLElement;
 	private static elementRules: HTMLElement;
@@ -362,10 +361,6 @@ class Life extends Edit {
 			Life.elementMenuContent.classList.toggle('open');
 		};
 		Life.elementMenuContent = <HTMLElement>document.getElementById('menu-content');
-		Life.elementMenuInfo = <HTMLElement>document.getElementById('info-click');
-		Life.elementMenuInfo.onclick = () => {
-			(<any>window).open('https://tknight.dev/#/creations', '_blank').focus();
-		};
 		Life.elementMenuRules = <HTMLElement>document.getElementById('info-rules');
 		Life.elementMenuRules.onclick = () => {
 			Life.elementSettingsCancel.click();
