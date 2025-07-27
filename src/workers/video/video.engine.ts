@@ -243,7 +243,6 @@ class VideoWorkerEngine {
 				pxWidth = VideoWorkerEngine.ctxWidth;
 				tableSizeX = VideoWorkerEngine.tableSizeX;
 
-				// pxCellSize = Math.max(1, Math.round(pxWidth / tableSizeX));
 				pxCellSize = Math.round((pxWidth / tableSizeX) * 1000) / 1000;
 				if (drawGrid && pxWidth / tableSizeX < 3) {
 					drawGrid = false;

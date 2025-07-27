@@ -42,7 +42,7 @@ export enum VideoBusInputDataSettingsFPS {
 
 export interface VideoBusInputPayload {
 	cmd: VideoBusInputCmd;
-	data: VideoBusInputDataInit | VideoBusInputDataResize | VideoBusInputDataSettings | Uint32Array | undefined;
+	data: boolean | VideoBusInputDataInit | VideoBusInputDataResize | VideoBusInputDataSettings | Uint32Array | undefined;
 }
 
 /*

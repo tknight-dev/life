@@ -27,8 +27,6 @@ export class MouseEngine {
 	private static callback: (action: MouseAction) => void;
 	private static feedFitted: HTMLElement;
 	private static suspend: boolean;
-	private static timeout: ReturnType<typeof setTimeout>;
-	private static timestamp: number = performance.now();
 
 	private static calc(event: MouseEvent): MousePosition {
 		let domRect: DOMRect = MouseEngine.feedFitted.getBoundingClientRect(),
@@ -74,27 +72,12 @@ export class MouseEngine {
 		});
 		((restrictTo || document) as HTMLElement).addEventListener('mousemove', (event: MouseEvent) => {
 			if (MouseEngine.callback) {
-				let timestamp = performance.now();
-
-				if (timestamp - MouseEngine.timestamp > 20) {
-					MouseEngine.callback({
-						cmd: MouseCmd.MOVE,
-						down: undefined,
-						elementId: (<HTMLElement>event.target).id,
-						position: MouseEngine.calc(event),
-					});
-					MouseEngine.timestamp = timestamp;
-				} else {
-					clearTimeout(MouseEngine.timeout);
-					MouseEngine.timeout = setTimeout(() => {
-						MouseEngine.callback({
-							cmd: MouseCmd.MOVE,
-							down: undefined,
-							elementId: (<HTMLElement>event.target).id,
-							position: MouseEngine.calc(event),
-						});
-					}, 40);
-				}
+				MouseEngine.callback({
+					cmd: MouseCmd.MOVE,
+					down: undefined,
+					elementId: (<HTMLElement>event.target).id,
+					position: MouseEngine.calc(event),
+				});
 			}
 		});
 		((restrictTo || document) as HTMLElement).addEventListener('mouseup', (event: MouseEvent) => {

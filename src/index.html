@@ -31,15 +31,17 @@
 			<div class="game" id="game">
 				<div class="wrapper">
 					<div class="alive" id="counts">
-						<div>
-							<span>Alive: </span><span id="alive"></span>
-						</div>
-						<div>
-							<span>Dead: </span><span id="dead"></span>
-						</div>
+						<table>
+							<tr>
+								<td class="name">Alive:</td><td class="count" id="alive"></td>
+							</tr>
+							<tr>
+								<td class="name">Dead:</td><td class="count" id="dead"></td>
+							</tr>
+						</table>
 					</div>
 					<div class="canvas">
-						<div class="aspect-ratio">
+						<div class="aspect-ratio" id="rotator">
 							<div class="aspect-ratio2">
 								<div class="data-container" id="data-container">
 									<canvas class="data" id="canvas"></canvas>
@@ -142,6 +144,10 @@
 										<tr>
 											<td><i>i/s</i></td>
 											<td><input autocomplete="off" id="settings-value-ips" max="1024" min="1" type="number" value="16" /></td>
+										</tr>
+										<tr>
+											<td>Orientation: Auto Rotate</td>
+											<td><input autocomplete="off" id="settings-value-orientation-auto-rotate" type="checkbox" checked /></td>
 										</tr>
 										<tr>
 											<td>Resolution</td>
