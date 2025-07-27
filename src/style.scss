@@ -620,9 +620,10 @@ $life-logo-width: 152px;
 					border-radius: 5px;
 					box-shadow: 2px 2px 2px 3px rgba(0, 0, 0, 0.25);
 					height: auto;
-					left: 0;
+					left: -2px; // Border offset
 					padding-bottom: 20px;
 					padding-top: $life-header-height + 10px;
+					right: -2px; // Border offset
 
 					.menu {
 						display: none;
@@ -660,8 +661,12 @@ $life-logo-width: 152px;
 
 			@media only screen and (max-width: 465px) {
 				&.open {
+					bottom: -4px; // border offset
 					border-bottom: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
-					border-top: 2px solid transparent;
+					border-top: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
+					box-shadow: 2px 2px 2px 0 rgba(0, 0, 0, 0.25);
+					height: $life-header-height;
+					top: -2px; // border offset
 				}
 			}
 		}

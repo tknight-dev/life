@@ -370,6 +370,8 @@ class Life extends Edit {
 		Life.elementMenuRules = <HTMLElement>document.getElementById('info-rules');
 		Life.elementMenuRules.onclick = () => {
 			Life.elementSettingsCancel.click();
+
+			Life.elementLogo.classList.remove('open');
 			Life.elementMenuContent.classList.remove('open');
 
 			Life.elementRules.style.display = 'block';
@@ -377,6 +379,8 @@ class Life extends Edit {
 		Life.elementMenuSettings = <HTMLElement>document.getElementById('info-settings');
 		Life.elementMenuSettings.onclick = () => {
 			Life.elementRulesClose.click();
+
+			Life.elementLogo.classList.remove('open');
 			Life.elementMenuContent.classList.remove('open');
 
 			Life.elementSettings.style.display = 'block';
@@ -384,6 +388,7 @@ class Life extends Edit {
 
 		document.addEventListener('click', (event: any) => {
 			if (event.target.id !== 'info-menu') {
+				Life.elementLogo.classList.remove('open');
 				Life.elementMenuContent.classList.remove('open');
 			}
 		});
