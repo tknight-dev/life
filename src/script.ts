@@ -67,6 +67,7 @@ class Life extends Edit {
 	private static elementWebGLNotSupported: HTMLElement;
 	private static timeoutControl: ReturnType<typeof setTimeout>;
 	private static timeoutFullscreen: ReturnType<typeof setTimeout>;
+	private static timeoutPlay: ReturnType<typeof setTimeout>;
 	private static timeoutReset: ReturnType<typeof setTimeout>;
 
 	private static initializeDOM(): void {
@@ -163,12 +164,13 @@ class Life extends Edit {
 			Life.elementEditNone.classList.add('active');
 			Life.elementEditRemove.classList.remove('active');
 
-			Life.elementHomeostatic.style.display = 'none';
+			Life.elementHomeostatic.classList.remove('show');
 			Life.elementStatsCPS.style.display = 'block';
 			Life.elementIPSRequested.innerText = Edit.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
 			Life.elementIPSRequested.classList.add('show');
 			Life.elementSpinout.classList.remove('show');
-			setTimeout(() => {
+			Life.timeoutPlay = setTimeout(() => {
+				Life.elementHomeostatic.style.display = 'none';
 				Life.elementIPSRequested.classList.remove('show');
 				Life.elementSpinout.style.display = 'none';
 			}, 1000);
@@ -559,14 +561,18 @@ class Life extends Edit {
 					Life.elementControlsPause.style.display = 'none';
 					Life.elementControlsPlay.style.display = 'block';
 				}
+				clearTimeout(Life.timeoutPlay);
 				clearTimeout(Life.timeoutReset);
 
-				setTimeout(() => {
+				if (Life.elementHomeostatic.style.display === 'none') {
 					Life.elementHomeostatic.style.display = 'block';
+
 					setTimeout(() => {
 						Life.elementHomeostatic.classList.add('show');
 					});
-				});
+				} else {
+					Life.elementHomeostatic.classList.add('show');
+				}
 			});
 			CalcBusEngine.setCallbackPS((data: CalcBusOutputDataPS) => {
 				Life.elementAlive.innerText = data.alive.toLocaleString('en-US');
