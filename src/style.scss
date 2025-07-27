@@ -144,7 +144,6 @@ $life-logo-width: 152px;
 						position: absolute;
 						right: 0;
 						top: 0;
-						transform-origin: 50% 50%;
 
 						.data {
 							position: relative;
@@ -170,6 +169,18 @@ $life-logo-width: 152px;
 								border: 1px solid red;
 								box-shadow: 0 0 2px 2px red;
 							}
+						}
+					}
+				}
+
+				&.rotate {
+					aspect-ratio: 9 / 16;
+
+					.aspect-ratio2 {
+						aspect-ratio: 9 / 16;
+
+						.data-container {
+							rotate: 90;
 						}
 					}
 				}
