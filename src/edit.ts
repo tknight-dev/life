@@ -103,6 +103,11 @@ export class Edit {
 			} else if (!out) {
 				Edit.editActive = down;
 
+				// Single touches can be registered a click by the browser
+				if (!touch || Edit.mobile) {
+					elementEditStyle.display = 'none';
+				}
+
 				if (down) {
 					if (!touch) {
 						buffer.add((tx << xyWidthBits) | ty | (Edit.mode ? xyValueAlive : xyValueDead));
@@ -211,13 +216,13 @@ export class Edit {
 				} else {
 					Edit.elementControlsForward.click();
 				}
+			} else if (action.cmd === MouseCmd.MOVE) {
+				Edit.handler(false, true, action.position, false);
 			} else {
 				if (action.down === true) {
 					Edit.handler(true, false, action.position, false);
 				} else if (action.down === false) {
 					Edit.handler(false, false, action.position, false);
-				} else {
-					Edit.handler(false, true, action.position, false);
 				}
 			}
 		});

@@ -1,4 +1,6 @@
 /**
+ * Known Qwerk: A single touch event can be interpreted as a click by the browser
+ *
  * @author tknight-dev
  */
 
