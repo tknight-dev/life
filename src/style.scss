@@ -569,6 +569,12 @@ $life-logo-width: 152px;
 		top: $life-header-height + 20px;
 	}
 
+	.game {
+		&.fullscreen {
+			border: none;
+		}
+	}
+
 	.header-menu {
 		height: $life-header-height;
 		top: 10px;

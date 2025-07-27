@@ -270,6 +270,7 @@ class Life extends Edit {
 				await FullscreenEngine.close();
 				Life.elementControls.classList.remove('fullscreen');
 				Life.elementCounts.classList.remove('fullscreen');
+				Life.elementGame.classList.remove('fullscreen');
 				Life.elementHomeostatic.classList.remove('fullscreen');
 				Life.elementStats.classList.remove('fullscreen');
 
@@ -286,6 +287,7 @@ class Life extends Edit {
 				Life.elementControls.classList.add('show');
 				Life.elementCounts.classList.add('fullscreen');
 				Life.elementCounts.classList.add('adjust');
+				Life.elementGame.classList.add('fullscreen');
 				Life.elementHomeostatic.classList.add('fullscreen');
 				Life.elementHomeostatic.classList.add('adjust');
 				Life.elementStats.classList.add('fullscreen');
@@ -639,6 +641,7 @@ class Life extends Edit {
 			if (!state) {
 				Life.elementControls.classList.remove('fullscreen');
 				Life.elementCounts.classList.remove('fullscreen');
+				Life.elementGame.classList.remove('fullscreen');
 				Life.elementHomeostatic.classList.remove('fullscreen');
 				Life.elementStats.classList.remove('fullscreen');
 
