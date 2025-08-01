@@ -40,6 +40,7 @@ export class Interaction {
 	protected static gameover: boolean;
 	protected static mode: boolean | null = null;
 	protected static mobile: boolean;
+	protected static moved: boolean;
 	protected static rotateAvailable: boolean;
 	protected static rotated: boolean;
 	protected static settingsCalc: CalcBusInputDataSettings;
@@ -216,11 +217,6 @@ export class Interaction {
 					Interaction.swipeLength = 0;
 					Interaction.swipePositionPrevious = px;
 
-					clearTimeout(Interaction.touchDownClickTimeout);
-					Interaction.touchDownClickTimeout = setTimeout(() => {
-						Interaction.elementCanvasInteractive.click();
-					}, Interaction.touchDoubleWindow + 100);
-
 					clearInterval(Interaction.editInterval);
 					Interaction.editInterval = setInterval(() => {
 						if (Math.abs(Interaction.swipeLength) > Interaction.swipeLengthAccepted) {
@@ -230,6 +226,7 @@ export class Interaction {
 								Interaction.elementControlsBackwardFunc();
 							}
 
+							Interaction.moved = true;
 							Interaction.swipeLength = 0;
 							Interaction.swipePositionPrevious = px;
 						}
@@ -257,9 +254,17 @@ export class Interaction {
 							Interaction.elementControlsBackwardFunc();
 						}
 
+						Interaction.moved = true;
 						Interaction.swipeLength = 0;
 						Interaction.swipePositionPrevious = px;
+					} else if (!Interaction.moved) {
+						clearTimeout(Interaction.touchDownClickTimeout);
+						Interaction.touchDownClickTimeout = setTimeout(() => {
+							Interaction.elementCanvasInteractive.click();
+						}, Interaction.touchDoubleWindow + 100);
 					}
+
+					Interaction.moved = false;
 				}
 			}
 		}
