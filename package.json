@@ -8,7 +8,7 @@
         "prod": "rimraf dist && node esbuild.mjs"
     },
     "type": "module",
-    "version": "1.5.1",
+    "version": "1.5.2",
     "dependencies": {
         "nosleep.js": "^0.12.0"
     },
