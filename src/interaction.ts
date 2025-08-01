@@ -69,9 +69,9 @@ export class Interaction {
 		MouseEngine.setCallback((action: MouseAction) => {
 			if (action.cmd === MouseCmd.WHEEL) {
 				if (action.down) {
-					Interaction.elementControlsBackward.click();
+					Interaction.elementControlsBackwardFunc();
 				} else {
-					Interaction.elementControlsForward.click();
+					Interaction.elementControlsForwardFunc();
 				}
 			} else if (action.cmd === MouseCmd.MOVE) {
 				Interaction.handler(false, true, action.position, false);
@@ -88,7 +88,6 @@ export class Interaction {
 				if (action.down === true) {
 					Interaction.handler(true, false, action.positions[0], true);
 				} else if (action.down === false) {
-					console.log('TOUCH UP');
 					Interaction.handler(false, false, action.positions[0], true);
 				}
 			} else if (action.cmd === TouchCmd.CLICK_MOVE) {
