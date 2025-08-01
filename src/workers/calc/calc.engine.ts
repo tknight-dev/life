@@ -518,7 +518,6 @@ class CalcWorkerEngine {
 									},
 								]);
 								calcCount = 0;
-								calcCountTotal = 0;
 								return;
 							}
 						}

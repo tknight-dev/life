@@ -541,8 +541,8 @@ class Life extends Interaction {
 		 * Calc
 		 */
 		Interaction.settingsCalc = {
-			cpuSpinOutProtection: true,
-			homeostaticPause: false,
+			cpuSpinOutProtection: true, // def true
+			homeostaticPause: false, // def false
 			fps: Interaction.settingsVideo.fps,
 			iterationsPerSecond: 16, // def: 16
 			tableSizeX: Interaction.settingsVideo.tableSizeX,
