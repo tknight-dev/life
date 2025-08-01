@@ -35,6 +35,7 @@ export class Interaction {
 	protected static elementControlsReset: HTMLElement;
 	protected static elementControlsResetFunc: () => void;
 	protected static elementEdit: HTMLElement;
+	protected static elementSpinner: HTMLElement;
 	protected static elementRotator: HTMLElement;
 	protected static gameover: boolean;
 	protected static mode: boolean | null = null;
@@ -47,6 +48,7 @@ export class Interaction {
 	protected static settingsSeedRandom: boolean;
 	protected static settingsStatsShowAliveDead: boolean;
 	protected static settingsVideo: VideoBusInputDataSettings;
+	protected static spinnerTimeout: ReturnType<typeof setTimeout>;
 	protected static swipeLength: number;
 	protected static swipeLengthAccepted: number = 9;
 	protected static swipePositionPrevious: number;
@@ -54,6 +56,59 @@ export class Interaction {
 	protected static readonly touchDoubleWindow: number = 300;
 	protected static touchUpTimestamp: number = 0;
 	protected static touchDownClickTimeout: ReturnType<typeof setTimeout>;
+
+	protected static initializeInteraction(): void {
+		// Config
+		Interaction.elementEdit = <HTMLElement>document.getElementById('edit');
+		Interaction.mobile = Interaction.isMobileOrTablet();
+
+		// Engines
+		OrientationEngine.setCallback((orientation: Orientation) => {
+			Interaction.rotator(orientation);
+		});
+		MouseEngine.setCallback((action: MouseAction) => {
+			if (action.cmd === MouseCmd.WHEEL) {
+				if (action.down) {
+					Interaction.elementControlsBackward.click();
+				} else {
+					Interaction.elementControlsForward.click();
+				}
+			} else if (action.cmd === MouseCmd.MOVE) {
+				Interaction.handler(false, true, action.position, false);
+			} else {
+				if (action.down === true) {
+					Interaction.handler(true, false, action.position, false);
+				} else if (action.down === false) {
+					Interaction.handler(false, false, action.position, false);
+				}
+			}
+		});
+		TouchEngine.setCallback((action: TouchAction) => {
+			if (action.cmd === TouchCmd.CLICK) {
+				if (action.down === true) {
+					Interaction.handler(true, false, action.positions[0], true);
+				} else if (action.down === false) {
+					console.log('TOUCH UP');
+					Interaction.handler(false, false, action.positions[0], true);
+				}
+			} else if (action.cmd === TouchCmd.CLICK_MOVE) {
+				Interaction.handler(false, true, action.positions[0], true);
+			}
+		});
+		ResizeEngine.initialize();
+		ResizeEngine.setCallback(() => {
+			Interaction.rotator();
+			setTimeout(() => {
+				Interaction.pxSizeCalc();
+			}, 100);
+		});
+
+		// Done
+		Interaction.rotator(OrientationEngine.getOrientation());
+		setTimeout(() => {
+			Interaction.pxSizeCalc();
+		}, 100);
+	}
 
 	private static handler(down: boolean, move: boolean, position: MousePosition | TouchPosition, touch: boolean): void {
 		// Standard edit interaction
@@ -227,59 +282,6 @@ export class Interaction {
 		Interaction.pxCellSize = pxCellSize;
 	}
 
-	protected static initializeEdit(): void {
-		// Config
-		Interaction.elementEdit = <HTMLElement>document.getElementById('edit');
-		Interaction.mobile = Interaction.isMobileOrTablet();
-
-		// Engines
-		OrientationEngine.setCallback((orientation: Orientation) => {
-			Interaction.rotator(orientation);
-		});
-		MouseEngine.setCallback((action: MouseAction) => {
-			if (action.cmd === MouseCmd.WHEEL) {
-				if (action.down) {
-					Interaction.elementControlsBackward.click();
-				} else {
-					Interaction.elementControlsForward.click();
-				}
-			} else if (action.cmd === MouseCmd.MOVE) {
-				Interaction.handler(false, true, action.position, false);
-			} else {
-				if (action.down === true) {
-					Interaction.handler(true, false, action.position, false);
-				} else if (action.down === false) {
-					Interaction.handler(false, false, action.position, false);
-				}
-			}
-		});
-		TouchEngine.setCallback((action: TouchAction) => {
-			if (action.cmd === TouchCmd.CLICK) {
-				if (action.down === true) {
-					Interaction.handler(true, false, action.positions[0], true);
-				} else if (action.down === false) {
-					console.log('TOUCH UP');
-					Interaction.handler(false, false, action.positions[0], true);
-				}
-			} else if (action.cmd === TouchCmd.CLICK_MOVE) {
-				Interaction.handler(false, true, action.positions[0], true);
-			}
-		});
-		ResizeEngine.initialize();
-		ResizeEngine.setCallback(() => {
-			Interaction.rotator();
-			setTimeout(() => {
-				Interaction.pxSizeCalc();
-			}, 100);
-		});
-
-		// Done
-		Interaction.rotator(OrientationEngine.getOrientation());
-		setTimeout(() => {
-			Interaction.pxSizeCalc();
-		}, 100);
-	}
-
 	protected static rotator(orientation?: Orientation): void {
 		if (Interaction.rotateAvailable) {
 			let rotate: boolean = Interaction.elementCanvasInteractive.clientWidth < Interaction.elementCanvasInteractive.clientHeight;
@@ -300,6 +302,33 @@ export class Interaction {
 		}
 
 		VideoBusEngine.resized();
+	}
+
+	protected static spinner(enable: boolean) {
+		if (enable) {
+			clearTimeout(Interaction.spinnerTimeout);
+
+			Interaction.spinnerTimeout = setTimeout(() => {
+				if (Interaction.elementSpinner.style.display !== 'flex') {
+					Interaction.elementSpinner.classList.remove('show');
+					Interaction.elementSpinner.style.display = 'flex';
+
+					setTimeout(() => {
+						Interaction.elementSpinner.classList.add('show');
+					}, 10);
+				} else {
+					Interaction.elementSpinner.classList.add('show');
+				}
+			}, 100);
+		} else {
+			clearTimeout(Interaction.spinnerTimeout);
+
+			Interaction.elementSpinner.classList.remove('show');
+
+			Interaction.spinnerTimeout = setTimeout(() => {
+				Interaction.elementSpinner.style.display = 'none';
+			}, 1000);
+		}
 	}
 
 	// http://detectmobilebrowsers.com/

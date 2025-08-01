@@ -52,6 +52,7 @@ export interface VideoBusInputPayload {
 export enum VideoBusOutputCmd {
 	FPS,
 	INIT_COMPLETE,
+	RESET_COMPLETE,
 }
 
 export interface VideoBusOutputPayload {

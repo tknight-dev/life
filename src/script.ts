@@ -91,6 +91,7 @@ class Life extends Interaction {
 		Life.elementIPSRequested = <HTMLElement>document.getElementById('ips-requested');
 		Life.elementLogo = <HTMLElement>document.getElementById('logo');
 		Interaction.elementRotator = <HTMLElement>document.getElementById('rotator');
+		Interaction.elementSpinner = <HTMLElement>document.getElementById('spinner');
 		Life.elementSpinout = <HTMLElement>document.getElementById('spinout');
 		Life.elementStats = <HTMLElement>document.getElementById('stats');
 		Life.elementStatsC = <HTMLElement>document.getElementById('c');
@@ -189,6 +190,8 @@ class Life extends Interaction {
 
 		Interaction.elementControlsReset = <HTMLElement>document.getElementById('reset');
 		Interaction.elementControlsResetFunc = () => {
+			Interaction.spinner(true);
+
 			const data: Uint32Array[] = Life.initializeLife();
 			VideoBusEngine.outputReset(data[0]);
 			CalcBusEngine.outputReset(data[1]);
@@ -576,7 +579,7 @@ class Life extends Interaction {
 				Life.elementGameOver.style.display = 'flex';
 				setTimeout(() => {
 					Life.elementGameOver.classList.add('show');
-				});
+				}, 10);
 			});
 			CalcBusEngine.setCallbackHomeostatic(() => {
 				if (Interaction.settingsCalc.homeostaticPause) {
@@ -591,7 +594,7 @@ class Life extends Interaction {
 
 					setTimeout(() => {
 						Life.elementHomeostatic.classList.add('show');
-					});
+					}, 10);
 				} else {
 					Life.elementHomeostatic.classList.add('show');
 				}
@@ -620,7 +623,7 @@ class Life extends Interaction {
 				Life.elementSpinout.style.display = 'flex';
 				setTimeout(() => {
 					Life.elementSpinout.classList.add('show');
-				});
+				}, 10);
 			});
 			CalcBusEngine.initialize(data[0], Interaction.settingsCalc, () => {
 				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
@@ -643,6 +646,9 @@ class Life extends Interaction {
 					} else {
 						Life.elementFPS.innerText = '';
 					}
+				});
+				VideoBusEngine.setCallbackResetComplete(() => {
+					Interaction.spinner(false);
 				});
 				VideoBusEngine.initialize(
 					Interaction.elementCanvas,
@@ -733,7 +739,7 @@ class Life extends Interaction {
 			console.log('System Loaded in', performance.now() - then, 'ms');
 
 			// Last
-			Life.initializeEdit();
+			Life.initializeInteraction();
 		} else {
 			CalcBusEngine.outputPause();
 

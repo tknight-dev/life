@@ -367,7 +367,17 @@ class VideoWorkerEngine {
 					}
 
 					cache = true;
-					VideoWorkerEngine.reset = false;
+
+					if (VideoWorkerEngine.reset) {
+						VideoWorkerEngine.reset = false;
+
+						VideoWorkerEngine.post([
+							{
+								cmd: VideoBusOutputCmd.RESET_COMPLETE,
+								data: undefined,
+							},
+						]);
+					}
 				}
 			}
 
