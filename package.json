@@ -9,7 +9,9 @@
     },
     "type": "module",
     "version": "1.5.1",
-    "dependencies": {},
+    "dependencies": {
+        "nosleep.js": "^0.12.0"
+    },
     "devDependencies": {
         "@jgoz/esbuild-plugin-typecheck": "^4.0.0",
         "esbuild": "^0.25.5",

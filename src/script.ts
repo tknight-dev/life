@@ -4,6 +4,7 @@ import { Edit } from './edit';
 import { FullscreenEngine } from './engines/fullscreen.engine';
 import { KeyboardEngine, KeyAction, KeyCommon } from './engines/keyboard.engine';
 import { MouseEngine } from './engines/mouse.engine';
+import NoSleep from 'nosleep.js';
 import { Orientation, OrientationEngine } from './engines/orientation.engine';
 import { TouchEngine } from './engines/touch.engine';
 import { VideoBusEngine } from './workers/video/video.bus';
@@ -65,6 +66,7 @@ class Life extends Edit {
 	private static elementStatsCPSAll: HTMLElement;
 	private static elementVersion: HTMLElement;
 	private static elementWebGLNotSupported: HTMLElement;
+	private static noSleep: NoSleep = new NoSleep();
 	private static timeoutControl: ReturnType<typeof setTimeout>;
 	private static timeoutFullscreen: ReturnType<typeof setTimeout>;
 	private static timeoutPlay: ReturnType<typeof setTimeout>;
@@ -270,6 +272,7 @@ class Life extends Edit {
 
 			if (FullscreenEngine.isOpen()) {
 				await FullscreenEngine.close();
+
 				Life.elementControls.classList.remove('fullscreen');
 				Life.elementCounts.classList.remove('fullscreen');
 				Life.elementGame.classList.remove('fullscreen');
@@ -280,11 +283,13 @@ class Life extends Edit {
 				Life.elementFullscreen.classList.add('fullscreen');
 
 				OrientationEngine.unlock();
+				Life.noSleep.disable();
 				setTimeout(() => {
 					Edit.pxSizeCalc();
 				}, 100);
 			} else {
 				await FullscreenEngine.open(Life.elementGame);
+
 				Life.elementControls.classList.add('fullscreen');
 				Life.elementControls.classList.add('show');
 				Life.elementCounts.classList.add('fullscreen');
@@ -302,6 +307,7 @@ class Life extends Edit {
 				setTimeout(() => {
 					Edit.pxSizeCalc();
 					OrientationEngine.lock(Orientation.LANDSCAPE);
+					Life.noSleep.enable();
 				}, 100);
 			}
 		};
@@ -660,6 +666,7 @@ class Life extends Edit {
 				Life.elementFullscreen.classList.add('fullscreen');
 
 				OrientationEngine.unlock();
+				Life.noSleep.disable();
 				setTimeout(() => {
 					Edit.pxSizeCalc();
 				}, 100);
