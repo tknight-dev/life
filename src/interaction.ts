@@ -51,7 +51,7 @@ export class Interaction {
 	protected static swipeLengthAccepted: number = 9;
 	protected static swipePositionPrevious: number;
 	protected static pxCellSize: number;
-	protected static readonly touchDoubleWindow: number = 500;
+	protected static readonly touchDoubleWindow: number = 300;
 	protected static touchUpTimestamp: number = 0;
 	protected static touchDownClickTimeout: ReturnType<typeof setTimeout>;
 
