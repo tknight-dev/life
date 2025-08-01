@@ -108,7 +108,7 @@ class Life extends Edit {
 		 */
 		Life.elementControls = <HTMLElement>document.getElementById('controls');
 		Edit.elementControlsBackward = <HTMLElement>document.getElementById('backward');
-		Edit.elementControlsBackward.onclick = () => {
+		Edit.elementControlsBackwardFunc = () => {
 			Edit.settingsCalc.iterationsPerSecond = Math.max(1, Math.round(Edit.settingsCalc.iterationsPerSecond / 2));
 
 			Life.elementSettingsValueIPS.value = String(Edit.settingsCalc.iterationsPerSecond);
@@ -125,8 +125,10 @@ class Life extends Edit {
 
 			CalcBusEngine.outputSettings(Edit.settingsCalc);
 		};
+		Edit.elementControlsBackward.onclick = Edit.elementControlsBackwardFunc;
+
 		Edit.elementControlsForward = <HTMLElement>document.getElementById('forward');
-		Edit.elementControlsForward.onclick = () => {
+		Edit.elementControlsForwardFunc = () => {
 			Edit.settingsCalc.iterationsPerSecond = Math.min(Edit.settingsCalcIPSMax, Edit.settingsCalc.iterationsPerSecond * 2);
 
 			Life.elementSettingsValueIPS.value = String(Edit.settingsCalc.iterationsPerSecond);
@@ -143,6 +145,8 @@ class Life extends Edit {
 
 			CalcBusEngine.outputSettings(Edit.settingsCalc);
 		};
+		Edit.elementControlsForward.onclick = Edit.elementControlsForwardFunc;
+
 		Life.elementControlsPause = <HTMLElement>document.getElementById('pause');
 		Life.elementControlsPause.onclick = () => {
 			Life.elementControlsPause.style.display = 'none';

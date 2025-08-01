@@ -25,7 +25,9 @@ export class Edit {
 	protected static elementCanvas: HTMLCanvasElement;
 	protected static elementCanvasInteractive: HTMLElement;
 	protected static elementControlsBackward: HTMLElement;
+	protected static elementControlsBackwardFunc: () => void;
 	protected static elementControlsForward: HTMLElement;
+	protected static elementControlsForwardFunc: () => void;
 	protected static elementEdit: HTMLElement;
 	protected static elementRotator: HTMLElement;
 	protected static gameover: boolean;
@@ -158,9 +160,9 @@ export class Edit {
 					Edit.editInterval = setInterval(() => {
 						if (Math.abs(Edit.swipeLength) > Edit.swipeLengthAccepted) {
 							if (Edit.swipeLength > 0) {
-								Edit.elementControlsForward.click();
+								Edit.elementControlsForwardFunc();
 							} else {
-								Edit.elementControlsBackward.click();
+								Edit.elementControlsBackwardFunc();
 							}
 
 							Edit.swipeLength = 0;
@@ -171,9 +173,9 @@ export class Edit {
 					clearInterval(Edit.editInterval);
 					if (Math.abs(Edit.swipeLength) > Edit.swipeLengthAccepted) {
 						if (Edit.swipeLength > 0) {
-							Edit.elementControlsForward.click();
+							Edit.elementControlsForwardFunc();
 						} else {
-							Edit.elementControlsBackward.click();
+							Edit.elementControlsBackwardFunc();
 						}
 
 						Edit.swipeLength = 0;
