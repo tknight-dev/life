@@ -30,6 +30,7 @@ export class TouchEngine {
 	private static cmdActiveStatus: boolean;
 	private static callback: (action: TouchAction) => void;
 	private static feedFitted: HTMLElement;
+	private static positionsLast: TouchPosition[];
 	private static suspend: boolean;
 	private static timeout: ReturnType<typeof setTimeout>;
 	private static timestamp: number = performance.now();
@@ -76,69 +77,81 @@ export class TouchEngine {
 		TouchEngine.feedFitted = feedFitted;
 
 		((restrictTo || document) as HTMLElement).addEventListener('touchcancel', (event: TouchEvent) => {
+			event.preventDefault();
+
 			if (!TouchEngine.suspend && TouchEngine.callback && TouchEngine.cmdActiveStatus) {
 				TouchEngine.cmdActiveStatus = false;
+				TouchEngine.positionsLast = TouchEngine.calc(event);
 				TouchEngine.callback({
 					cmd: TouchEngine.cmdActive,
 					down: false,
 					elementId: (<HTMLElement>event.target).id,
-					positions: TouchEngine.calc(event),
+					positions: TouchEngine.positionsLast,
 				});
 			}
 		});
 
 		((restrictTo || document) as HTMLElement).addEventListener('touchend', (event: TouchEvent) => {
+			event.preventDefault();
+
 			if (!TouchEngine.suspend && TouchEngine.callback && TouchEngine.cmdActiveStatus) {
 				TouchEngine.cmdActiveStatus = false;
 				TouchEngine.callback({
 					cmd: TouchEngine.cmdActive,
 					down: false,
 					elementId: (<HTMLElement>event.target).id,
-					positions: TouchEngine.calc(event),
+					positions: TouchEngine.positionsLast,
 				});
 			}
 		});
 
 		((restrictTo || document) as HTMLElement).addEventListener('touchmove', (event: TouchEvent) => {
+			event.preventDefault();
+
 			if (!TouchEngine.suspend && TouchEngine.callback && TouchEngine.cmdActiveStatus) {
 				let timestamp = performance.now();
 
 				if (timestamp - TouchEngine.timestamp > 20) {
+					TouchEngine.positionsLast = TouchEngine.calc(event);
 					TouchEngine.callback({
 						cmd: TouchEngine.cmdActive === TouchCmd.CLICK ? TouchCmd.CLICK_MOVE : TouchCmd.ZOOM_MOVE,
 						down: true,
 						elementId: (<HTMLElement>event.target).id,
-						positions: TouchEngine.calc(event),
+						positions: TouchEngine.positionsLast,
 					});
 					TouchEngine.timestamp = timestamp;
 				} else {
 					clearTimeout(TouchEngine.timeout);
+					TouchEngine.positionsLast = TouchEngine.calc(event);
 					TouchEngine.timeout = setTimeout(() => {
 						TouchEngine.callback({
 							cmd: TouchEngine.cmdActive,
 							down: true,
 							elementId: (<HTMLElement>event.target).id,
-							positions: TouchEngine.calc(event),
+							positions: TouchEngine.positionsLast,
 						});
-					}, 40);
+					}, 20);
 				}
 			}
 		});
 
 		((restrictTo || document) as HTMLElement).addEventListener('touchstart', (event: TouchEvent) => {
+			event.preventDefault();
+
 			if (!TouchEngine.suspend && TouchEngine.callback && !TouchEngine.cmdActiveStatus) {
 				clearTimeout(TouchEngine.timeout);
 				TouchEngine.timeout = setTimeout(() => {
 					TouchEngine.cmdActive = event.touches.length === 1 ? TouchCmd.CLICK : TouchCmd.ZOOM;
 					TouchEngine.cmdActiveStatus = true;
 
+					TouchEngine.positionsLast = TouchEngine.calc(event);
 					TouchEngine.callback({
 						cmd: TouchEngine.cmdActive,
 						down: true,
 						elementId: (<HTMLElement>event.target).id,
-						positions: TouchEngine.calc(event),
+						positions: TouchEngine.positionsLast,
 					});
-				}, 40);
+				}, 20);
 			}
 		});
 	}

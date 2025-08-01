@@ -1,7 +1,7 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
 import { CalcBusOutputDataPS, masks, xyWidthBits } from './workers/calc/calc.model';
-import { Edit } from './edit';
 import { FullscreenEngine } from './engines/fullscreen.engine';
+import { Interaction } from './interaction';
 import { KeyboardEngine, KeyAction, KeyCommon } from './engines/keyboard.engine';
 import { MouseEngine } from './engines/mouse.engine';
 import NoSleep from 'nosleep.js';
@@ -19,12 +19,9 @@ import packageJSON from '../package.json';
 // ESBuild live reloader
 new EventSource('/esbuild').addEventListener('change', () => location.reload());
 
-class Life extends Edit {
+class Life extends Interaction {
 	private static elementAlive: HTMLElement;
 	private static elementControls: HTMLElement;
-	private static elementControlsPause: HTMLElement;
-	private static elementControlsPlay: HTMLElement;
-	private static elementControlsReset: HTMLElement;
 	private static elementCounts: HTMLElement;
 	private static elementDead: HTMLElement;
 	private static elementDataContainer: HTMLElement;
@@ -74,8 +71,8 @@ class Life extends Edit {
 
 	private static initializeDOM(): void {
 		Life.elementAlive = <HTMLElement>document.getElementById('alive');
-		Edit.elementCanvas = <HTMLCanvasElement>document.getElementById('canvas');
-		Edit.elementCanvasInteractive = <HTMLElement>document.getElementById('canvas-interactive');
+		Interaction.elementCanvas = <HTMLCanvasElement>document.getElementById('canvas');
+		Interaction.elementCanvasInteractive = <HTMLElement>document.getElementById('canvas-interactive');
 
 		Life.elementRules = <HTMLButtonElement>document.getElementById('rules');
 		Life.elementRulesClose = <HTMLButtonElement>document.getElementById('rules-close');
@@ -93,7 +90,7 @@ class Life extends Edit {
 		Life.elementHomeostatic = <HTMLElement>document.getElementById('homeostatic');
 		Life.elementIPSRequested = <HTMLElement>document.getElementById('ips-requested');
 		Life.elementLogo = <HTMLElement>document.getElementById('logo');
-		Edit.elementRotator = <HTMLElement>document.getElementById('rotator');
+		Interaction.elementRotator = <HTMLElement>document.getElementById('rotator');
 		Life.elementSpinout = <HTMLElement>document.getElementById('spinout');
 		Life.elementStats = <HTMLElement>document.getElementById('stats');
 		Life.elementStatsC = <HTMLElement>document.getElementById('c');
@@ -107,12 +104,12 @@ class Life extends Edit {
 		 * Controls
 		 */
 		Life.elementControls = <HTMLElement>document.getElementById('controls');
-		Edit.elementControlsBackward = <HTMLElement>document.getElementById('backward');
-		Edit.elementControlsBackwardFunc = () => {
-			Edit.settingsCalc.iterationsPerSecond = Math.max(1, Math.round(Edit.settingsCalc.iterationsPerSecond / 2));
+		Interaction.elementControlsBackward = <HTMLElement>document.getElementById('backward');
+		Interaction.elementControlsBackwardFunc = () => {
+			Interaction.settingsCalc.iterationsPerSecond = Math.max(1, Math.round(Interaction.settingsCalc.iterationsPerSecond / 2));
 
-			Life.elementSettingsValueIPS.value = String(Edit.settingsCalc.iterationsPerSecond);
-			Life.elementIPSRequested.innerText = Edit.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
+			Life.elementSettingsValueIPS.value = String(Interaction.settingsCalc.iterationsPerSecond);
+			Life.elementIPSRequested.innerText = Interaction.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
 			Life.elementIPSRequested.style.display = 'flex';
 			Life.elementIPSRequested.classList.add('show');
 			Life.elementSpinout.classList.remove('show');
@@ -123,16 +120,19 @@ class Life extends Edit {
 				Life.elementSpinout.classList.add('show');
 			}, 1000);
 
-			CalcBusEngine.outputSettings(Edit.settingsCalc);
+			CalcBusEngine.outputSettings(Interaction.settingsCalc);
 		};
-		Edit.elementControlsBackward.onclick = Edit.elementControlsBackwardFunc;
+		Interaction.elementControlsBackward.onclick = Interaction.elementControlsBackwardFunc;
 
-		Edit.elementControlsForward = <HTMLElement>document.getElementById('forward');
-		Edit.elementControlsForwardFunc = () => {
-			Edit.settingsCalc.iterationsPerSecond = Math.min(Edit.settingsCalcIPSMax, Edit.settingsCalc.iterationsPerSecond * 2);
+		Interaction.elementControlsForward = <HTMLElement>document.getElementById('forward');
+		Interaction.elementControlsForwardFunc = () => {
+			Interaction.settingsCalc.iterationsPerSecond = Math.min(
+				Interaction.settingsCalcIPSMax,
+				Interaction.settingsCalc.iterationsPerSecond * 2,
+			);
 
-			Life.elementSettingsValueIPS.value = String(Edit.settingsCalc.iterationsPerSecond);
-			Life.elementIPSRequested.innerText = Edit.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
+			Life.elementSettingsValueIPS.value = String(Interaction.settingsCalc.iterationsPerSecond);
+			Life.elementIPSRequested.innerText = Interaction.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
 			Life.elementIPSRequested.style.display = 'flex';
 			Life.elementIPSRequested.classList.add('show');
 			Life.elementSpinout.classList.remove('show');
@@ -143,36 +143,38 @@ class Life extends Edit {
 				Life.elementSpinout.classList.add('show');
 			}, 1000);
 
-			CalcBusEngine.outputSettings(Edit.settingsCalc);
+			CalcBusEngine.outputSettings(Interaction.settingsCalc);
 		};
-		Edit.elementControlsForward.onclick = Edit.elementControlsForwardFunc;
+		Interaction.elementControlsForward.onclick = Interaction.elementControlsForwardFunc;
 
-		Life.elementControlsPause = <HTMLElement>document.getElementById('pause');
-		Life.elementControlsPause.onclick = () => {
-			Life.elementControlsPause.style.display = 'none';
-			if (!Edit.gameover) {
-				Life.elementControlsPlay.style.display = 'block';
+		Interaction.elementControlsPause = <HTMLElement>document.getElementById('pause');
+		Interaction.elementControlsPauseFunc = () => {
+			Interaction.elementControlsPause.style.display = 'none';
+			if (!Interaction.gameover) {
+				Interaction.elementControlsPlay.style.display = 'block';
 			}
 
 			Life.elementStatsCPS.style.display = 'none';
 
 			CalcBusEngine.outputPause();
 		};
-		Life.elementControlsPause.style.display = 'none';
-		Life.elementControlsPlay = <HTMLElement>document.getElementById('play');
-		Life.elementControlsPlay.onclick = (event) => {
-			Life.elementControlsPlay.style.display = 'none';
-			Life.elementControlsPause.style.display = 'block';
+		Interaction.elementControlsPause.onclick = Interaction.elementControlsPauseFunc;
+		Interaction.elementControlsPause.style.display = 'none';
 
-			Edit.mode = null;
-			Edit.elementEdit.style.display = 'none';
+		Interaction.elementControlsPlay = <HTMLElement>document.getElementById('play');
+		Interaction.elementControlsPlayFunc = () => {
+			Interaction.elementControlsPlay.style.display = 'none';
+			Interaction.elementControlsPause.style.display = 'block';
+
+			Interaction.mode = null;
+			Interaction.elementEdit.style.display = 'none';
 			Life.elementEditAdd.classList.remove('active');
 			Life.elementEditNone.classList.add('active');
 			Life.elementEditRemove.classList.remove('active');
 
 			Life.elementHomeostatic.classList.remove('show');
 			Life.elementStatsCPS.style.display = 'block';
-			Life.elementIPSRequested.innerText = Edit.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
+			Life.elementIPSRequested.innerText = Interaction.settingsCalc.iterationsPerSecond.toLocaleString('en-US') + ' i/s';
 			Life.elementIPSRequested.classList.add('show');
 			Life.elementSpinout.classList.remove('show');
 			Life.timeoutPlay = setTimeout(() => {
@@ -183,26 +185,28 @@ class Life extends Edit {
 
 			CalcBusEngine.outputPlay();
 		};
-		Life.elementControlsReset = <HTMLElement>document.getElementById('reset');
-		Life.elementControlsReset.onclick = () => {
+		Interaction.elementControlsPlay.onclick = Interaction.elementControlsPlayFunc;
+
+		Interaction.elementControlsReset = <HTMLElement>document.getElementById('reset');
+		Interaction.elementControlsResetFunc = () => {
 			const data: Uint32Array[] = Life.initializeLife();
 			VideoBusEngine.outputReset(data[0]);
 			CalcBusEngine.outputReset(data[1]);
-			Edit.gameover = false;
+			Interaction.gameover = false;
 
 			Life.elementAlive.innerText = '';
 			Life.elementDead.innerText = '';
 
-			Edit.elementControlsBackward.style.display = 'block';
-			Edit.elementControlsForward.style.display = 'block';
-			Life.elementControlsPlay.style.display = 'block';
-			Life.elementControlsPause.style.display = 'none';
+			Interaction.elementControlsBackward.style.display = 'block';
+			Interaction.elementControlsForward.style.display = 'block';
+			Interaction.elementControlsPlay.style.display = 'block';
+			Interaction.elementControlsPause.style.display = 'none';
 
 			Life.elementEditAdd.style.display = 'flex';
 			Life.elementEditNone.style.display = 'flex';
 			Life.elementEditRemove.style.display = 'flex';
 
-			if (!Edit.settingsSeedRandom) {
+			if (!Interaction.settingsSeedRandom) {
 				Life.elementEditAdd.click();
 			}
 
@@ -217,14 +221,15 @@ class Life extends Edit {
 			}, 1000);
 			Life.elementStatsC.innerText = '0';
 		};
+		Interaction.elementControlsReset.onclick = Interaction.elementControlsResetFunc;
 
 		/**
 		 * Edit
 		 */
 		Life.elementEditAdd = <HTMLElement>document.getElementById('edit-add');
 		Life.elementEditAdd.onclick = () => {
-			if (Edit.mode !== true) {
-				Edit.mode = true;
+			if (Interaction.mode !== true) {
+				Interaction.mode = true;
 
 				Life.elementEditAdd.classList.add('active');
 				Life.elementEditNone.classList.remove('active');
@@ -233,27 +238,27 @@ class Life extends Edit {
 				Life.elementEdit.classList.add('add');
 				Life.elementEdit.classList.remove('remove');
 
-				if (Life.elementControlsPause.style.display === 'block') {
-					Life.elementControlsPause.click();
+				if (Interaction.elementControlsPause.style.display === 'block') {
+					Interaction.elementControlsPause.click();
 				}
 			}
 		};
 		Life.elementEditNone = <HTMLElement>document.getElementById('edit-none');
 		Life.elementEditNone.onclick = () => {
-			if (Edit.mode !== null) {
-				Edit.mode = null;
+			if (Interaction.mode !== null) {
+				Interaction.mode = null;
 
 				Life.elementEditAdd.classList.remove('active');
 				Life.elementEditNone.classList.add('active');
 				Life.elementEditRemove.classList.remove('active');
 
-				Edit.elementEdit.style.display = 'none';
+				Interaction.elementEdit.style.display = 'none';
 			}
 		};
 		Life.elementEditRemove = <HTMLElement>document.getElementById('edit-remove');
 		Life.elementEditRemove.onclick = () => {
-			if (Edit.mode !== false) {
-				Edit.mode = false;
+			if (Interaction.mode !== false) {
+				Interaction.mode = false;
 
 				Life.elementEditAdd.classList.remove('active');
 				Life.elementEditNone.classList.remove('active');
@@ -262,8 +267,8 @@ class Life extends Edit {
 				Life.elementEdit.classList.remove('add');
 				Life.elementEdit.classList.add('remove');
 
-				if (Life.elementControlsPause.style.display === 'block') {
-					Life.elementControlsPause.click();
+				if (Interaction.elementControlsPause.style.display === 'block') {
+					Interaction.elementControlsPause.click();
 				}
 			}
 		};
@@ -272,7 +277,7 @@ class Life extends Edit {
 		 * Fullscreen
 		 */
 		Life.elementFullscreen.onclick = async () => {
-			Life.elementControlsPause.click();
+			Interaction.elementControlsPause.click();
 
 			if (FullscreenEngine.isOpen()) {
 				await FullscreenEngine.close();
@@ -289,7 +294,7 @@ class Life extends Edit {
 				OrientationEngine.unlock();
 				Life.noSleep.disable();
 				setTimeout(() => {
-					Edit.pxSizeCalc();
+					Interaction.pxSizeCalc();
 				}, 100);
 			} else {
 				await FullscreenEngine.open(Life.elementGame);
@@ -309,7 +314,7 @@ class Life extends Edit {
 
 				fullscreenFader();
 				setTimeout(() => {
-					Edit.pxSizeCalc();
+					Interaction.pxSizeCalc();
 					OrientationEngine.lock(Orientation.LANDSCAPE);
 					Life.noSleep.enable();
 				}, 100);
@@ -318,7 +323,7 @@ class Life extends Edit {
 		document.addEventListener('click', (event) => {
 			if (FullscreenEngine.isOpen()) {
 				if ((event.target as HTMLElement).id === 'canvas-interactive' && Life.elementControls.classList.contains('show')) {
-					if (Edit.mode === null) {
+					if (Interaction.mode === null) {
 						Life.elementControls.classList.remove('show');
 						Life.elementCounts.classList.remove('adjust');
 						Life.elementHomeostatic.classList.remove('adjust');
@@ -337,7 +342,7 @@ class Life extends Edit {
 		const fullscreenFader = () => {
 			clearTimeout(Life.timeoutFullscreen);
 			Life.timeoutFullscreen = setTimeout(() => {
-				if (Edit.mode === null) {
+				if (Interaction.mode === null) {
 					Life.elementControls.classList.remove('show');
 					Life.elementCounts.classList.remove('adjust');
 					Life.elementHomeostatic.classList.remove('adjust');
@@ -412,32 +417,34 @@ class Life extends Edit {
 			/**
 			 * HTML -> JS
 			 */
-			Edit.settingsCalc = {
+			Interaction.settingsCalc = {
 				cpuSpinOutProtection: Boolean(Life.elementSettingsValueCPUSpinOutProtection.checked),
 				homeostaticPause: Boolean(Life.elementSettingsValueHomeostaticPause.checked),
 				fps: Number(Life.elementSettingsValueFPS.value),
-				iterationsPerSecond: Math.round(Math.max(1, Math.min(Edit.settingsCalcIPSMax, Number(Life.elementSettingsValueIPS.value)))),
+				iterationsPerSecond: Math.round(
+					Math.max(1, Math.min(Interaction.settingsCalcIPSMax, Number(Life.elementSettingsValueIPS.value))),
+				),
 				tableSizeX: <any>Number(Life.elementSettingsValueTableSize.value),
 			};
 
-			Edit.settingsVideo = {
+			Interaction.settingsVideo = {
 				drawDeadCells: Boolean(Life.elementSettingsValueDrawDeadCells.checked),
 				drawGrid: Boolean(Life.elementSettingsValueDrawGrid.checked),
-				fps: Edit.settingsCalc.fps,
+				fps: Interaction.settingsCalc.fps,
 				resolution: <any>(
 					(Life.elementSettingsValueResolution.value === 'null' ? null : Number(Life.elementSettingsValueResolution.value))
 				),
-				tableSizeX: Edit.settingsCalc.tableSizeX,
+				tableSizeX: Interaction.settingsCalc.tableSizeX,
 			};
 
-			Edit.settingsFPSShow = Boolean(Life.elementSettingsValueFPSShow.checked);
-			if (!Edit.settingsFPSShow) {
+			Interaction.settingsFPSShow = Boolean(Life.elementSettingsValueFPSShow.checked);
+			if (!Interaction.settingsFPSShow) {
 				Life.elementFPS.innerText = '';
 			}
-			Edit.rotateAvailable = Boolean(Life.elementSettingsValueOrientationAutoRotate.checked);
-			Edit.settingsSeedRandom = Boolean(Life.elementSettingsValueSeedRandom.checked);
-			Edit.settingsStatsShowAliveDead = Boolean(Life.elementSettingsValueStatsShowAliveDead.checked);
-			if (Edit.settingsStatsShowAliveDead) {
+			Interaction.rotateAvailable = Boolean(Life.elementSettingsValueOrientationAutoRotate.checked);
+			Interaction.settingsSeedRandom = Boolean(Life.elementSettingsValueSeedRandom.checked);
+			Interaction.settingsStatsShowAliveDead = Boolean(Life.elementSettingsValueStatsShowAliveDead.checked);
+			if (Interaction.settingsStatsShowAliveDead) {
 				Life.elementCounts.style.display = 'block';
 			} else {
 				Life.elementCounts.style.display = 'none';
@@ -446,17 +453,17 @@ class Life extends Edit {
 			/**
 			 * Main thread -> workers
 			 */
-			CalcBusEngine.outputSettings(Edit.settingsCalc);
-			VideoBusEngine.outputSettings(Edit.settingsVideo);
+			CalcBusEngine.outputSettings(Interaction.settingsCalc);
+			VideoBusEngine.outputSettings(Interaction.settingsVideo);
 
 			/**
 			 * Done
 			 */
 			Life.elementSettings.style.display = 'none';
-			Life.elementSettingsValueIPS.value = String(Edit.settingsCalc.iterationsPerSecond);
+			Life.elementSettingsValueIPS.value = String(Interaction.settingsCalc.iterationsPerSecond);
 
-			Edit.pxSizeCalc();
-			Edit.rotator();
+			Interaction.pxSizeCalc();
+			Interaction.rotator();
 		};
 		Life.elementSettingsCancel = <HTMLButtonElement>document.getElementById('settings-cancel');
 		Life.elementSettingsCancel.onclick = () => {
@@ -479,10 +486,10 @@ class Life extends Edit {
 	}
 
 	private static initializeLife(): Uint32Array[] {
-		if (Edit.settingsSeedRandom) {
+		if (Interaction.settingsSeedRandom) {
 			let data: Set<number> = new Set<number>(),
-				tableSizeX: number = Edit.settingsCalc.tableSizeX,
-				tableSizeY: number = (Edit.settingsCalc.tableSizeX * 9) / 16,
+				tableSizeX: number = Interaction.settingsCalc.tableSizeX,
+				tableSizeY: number = (Interaction.settingsCalc.tableSizeX * 9) / 16,
 				x: number,
 				y: number;
 
@@ -508,15 +515,15 @@ class Life extends Edit {
 	 * Update the HTML defaults to match the values set here
 	 */
 	private static initializeSettings(): void {
-		Edit.settingsFPSShow = true; // def true
-		Edit.rotateAvailable = true; // def true
-		Edit.settingsSeedRandom = true; // def true
-		Edit.settingsStatsShowAliveDead = true; // def true
+		Interaction.settingsFPSShow = true; // def true
+		Interaction.rotateAvailable = true; // def true
+		Interaction.settingsSeedRandom = true; // def true
+		Interaction.settingsStatsShowAliveDead = true; // def true
 
 		/*
 		 * Video
 		 */
-		Edit.settingsVideo = {
+		Interaction.settingsVideo = {
 			drawDeadCells: true,
 			drawGrid: true,
 			fps: VideoBusInputDataSettingsFPS._60,
@@ -524,21 +531,21 @@ class Life extends Edit {
 			tableSizeX: 112, // def: 112y
 		};
 
-		if (Edit.isMobileOrTablet()) {
+		if (Interaction.isMobileOrTablet()) {
 			// Mobile devices utilize sub-pixel rendering with their canvas API implementations
-			Edit.settingsVideo.resolution = 512;
+			Interaction.settingsVideo.resolution = 512;
 			Life.elementSettingsValueResolution.value = '512';
 		}
 
 		/*
 		 * Calc
 		 */
-		Edit.settingsCalc = {
+		Interaction.settingsCalc = {
 			cpuSpinOutProtection: true,
 			homeostaticPause: false,
-			fps: Edit.settingsVideo.fps,
+			fps: Interaction.settingsVideo.fps,
 			iterationsPerSecond: 16, // def: 16
-			tableSizeX: Edit.settingsVideo.tableSizeX,
+			tableSizeX: Interaction.settingsVideo.tableSizeX,
 		};
 	}
 
@@ -552,12 +559,12 @@ class Life extends Edit {
 			 */
 			CalcBusEngine.setCallbackGameOver(() => {
 				clearTimeout(Life.timeoutReset);
-				Edit.gameover = true;
+				Interaction.gameover = true;
 
-				Edit.elementControlsBackward.style.display = 'none';
-				Edit.elementControlsForward.style.display = 'none';
-				Life.elementControlsPlay.style.display = 'none';
-				Life.elementControlsPause.style.display = 'none';
+				Interaction.elementControlsBackward.style.display = 'none';
+				Interaction.elementControlsForward.style.display = 'none';
+				Interaction.elementControlsPlay.style.display = 'none';
+				Interaction.elementControlsPause.style.display = 'none';
 
 				Life.elementEditAdd.style.display = 'none';
 				Life.elementEditNone.style.display = 'none';
@@ -572,9 +579,9 @@ class Life extends Edit {
 				});
 			});
 			CalcBusEngine.setCallbackHomeostatic(() => {
-				if (Edit.settingsCalc.homeostaticPause) {
-					Life.elementControlsPause.style.display = 'none';
-					Life.elementControlsPlay.style.display = 'block';
+				if (Interaction.settingsCalc.homeostaticPause) {
+					Interaction.elementControlsPause.style.display = 'none';
+					Interaction.elementControlsPlay.style.display = 'block';
 				}
 				clearTimeout(Life.timeoutPlay);
 				clearTimeout(Life.timeoutReset);
@@ -600,22 +607,22 @@ class Life extends Edit {
 				Life.elementStatsCPS.innerText = ipsEff.toLocaleString('en-US');
 				Life.elementStatsCPSAll.style.display = 'flex';
 
-				if (ipsEff < Edit.settingsCalc.iterationsPerSecond * 0.8) {
+				if (ipsEff < Interaction.settingsCalc.iterationsPerSecond * 0.8) {
 					Life.elementStatsCPS.style.color = 'red';
-				} else if (ipsEff < Edit.settingsCalc.iterationsPerSecond * 0.9) {
+				} else if (ipsEff < Interaction.settingsCalc.iterationsPerSecond * 0.9) {
 					Life.elementStatsCPS.style.color = 'yellow';
 				} else {
 					Life.elementStatsCPS.style.color = 'green';
 				}
 			});
 			CalcBusEngine.setCallbackSpinOut(() => {
-				Life.elementControlsPause.click();
+				Interaction.elementControlsPause.click();
 				Life.elementSpinout.style.display = 'flex';
 				setTimeout(() => {
 					Life.elementSpinout.classList.add('show');
 				});
 			});
-			CalcBusEngine.initialize(data[0], Edit.settingsCalc, () => {
+			CalcBusEngine.initialize(data[0], Interaction.settingsCalc, () => {
 				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
 
 				/*
@@ -623,12 +630,12 @@ class Life extends Edit {
 				 */
 				then = performance.now();
 				VideoBusEngine.setCallbackFPS((fps: number) => {
-					if (Edit.settingsFPSShow) {
+					if (Interaction.settingsFPSShow) {
 						Life.elementFPS.innerText = String(fps);
 
-						if (fps < Edit.settingsVideo.fps * 0.8) {
+						if (fps < Interaction.settingsVideo.fps * 0.8) {
 							Life.elementFPS.style.color = 'red';
-						} else if (fps < Edit.settingsVideo.fps * 0.9) {
+						} else if (fps < Interaction.settingsVideo.fps * 0.9) {
 							Life.elementFPS.style.color = 'yellow';
 						} else {
 							Life.elementFPS.style.color = 'green';
@@ -637,14 +644,20 @@ class Life extends Edit {
 						Life.elementFPS.innerText = '';
 					}
 				});
-				VideoBusEngine.initialize(Edit.elementCanvas, Life.elementDataContainer, data[1], Edit.settingsVideo, (status: boolean) => {
-					if (status) {
-						console.log('Engine > Video: loaded in', performance.now() - then, 'ms');
-						resolve(true);
-					} else {
-						resolve(false);
-					}
-				});
+				VideoBusEngine.initialize(
+					Interaction.elementCanvas,
+					Life.elementDataContainer,
+					data[1],
+					Interaction.settingsVideo,
+					(status: boolean) => {
+						if (status) {
+							console.log('Engine > Video: loaded in', performance.now() - then, 'ms');
+							resolve(true);
+						} else {
+							resolve(false);
+						}
+					},
+				);
 			});
 		});
 	}
@@ -672,7 +685,7 @@ class Life extends Edit {
 				OrientationEngine.unlock();
 				Life.noSleep.disable();
 				setTimeout(() => {
-					Edit.pxSizeCalc();
+					Interaction.pxSizeCalc();
 				}, 100);
 			}
 		});
@@ -684,35 +697,35 @@ class Life extends Edit {
 		});
 		KeyboardEngine.register(KeyCommon.LEFT, (keyAction: KeyAction) => {
 			if (keyAction.down) {
-				Edit.elementControlsBackward.click();
+				Interaction.elementControlsBackward.click();
 			}
 		});
 		KeyboardEngine.register(KeyCommon.R, (keyAction: KeyAction) => {
 			if (keyAction.down) {
-				Life.elementControlsReset.click();
+				Interaction.elementControlsReset.click();
 			}
 		});
 		KeyboardEngine.register(KeyCommon.RIGHT, (keyAction: KeyAction) => {
 			if (keyAction.down) {
-				Edit.elementControlsForward.click();
+				Interaction.elementControlsForward.click();
 			}
 		});
 		KeyboardEngine.register(KeyCommon.SPACE_BAR, (keyAction: KeyAction) => {
 			if (keyAction.down) {
-				if (Life.elementControlsPlay.style.display === 'none') {
-					Life.elementControlsPause.click();
+				if (Interaction.elementControlsPlay.style.display === 'none') {
+					Interaction.elementControlsPause.click();
 				} else {
-					Life.elementControlsPlay.click();
+					Interaction.elementControlsPlay.click();
 				}
 			}
 		});
-		MouseEngine.initialize(Edit.elementCanvas, Edit.elementCanvasInteractive);
+		MouseEngine.initialize(Interaction.elementCanvas, Interaction.elementCanvasInteractive);
 		OrientationEngine.initialize();
-		TouchEngine.initialize(Edit.elementCanvas, Edit.elementCanvasInteractive);
+		TouchEngine.initialize(Interaction.elementCanvas, Interaction.elementCanvasInteractive);
 		VisibilityEngine.initialize();
 		VisibilityEngine.setCallback((state: boolean) => {
 			if (!state) {
-				Life.elementControlsPause.click();
+				Interaction.elementControlsPause.click();
 			}
 		});
 
@@ -727,11 +740,11 @@ class Life extends Edit {
 			Life.elementWebGLNotSupported.style.display = 'flex';
 			Life.elementWebGLNotSupported.classList.add('show');
 
-			Edit.elementControlsBackward.style.display = 'none';
-			Edit.elementControlsForward.style.display = 'none';
-			Life.elementControlsPlay.style.display = 'none';
-			Life.elementControlsPause.style.display = 'none';
-			Life.elementControlsReset.style.display = 'none';
+			Interaction.elementControlsBackward.style.display = 'none';
+			Interaction.elementControlsForward.style.display = 'none';
+			Interaction.elementControlsPlay.style.display = 'none';
+			Interaction.elementControlsPause.style.display = 'none';
+			Interaction.elementControlsReset.style.display = 'none';
 		}
 	}
 }

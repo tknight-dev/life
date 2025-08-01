@@ -58,14 +58,11 @@ export class KeyboardEngine {
 	 * Check key usage every X ms
 	 */
 	private static async processor(): Promise<void> {
-		const delay: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-			registered: { [key: number]: KeyRegistration } = KeyboardEngine.registered,
+		const registered: { [key: number]: KeyRegistration } = KeyboardEngine.registered,
 			state: { [key: number]: boolean } = KeyboardEngine.state;
 		let i: string, keyAction: KeyAction, keyRegistration: KeyRegistration, keyState: boolean;
 
-		while (true) {
-			await delay(20);
-
+		setInterval(() => {
 			if (!KeyboardEngine.suspend) {
 				for (i in registered) {
 					keyRegistration = registered[i];
@@ -78,7 +75,7 @@ export class KeyboardEngine {
 					}
 				}
 			}
-		}
+		}, 20);
 	}
 
 	public static setSuspend(suspend: boolean) {

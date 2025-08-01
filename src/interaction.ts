@@ -17,7 +17,7 @@ interface Placement {
 	y: number;
 }
 
-export class Edit {
+export class Interaction {
 	protected static buffer: Set<number> = new Set();
 	protected static domRect: DOMRect;
 	protected static editActive: boolean;
@@ -28,6 +28,12 @@ export class Edit {
 	protected static elementControlsBackwardFunc: () => void;
 	protected static elementControlsForward: HTMLElement;
 	protected static elementControlsForwardFunc: () => void;
+	protected static elementControlsPause: HTMLElement;
+	protected static elementControlsPauseFunc: () => void;
+	protected static elementControlsPlay: HTMLElement;
+	protected static elementControlsPlayFunc: () => void;
+	protected static elementControlsReset: HTMLElement;
+	protected static elementControlsResetFunc: () => void;
 	protected static elementEdit: HTMLElement;
 	protected static elementRotator: HTMLElement;
 	protected static gameover: boolean;
@@ -36,7 +42,7 @@ export class Edit {
 	protected static rotateAvailable: boolean;
 	protected static rotated: boolean;
 	protected static settingsCalc: CalcBusInputDataSettings;
-	protected static settingsCalcIPSMax: number = 1024;
+	protected static readonly settingsCalcIPSMax: number = 1024;
 	protected static settingsFPSShow: boolean;
 	protected static settingsSeedRandom: boolean;
 	protected static settingsStatsShowAliveDead: boolean;
@@ -45,19 +51,18 @@ export class Edit {
 	protected static swipeLengthAccepted: number = 9;
 	protected static swipePositionPrevious: number;
 	protected static pxCellSize: number;
+	protected static readonly touchDoubleWindow: number = 500;
+	protected static touchUpTimestamp: number = 0;
+	protected static touchDownClickTimeout: ReturnType<typeof setTimeout>;
 
 	private static handler(down: boolean, move: boolean, position: MousePosition | TouchPosition, touch: boolean): void {
-		if (!position) {
-			return;
-		}
-
 		// Standard edit interaction
-		if (Edit.mode !== null) {
-			const buffer = Edit.buffer,
+		if (Interaction.mode !== null) {
+			const buffer = Interaction.buffer,
 				devicePixelRatio: number = Math.round(window.devicePixelRatio * 1000) / 1000,
-				domRect: DOMRect = Edit.domRect,
-				elementEditStyle: CSSStyleDeclaration = Edit.elementEdit.style,
-				pxCellSize: number = Edit.pxCellSize;
+				domRect: DOMRect = Interaction.domRect,
+				elementEditStyle: CSSStyleDeclaration = Interaction.elementEdit.style,
+				pxCellSize: number = Interaction.pxCellSize;
 
 			let out: boolean = false,
 				px: number = position.x / devicePixelRatio,
@@ -65,7 +70,7 @@ export class Edit {
 				tx: number,
 				ty: number;
 
-			if (Edit.rotated) {
+			if (Interaction.rotated) {
 				px = position.y / devicePixelRatio;
 				py = domRect.width - position.x / devicePixelRatio;
 
@@ -86,7 +91,7 @@ export class Edit {
 
 			if (move) {
 				if (out) {
-					Edit.editActive = false;
+					Interaction.editActive = false;
 					elementEditStyle.display = 'none';
 				} else {
 					if (!touch) {
@@ -98,32 +103,32 @@ export class Edit {
 						elementEditStyle.display = 'none';
 					}
 
-					if (Edit.editActive) {
-						buffer.add((tx << xyWidthBits) | ty | (Edit.mode ? xyValueAlive : xyValueDead));
+					if (Interaction.editActive) {
+						buffer.add((tx << xyWidthBits) | ty | (Interaction.mode ? xyValueAlive : xyValueDead));
 					}
 				}
 			} else if (!out) {
-				Edit.editActive = down;
+				Interaction.editActive = down;
 
 				// Single touches can be registered a click by the browser
-				if (!touch || Edit.mobile) {
+				if (!touch || Interaction.mobile) {
 					elementEditStyle.display = 'none';
 				}
 
 				if (down) {
 					if (!touch) {
-						buffer.add((tx << xyWidthBits) | ty | (Edit.mode ? xyValueAlive : xyValueDead));
+						buffer.add((tx << xyWidthBits) | ty | (Interaction.mode ? xyValueAlive : xyValueDead));
 					}
 
-					clearInterval(Edit.editInterval);
-					Edit.editInterval = setInterval(() => {
+					clearInterval(Interaction.editInterval);
+					Interaction.editInterval = setInterval(() => {
 						if (buffer.size) {
 							CalcBusEngine.outputLife(Uint32Array.from(buffer));
 							buffer.clear();
 						}
 					}, 40);
 				} else {
-					clearInterval(Edit.editInterval);
+					clearInterval(Interaction.editInterval);
 					if (buffer.size) {
 						CalcBusEngine.outputLife(Uint32Array.from(buffer));
 						buffer.clear();
@@ -132,9 +137,10 @@ export class Edit {
 			}
 		} else if (touch) {
 			// Swipe for speedup or speeddown
-			const domRect: DOMRect = Edit.domRect;
+			const domRect: DOMRect = Interaction.domRect;
 
-			let out: boolean = false,
+			let now: number,
+				out: boolean = false,
 				px: number = position.x / devicePixelRatio,
 				py: number = position.y / devicePixelRatio;
 
@@ -144,42 +150,61 @@ export class Edit {
 
 			if (move) {
 				if (out) {
-					Edit.editActive = false;
-				} else if (Edit.editActive) {
-					Edit.swipeLength = px - Edit.swipePositionPrevious;
-					Edit.swipePositionPrevious = px;
+					Interaction.editActive = false;
+				} else if (Interaction.editActive) {
+					Interaction.swipeLength = px - Interaction.swipePositionPrevious;
+					Interaction.swipePositionPrevious = px;
 				}
 			} else if (!out) {
-				Edit.editActive = down;
+				Interaction.editActive = down;
 
 				if (down) {
-					Edit.swipeLength = 0;
-					Edit.swipePositionPrevious = px;
+					Interaction.swipeLength = 0;
+					Interaction.swipePositionPrevious = px;
 
-					clearInterval(Edit.editInterval);
-					Edit.editInterval = setInterval(() => {
-						if (Math.abs(Edit.swipeLength) > Edit.swipeLengthAccepted) {
-							if (Edit.swipeLength > 0) {
-								Edit.elementControlsForwardFunc();
+					clearTimeout(Interaction.touchDownClickTimeout);
+					Interaction.touchDownClickTimeout = setTimeout(() => {
+						Interaction.elementCanvasInteractive.click();
+					}, Interaction.touchDoubleWindow + 100);
+
+					clearInterval(Interaction.editInterval);
+					Interaction.editInterval = setInterval(() => {
+						if (Math.abs(Interaction.swipeLength) > Interaction.swipeLengthAccepted) {
+							if (Interaction.swipeLength > 0) {
+								Interaction.elementControlsForwardFunc();
 							} else {
-								Edit.elementControlsBackwardFunc();
+								Interaction.elementControlsBackwardFunc();
 							}
 
-							Edit.swipeLength = 0;
-							Edit.swipePositionPrevious = px;
+							Interaction.swipeLength = 0;
+							Interaction.swipePositionPrevious = px;
 						}
 					}, 120);
 				} else {
-					clearInterval(Edit.editInterval);
-					if (Math.abs(Edit.swipeLength) > Edit.swipeLengthAccepted) {
-						if (Edit.swipeLength > 0) {
-							Edit.elementControlsForwardFunc();
+					now = performance.now();
+					if (now - Interaction.touchUpTimestamp < Interaction.touchDoubleWindow) {
+						if (Interaction.elementControlsPlay.style.display !== 'none') {
+							Interaction.elementControlsPlayFunc();
 						} else {
-							Edit.elementControlsBackwardFunc();
+							Interaction.elementControlsPauseFunc();
 						}
 
-						Edit.swipeLength = 0;
-						Edit.swipePositionPrevious = px;
+						clearTimeout(Interaction.touchDownClickTimeout);
+						Interaction.touchUpTimestamp = 0;
+					} else {
+						Interaction.touchUpTimestamp = now;
+					}
+
+					clearInterval(Interaction.editInterval);
+					if (Math.abs(Interaction.swipeLength) > Interaction.swipeLengthAccepted) {
+						if (Interaction.swipeLength > 0) {
+							Interaction.elementControlsForwardFunc();
+						} else {
+							Interaction.elementControlsBackwardFunc();
+						}
+
+						Interaction.swipeLength = 0;
+						Interaction.swipePositionPrevious = px;
 					}
 				}
 			}
@@ -187,89 +212,90 @@ export class Edit {
 	}
 
 	protected static pxSizeCalc(): void {
-		const domRect: DOMRect = Edit.elementCanvas.getBoundingClientRect();
+		const domRect: DOMRect = Interaction.elementCanvas.getBoundingClientRect();
 
 		let pxCellSize: number;
-		if (Edit.rotated) {
-			pxCellSize = Math.round((domRect.height / Edit.settingsVideo.tableSizeX) * 1000) / 1000;
+		if (Interaction.rotated) {
+			pxCellSize = Math.round((domRect.height / Interaction.settingsVideo.tableSizeX) * 1000) / 1000;
 		} else {
-			pxCellSize = Math.round((domRect.width / Edit.settingsVideo.tableSizeX) * 1000) / 1000;
+			pxCellSize = Math.round((domRect.width / Interaction.settingsVideo.tableSizeX) * 1000) / 1000;
 		}
 
-		Edit.domRect = domRect;
-		Edit.elementEdit.style.height = pxCellSize + 'px';
-		Edit.elementEdit.style.width = pxCellSize + 'px';
-		Edit.pxCellSize = pxCellSize;
+		Interaction.domRect = domRect;
+		Interaction.elementEdit.style.height = pxCellSize + 'px';
+		Interaction.elementEdit.style.width = pxCellSize + 'px';
+		Interaction.pxCellSize = pxCellSize;
 	}
 
 	protected static initializeEdit(): void {
 		// Config
-		Edit.elementEdit = <HTMLElement>document.getElementById('edit');
-		Edit.mobile = Edit.isMobileOrTablet();
+		Interaction.elementEdit = <HTMLElement>document.getElementById('edit');
+		Interaction.mobile = Interaction.isMobileOrTablet();
 
 		// Engines
 		OrientationEngine.setCallback((orientation: Orientation) => {
-			Edit.rotator(orientation);
+			Interaction.rotator(orientation);
 		});
 		MouseEngine.setCallback((action: MouseAction) => {
 			if (action.cmd === MouseCmd.WHEEL) {
 				if (action.down) {
-					Edit.elementControlsBackward.click();
+					Interaction.elementControlsBackward.click();
 				} else {
-					Edit.elementControlsForward.click();
+					Interaction.elementControlsForward.click();
 				}
 			} else if (action.cmd === MouseCmd.MOVE) {
-				Edit.handler(false, true, action.position, false);
+				Interaction.handler(false, true, action.position, false);
 			} else {
 				if (action.down === true) {
-					Edit.handler(true, false, action.position, false);
+					Interaction.handler(true, false, action.position, false);
 				} else if (action.down === false) {
-					Edit.handler(false, false, action.position, false);
+					Interaction.handler(false, false, action.position, false);
 				}
 			}
 		});
 		TouchEngine.setCallback((action: TouchAction) => {
 			if (action.cmd === TouchCmd.CLICK) {
 				if (action.down === true) {
-					Edit.handler(true, false, action.positions[0], true);
+					Interaction.handler(true, false, action.positions[0], true);
 				} else if (action.down === false) {
-					Edit.handler(false, false, action.positions[0], true);
+					console.log('TOUCH UP');
+					Interaction.handler(false, false, action.positions[0], true);
 				}
 			} else if (action.cmd === TouchCmd.CLICK_MOVE) {
-				Edit.handler(false, true, action.positions[0], true);
+				Interaction.handler(false, true, action.positions[0], true);
 			}
 		});
 		ResizeEngine.initialize();
 		ResizeEngine.setCallback(() => {
-			Edit.rotator();
+			Interaction.rotator();
 			setTimeout(() => {
-				Edit.pxSizeCalc();
+				Interaction.pxSizeCalc();
 			}, 100);
 		});
 
 		// Done
-		Edit.rotator(OrientationEngine.getOrientation());
+		Interaction.rotator(OrientationEngine.getOrientation());
 		setTimeout(() => {
-			Edit.pxSizeCalc();
+			Interaction.pxSizeCalc();
 		}, 100);
 	}
 
 	protected static rotator(orientation?: Orientation): void {
-		if (Edit.rotateAvailable) {
-			let rotate: boolean = Edit.elementCanvasInteractive.clientWidth < Edit.elementCanvasInteractive.clientHeight;
+		if (Interaction.rotateAvailable) {
+			let rotate: boolean = Interaction.elementCanvasInteractive.clientWidth < Interaction.elementCanvasInteractive.clientHeight;
 
-			if (Edit.rotated !== rotate) {
-				Edit.rotated = rotate;
+			if (Interaction.rotated !== rotate) {
+				Interaction.rotated = rotate;
 
 				// VideoBusEngine.outputRotate(rotate);
-				rotate ? Edit.elementRotator.classList.add('rotate') : Edit.elementRotator.classList.remove('rotate');
+				rotate ? Interaction.elementRotator.classList.add('rotate') : Interaction.elementRotator.classList.remove('rotate');
 			}
 		} else {
-			if (Edit.rotated) {
-				Edit.rotated = false;
+			if (Interaction.rotated) {
+				Interaction.rotated = false;
 
 				// VideoBusEngine.outputRotate(false);
-				Edit.elementRotator.classList.remove('rotate');
+				Interaction.elementRotator.classList.remove('rotate');
 			}
 		}
 
