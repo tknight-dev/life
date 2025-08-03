@@ -2,6 +2,7 @@
     "author": "tknight-dev",
     "description": "A multithreaded game of life",
     "name": "life",
+    "license": "MIT",
     "scripts": {
         "dev": "rimraf dist && node esbuild.mjs dev",
         "lint": "prettier esbuild.mjs src/. --write",
