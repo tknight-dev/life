@@ -301,7 +301,6 @@ class VideoWorkerEngine {
 				frameCount++;
 
 				// Process Data
-				cache = false;
 				if (!cache || VideoWorkerEngine.dataNew) {
 					VideoWorkerEngine.dataNew = false;
 					data = VideoWorkerEngine.data;
