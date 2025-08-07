@@ -41,6 +41,7 @@ class Life extends Interaction {
 	private static elementMenuSettings: HTMLElement;
 	private static elementPerformance: HTMLElement;
 	private static elementPerformanceAll: HTMLElement;
+	private static elementPerformanceBus: HTMLElement;
 	private static elementPerformanceCalc: HTMLElement;
 	private static elementPerformanceCtV: HTMLElement;
 	private static elementPerformanceDraw: HTMLElement;
@@ -203,9 +204,9 @@ class Life extends Interaction {
 		Interaction.elementControlsResetFunc = () => {
 			Interaction.spinner(true);
 
-			const data = Life.initializeLife();
-			VideoBusEngine.outputReset(data.video);
-			CalcBusEngine.outputReset(data.calc);
+			const data: Uint32Array = Life.initializeLife();
+			VideoBusEngine.outputReset();
+			CalcBusEngine.outputReset(data);
 			Interaction.gameover = false;
 
 			Life.elementAlive.innerText = '';
@@ -435,6 +436,7 @@ class Life extends Interaction {
 		 */
 		Life.elementPerformance = <HTMLElement>document.getElementById('performance');
 		Life.elementPerformanceAll = <HTMLElement>document.getElementById('performance-all');
+		Life.elementPerformanceBus = <HTMLElement>document.getElementById('performance-bus');
 		Life.elementPerformanceCalc = <HTMLElement>document.getElementById('performance-calc');
 		Life.elementPerformanceCtV = <HTMLElement>document.getElementById('performance-ctv');
 		Life.elementPerformanceDraw = <HTMLElement>document.getElementById('performance-draw');
@@ -526,43 +528,31 @@ class Life extends Interaction {
 		Life.elementSettingsValueTableSize = <HTMLInputElement>document.getElementById('settings-value-table-size');
 	}
 
-	private static initializeLife(): any {
+	private static initializeLife(): Uint32Array {
+		const { xyValueAlive } = masks;
+
 		if (Interaction.settingsSeedRandom) {
 			let arrayCalc: number[] = [],
-				arrayVideo: number[] = [],
 				tableSizeX: number = Interaction.settingsCalc.tableSizeX,
 				tableSizeY: number = (Interaction.settingsCalc.tableSizeX * 9) / 16,
 				x: number,
+				xy: number,
 				y: number;
-
-			const { xyValueAlive } = masks;
-
-			// Alive & Dead count
-			arrayVideo.push(0);
-
-			// CtV Bus initial timestamp
-			arrayVideo.push(new Date().getTime() & 0x7fffffff);
 
 			// Random
 			for (x = 0; x < tableSizeX; x++) {
 				for (y = 0; y < tableSizeY; y++) {
+					xy = (x << xyWidthBits) | y;
+
 					if (Math.random() > 0.5) {
-						arrayCalc.push((x << xyWidthBits) | y | xyValueAlive);
-						arrayVideo.push(arrayCalc[arrayCalc.length - 1]);
+						arrayCalc.push(xy | xyValueAlive);
 					}
 				}
 			}
 
-			// The array buffer must be passed to each web worker independently
-			return {
-				calc: Uint32Array.from(arrayCalc),
-				video: Uint32Array.from(arrayVideo),
-			};
+			return Uint32Array.from(arrayCalc);
 		} else {
-			return {
-				calc: new Uint32Array(),
-				video: Uint32Array.from([0, new Date().getTime() & 0x7fffffff]),
-			};
+			return new Uint32Array();
 		}
 	}
 
@@ -693,7 +683,7 @@ class Life extends Interaction {
 
 	private static initializeWorkers(): Promise<boolean> {
 		return new Promise((resolve, reject) => {
-			const data = Life.initializeLife(),
+			const data: Uint32Array = Life.initializeLife(),
 				perf = (timeInMs: number) => {
 					return timeInMs.toFixed(1).padStart(7, '_').replaceAll('_', '&nbsp;') + 'ms';
 				};
@@ -756,6 +746,7 @@ class Life extends Interaction {
 
 				Life.performanceCalc = neighborsAvgInMs + stateAvgInMs;
 
+				Life.elementPerformanceBus.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_BUS_AVG]));
 				Life.elementPerformanceCalc.innerHTML = perf(calcAvgInMs);
 				Life.elementPerformanceHomeostatis.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_HOMEOSTASIS_AVG]));
 				Life.elementPerformanceNeighbors.innerHTML = perf(neighborsAvgInMs);
@@ -789,7 +780,7 @@ class Life extends Interaction {
 					Life.elementStatsCPS.style.color = 'green';
 				}
 			});
-			CalcBusEngine.initialize(data.calc, Interaction.settingsCalc, () => {
+			CalcBusEngine.initialize(data, Interaction.settingsCalc, () => {
 				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
 
 				/*
@@ -836,7 +827,6 @@ class Life extends Interaction {
 				VideoBusEngine.initialize(
 					Interaction.elementCanvas,
 					Life.elementDataContainer,
-					data.video,
 					Interaction.settingsVideo,
 					(status: boolean) => {
 						if (status) {
@@ -857,6 +847,7 @@ class Life extends Interaction {
 		// Initialize
 		Life.initializeDOM();
 		Life.initializeSettings();
+		Interaction.spinner(true);
 
 		// Initialize: Engines
 		FullscreenEngine.initialize();

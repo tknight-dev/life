@@ -8,6 +8,8 @@ import { VideoBusInputDataSettingsFPS } from '../video/video.model';
  * Masks
  */
 export const masks = {
+	busMask: 0x7fffffff,
+	busDeadValue: 0,
 	xMask: 0,
 	xShifted1: 0,
 	xyMask: 0,
@@ -17,6 +19,7 @@ export const masks = {
 };
 export const xyWidthBits: number = 11;
 
+masks.busDeadValue = 1 << 31;
 masks.xMask = (Math.pow(2, xyWidthBits) - 1) << xyWidthBits;
 masks.xShifted1 = 0x1 << xyWidthBits;
 masks.xyMask = ((Math.pow(2, xyWidthBits) - 1) << xyWidthBits) | (Math.pow(2, xyWidthBits) - 1);
@@ -30,11 +33,12 @@ masks.yMask = Math.pow(2, xyWidthBits) - 1;
 
 export enum Stats {
 	CALC_AVG = 0,
-	CALC_HOMEOSTASIS_AVG = 1,
-	CALC_NEIGHBORS_AVG = 2,
-	CALC_STATE_AVG = 3,
-	CALC_TO_VIDEO_BUS_AVG = 4,
-	VIDEO_DRAW_AVG = 5,
+	CALC_BUS_AVG = 1,
+	CALC_HOMEOSTASIS_AVG = 2,
+	CALC_NEIGHBORS_AVG = 3,
+	CALC_STATE_AVG = 4,
+	CALC_TO_VIDEO_BUS_AVG = 5,
+	VIDEO_DRAW_AVG = 6,
 }
 
 export class Stat {

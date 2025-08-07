@@ -24,7 +24,7 @@ self.onmessage = (event: MessageEvent) => {
 			VideoWorkerEngine.initialize(self, <VideoBusInputDataInit>videoBusInputPayload.data);
 			break;
 		case VideoBusInputCmd.RESET:
-			VideoWorkerEngine.inputReset(<Uint32Array>videoBusInputPayload.data);
+			VideoWorkerEngine.inputReset();
 			break;
 		case VideoBusInputCmd.RESIZE:
 			VideoWorkerEngine.inputResize(<VideoBusInputDataResize>videoBusInputPayload.data);
@@ -34,12 +34,6 @@ self.onmessage = (event: MessageEvent) => {
 			break;
 	}
 };
-
-enum CellState {
-	ALIVE = 0,
-	DEAD = 1,
-	NONE = 2,
-}
 
 class VideoWorkerEngine {
 	private static canvasOffscreen: OffscreenCanvas;
@@ -52,7 +46,7 @@ class VideoWorkerEngine {
 	private static drawGrid: boolean;
 	private static frameRequest: number;
 	private static framesPerMillisecond: number;
-	private static reset: boolean;
+	private static reset: boolean = true;
 	private static resized: boolean;
 	private static self: Window & typeof globalThis;
 	private static settingsNew: boolean;
@@ -80,7 +74,7 @@ class VideoWorkerEngine {
 		VideoWorkerEngine.stats[Stats.VIDEO_DRAW_AVG] = new Stat();
 
 		// Engines
-		VideoWorkerEngine.inputData(data.life);
+		VideoWorkerEngine.inputData(Uint32Array.from([0, masks.busDeadValue, new Date().getTime() & 0x7fffffff]));
 		VideoWorkerEngine.inputResize(data);
 		VideoWorkerEngine.inputSettings(data);
 
@@ -110,18 +104,12 @@ class VideoWorkerEngine {
 	}
 
 	public static inputData(data: Uint32Array): void {
-		VideoWorkerEngine.stats[Stats.CALC_TO_VIDEO_BUS_AVG].add((new Date().getTime() & 0x7fffffff) - data[1]);
-
-		if (VideoWorkerEngine.reset) {
-			return;
-		}
-
 		VideoWorkerEngine.data = data;
 		VideoWorkerEngine.dataNew = true;
+		VideoWorkerEngine.stats[Stats.CALC_TO_VIDEO_BUS_AVG].add((new Date().getTime() & 0x7fffffff) - data[2]);
 	}
 
-	public static inputReset(data: Uint32Array): void {
-		VideoWorkerEngine.inputData(data);
+	public static inputReset(): void {
 		VideoWorkerEngine.reset = true;
 	}
 
@@ -150,7 +138,7 @@ class VideoWorkerEngine {
 		});
 	}
 
-	private static render(timestampNow: number): void {}
+	private static render(_: number): void {}
 
 	private static renderBinder(): boolean {
 		let cache: boolean,
@@ -166,7 +154,6 @@ class VideoWorkerEngine {
 			cacheCanvasGridVerticalCtx: OffscreenCanvasRenderingContext2D,
 			canvasOffscreen: OffscreenCanvas = VideoWorkerEngine.canvasOffscreen,
 			canvasOffscreenContext: OffscreenCanvasRenderingContext2D = VideoWorkerEngine.canvasOffscreenContext,
-			cellState: CellState,
 			contextOptionsNoAlpha = {
 				alpha: false,
 				antialias: false,
@@ -175,27 +162,29 @@ class VideoWorkerEngine {
 				powerPreference: 'high-performance',
 				preserveDrawingBuffer: true,
 			},
-			countDead: number,
+			countAlive: number,
+			countDeadMode: boolean,
+			countDeadOrNone: number,
 			data: Uint32Array,
 			drawDeadCells: boolean,
-			drawDeadCellsInversion: boolean,
 			drawGrid: boolean,
 			frameCount: number = 0,
 			frameTimestampDelta: number = 0,
 			frameTimestampFPSThen: number = 0,
 			frameTimestampThen: number = 0,
 			i: number,
+			iMax: number,
+			iMin: number,
 			pxCellSize: number,
 			pxHeight: number,
 			pxWidth: number,
 			statDrawAvg: Stat = VideoWorkerEngine.stats[Stats.VIDEO_DRAW_AVG],
 			tableSizeX: number,
-			tableSizeTotal: number,
 			x: number,
 			xy: number,
 			y: number;
 
-		const { xyValueAlive, xyValueDead, yMask } = masks;
+		const { busMask, busDeadValue, yMask } = masks;
 
 		cacheCanvasCellAliveCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasCellAlive.getContext('2d', contextOptionsNoAlpha);
 		cacheCanvasCellAliveCtx.imageSmoothingEnabled = false;
@@ -244,7 +233,6 @@ class VideoWorkerEngine {
 				pxHeight = VideoWorkerEngine.ctxHeight;
 				pxWidth = VideoWorkerEngine.ctxWidth;
 				tableSizeX = VideoWorkerEngine.tableSizeX;
-				tableSizeTotal = VideoWorkerEngine.tableSizeX * VideoWorkerEngine.tableSizeY;
 
 				pxCellSize = Math.round((pxWidth / tableSizeX) * 1000) / 1000;
 				if (drawGrid && pxWidth / tableSizeX < 3) {
@@ -305,86 +293,75 @@ class VideoWorkerEngine {
 					VideoWorkerEngine.dataNew = false;
 					data = VideoWorkerEngine.data;
 
-					// Background
-					if (drawDeadCells && drawDeadCellsInversion) {
-						canvasOffscreenContext.fillStyle = 'rgb(0,64,0)';
-						canvasOffscreenContext.fillRect(0, 0, pxWidth, pxHeight);
-					} else {
-						canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);
-					}
+					// Gather meta
+					countAlive = data[0] & busMask;
+					countDeadMode = (data[1] & busDeadValue) !== 0;
+					countDeadOrNone = data[1] & busMask;
 
-					// Invert dead cell draw logic?
-					countDead = data[0] & 0x7fff;
-					if (countDead > tableSizeTotal / 2) {
-						// Clear non-dead cells
-						drawDeadCellsInversion = true;
-					} else {
-						// Draw dead cells
-						drawDeadCellsInversion = false;
-					}
+					// Draw
+					if (countDeadOrNone + countAlive > 0) {
+						statDrawAvg.watchStart();
 
-					// Update the effective and record new changes
-					statDrawAvg.watchStart();
-					for (i = 1; i < data.length; i++) {
-						// the first entry is a timestamp for the CtV Bus performance stat
-						xy = data[i];
-
-						if ((xy & xyValueAlive) !== 0) {
-							cellState = CellState.ALIVE;
-						} else if ((xy & xyValueDead) !== 0) {
-							cellState = CellState.DEAD;
+						// Draw: Background
+						if (drawDeadCells && !countDeadMode) {
+							canvasOffscreenContext.fillStyle = 'rgb(0,64,0)';
+							canvasOffscreenContext.fillRect(0, 0, pxWidth, pxHeight);
 						} else {
-							cellState = CellState.NONE;
+							canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);
 						}
 
-						// Cells
-						if (drawDeadCells) {
-							if (drawDeadCellsInversion) {
-								// Draw alive cells and clear non-dead cells
-								x = (xy >> xyWidthBits) & yMask;
-								y = xy & yMask;
-
-								if (cellState === CellState.ALIVE) {
-									canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
-								} else if (cellState === CellState.NONE) {
-									canvasOffscreenContext.clearRect(x * pxCellSize, y * pxCellSize, pxCellSize, pxCellSize);
-								}
-							} else if (cellState !== CellState.NONE) {
-								// Draw dead or alive cells
-								x = (xy >> xyWidthBits) & yMask;
-								y = xy & yMask;
-
-								canvasOffscreenContext.drawImage(
-									cellState === CellState.ALIVE ? cacheCanvasCellAlive : cacheCanvasCellDead,
-									x * pxCellSize,
-									y * pxCellSize,
-								);
-							}
-						} else if (cellState === CellState.ALIVE) {
-							// Draw alive
+						// Draw: Living Cells
+						iMin = 3;
+						iMax = iMin + countAlive;
+						for (i = iMin; i < iMax; i++) {
+							xy = data[i];
 							x = (xy >> xyWidthBits) & yMask;
 							y = xy & yMask;
 							canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
 						}
-					}
 
-					// Grid
-					if (drawGrid) {
-						canvasOffscreenContext.drawImage(cacheCanvasGrids, 0, 0);
-					}
+						// Clear/Draw: Dead Cells
+						if (drawDeadCells) {
+							iMin = iMax;
+							iMax = iMin + countDeadOrNone;
 
-					cache = true;
-					statDrawAvg.watchStop();
+							if (countDeadMode) {
+								// Draw dead cells
+								for (i = iMin; i < iMax; i++) {
+									xy = data[i];
+									x = (xy >> xyWidthBits) & yMask;
+									y = xy & yMask;
+									canvasOffscreenContext.drawImage(cacheCanvasCellDead, x * pxCellSize, y * pxCellSize);
+								}
+							} else {
+								// Clear non-dead cells
+								for (i = iMin; i < iMax; i++) {
+									xy = data[i];
+									x = (xy >> xyWidthBits) & yMask;
+									y = xy & yMask;
+									canvasOffscreenContext.clearRect(x * pxCellSize, y * pxCellSize, pxCellSize, pxCellSize);
+								}
+							}
+						}
 
-					if (VideoWorkerEngine.reset) {
-						VideoWorkerEngine.reset = false;
+						// Grid
+						if (drawGrid) {
+							canvasOffscreenContext.drawImage(cacheCanvasGrids, 0, 0);
+						}
 
-						VideoWorkerEngine.post([
-							{
-								cmd: VideoBusOutputCmd.RESET_COMPLETE,
-								data: undefined,
-							},
-						]);
+						cache = true;
+						statDrawAvg.watchStop();
+
+						if (VideoWorkerEngine.reset) {
+							VideoWorkerEngine.reset = false;
+
+							VideoWorkerEngine.post([
+								{
+									cmd: VideoBusOutputCmd.RESET_COMPLETE,
+									data: undefined,
+								},
+							]);
+						}
 					}
 				}
 			}

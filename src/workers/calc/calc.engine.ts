@@ -73,6 +73,7 @@ class CalcWorkerEngine {
 
 		// Stats
 		CalcWorkerEngine.stats[Stats.CALC_AVG] = new Stat();
+		CalcWorkerEngine.stats[Stats.CALC_BUS_AVG] = new Stat();
 		CalcWorkerEngine.stats[Stats.CALC_HOMEOSTASIS_AVG] = new Stat();
 		CalcWorkerEngine.stats[Stats.CALC_NEIGHBORS_AVG] = new Stat();
 		CalcWorkerEngine.stats[Stats.CALC_STATE_AVG] = new Stat();
@@ -146,10 +147,13 @@ class CalcWorkerEngine {
 			calcTimestampIPSThen: number = calcTimestampFPSThen,
 			calcTimestampThen: number = 0,
 			cellMeta: CellMeta,
-			countDead: number = 0,
 			data: Map<number, CellMeta> = new Map<number, CellMeta>(),
 			dataAlive: number[] = [],
 			dataAliveIndex: number = 0,
+			dataDead: number[] = [],
+			dataDeadIndex: number = 0,
+			dataNone: number[] = [],
+			dataNoneIndex: number = 0,
 			dataNew: boolean,
 			i: number,
 			life: Uint32Array[] = CalcWorkerEngine.life,
@@ -160,6 +164,7 @@ class CalcWorkerEngine {
 			positions: Uint32Array,
 			spinOut: boolean = false,
 			statCalcAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_AVG],
+			statBusAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_BUS_AVG],
 			statHomeostasisAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_HOMEOSTASIS_AVG],
 			statNeighborAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_NEIGHBORS_AVG],
 			statStatAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_STATE_AVG],
@@ -176,23 +181,41 @@ class CalcWorkerEngine {
 			yPlus1: number,
 			ySub1: number;
 
-		const { xMask, xShifted1, xyMask, xyValueAlive, xyValueDead, yMask } = masks;
+		const { busMask, busDeadValue, xMask, xShifted1, xyMask, xyValueAlive, xyValueDead, yMask } = masks;
 		const dataTransform: () => Uint32Array = () => {
-			const array: number[] = [];
+			statBusAvg.watchStart();
+			const sendDead: boolean = dataNoneIndex > dataDeadIndex, // Send the smaller of the 2 possible arrays
+				array: number[] = new Array(3 + dataAliveIndex + (sendDead ? dataDeadIndex : dataNoneIndex));
 
-			// Alive & Dead count
-			array.push(((dataAliveIndex & 0x7fff) << 15) | (countDead & 0x7fff));
+			// Alive & Dead/None count
+			array[0] = dataAliveIndex & busMask;
+			array[1] = (sendDead ? busDeadValue : 0) | ((sendDead ? dataDeadIndex : dataNoneIndex) & busMask);
 
-			// CtV Bus initial timestamp
-			array.push(new Date().getTime() & 0x7fffffff);
+			// Alive
+			for (i = 0; i < dataAliveIndex; i++) {
+				array[i + 3] = dataAlive[i] | xyValueAlive;
+			}
 
-			for ([xy, cellMeta] of data) {
-				if (cellMeta.alive !== 0 || cellMeta.dead !== 0) {
-					array.push(xy | cellMeta.alive | cellMeta.dead);
+			x = 3 + dataAliveIndex; // Offset
+			if (sendDead) {
+				// Dead
+				for (i = 0; i < dataDeadIndex; i++) {
+					array[i + x] = dataDead[i] | xyValueDead;
+				}
+			} else {
+				// None
+				for (i = 0; i < dataNoneIndex; i++) {
+					array[i + x] = dataNone[i];
 				}
 			}
 
-			return Uint32Array.from(array);
+			const uint32Array: Uint32Array = Uint32Array.from(array);
+			// CtV Bus initial timestamp
+			uint32Array[2] = new Date().getTime() & busMask;
+
+			statBusAvg.watchStop();
+
+			return uint32Array;
 		};
 
 		for (x = 0; x < homeostaticDataMax; x++) {
@@ -222,17 +245,24 @@ class CalcWorkerEngine {
 				if (dataAlive.length < tableSizeX * tableSizeY) {
 					try {
 						Array.prototype.push.apply(dataAlive, new Array(tableSizeX * tableSizeY - dataAlive.length));
+						Array.prototype.push.apply(dataDead, new Array(tableSizeX * tableSizeY - dataDead.length));
+						Array.prototype.push.apply(dataNone, new Array(tableSizeX * tableSizeY - dataNone.length));
 					} catch (error) {
 						dataAlive = new Array(tableSizeX * tableSizeY);
+						dataDead = new Array(tableSizeX * tableSizeY);
+						dataNone = new Array(tableSizeX * tableSizeY);
 					}
 				}
 				dataAliveIndex = 0;
+				dataDeadIndex = 0;
+				dataNoneIndex = 0;
 
 				for (x = 0; x < tableSizeX; x++) {
 					for (y = 0; y < tableSizeY; y++) {
 						xy = (x << xyWidthBits) | y;
 
 						cellMeta = <any>data.get(xy);
+						dataNone[dataNoneIndex++] = xy;
 						if (cellMeta) {
 							cellMeta.alive = 0;
 							cellMeta.dead = 0;
@@ -267,21 +297,30 @@ class CalcWorkerEngine {
 					if (dataAlive.length < tableSizeX * tableSizeY) {
 						try {
 							Array.prototype.push.apply(dataAlive, new Array(tableSizeX * tableSizeY - dataAlive.length));
+							Array.prototype.push.apply(dataDead, new Array(tableSizeX * tableSizeY - dataDead.length));
+							Array.prototype.push.apply(dataNone, new Array(tableSizeX * tableSizeY - dataNone.length));
 						} catch (error) {
 							dataAlive = new Array(tableSizeX * tableSizeY);
+							dataDead = new Array(tableSizeX * tableSizeY);
+							dataNone = new Array(tableSizeX * tableSizeY);
 						}
 					}
+					dataAliveIndex = 0;
+					dataDeadIndex = 0;
+					dataNoneIndex = 0;
 
 					for (x = 0; x < tableSizeX; x++) {
 						for (y = 0; y < tableSizeY; y++) {
 							xy = (x << xyWidthBits) | y;
 
-							!data.has(xy) &&
+							if (data.has(xy)) {
 								data.set(xy, {
 									alive: 0,
 									dead: 0,
 									neighbors: 0,
 								});
+								dataNone[dataNoneIndex++] = xy;
+							}
 						}
 					}
 				} else {
@@ -331,6 +370,10 @@ class CalcWorkerEngine {
 
 						if (cellMeta.alive) {
 							dataAlive[dataAliveIndex++] = xy & xyMask;
+						} else if (cellMeta.dead) {
+							dataDead[dataDeadIndex++] = xy & xyMask;
+						} else {
+							dataNone[dataNoneIndex++] = xy & xyMask;
 						}
 					}
 				}
@@ -471,8 +514,9 @@ class CalcWorkerEngine {
 					 * 4. Any dead cell with exactly three live neighbors		- Becomes alive (reproduction)
 					 */
 					statStatAvg.watchStart();
-					countDead = 0;
 					dataAliveIndex = 0;
+					dataDeadIndex = 0;
+					dataNoneIndex = 0;
 					for ([xy, cellMeta] of data) {
 						if (cellMeta.alive !== 0) {
 							if (cellMeta.neighbors === 2 || cellMeta.neighbors === 3) {
@@ -482,7 +526,7 @@ class CalcWorkerEngine {
 								// Rule 1 & Rule 3
 								cellMeta.alive = 0;
 								cellMeta.dead = xyValueDead;
-								countDead++;
+								dataDead[dataDeadIndex++] = xy & xyMask;
 							}
 						} else if (cellMeta.neighbors === 3) {
 							// Rule 4
@@ -490,7 +534,9 @@ class CalcWorkerEngine {
 							cellMeta.dead = 0;
 							dataAlive[dataAliveIndex++] = xy & xyMask;
 						} else if (cellMeta.dead !== 0) {
-							countDead++;
+							dataDead[dataDeadIndex++] = xy & xyMask;
+						} else {
+							dataNone[dataNoneIndex++] = xy & xyMask;
 						}
 
 						cellMeta.neighbors = 0;
@@ -501,7 +547,7 @@ class CalcWorkerEngine {
 					if (!homeostatic) {
 						statHomeostasisAvg.watchStart();
 						homeostaticData[homeostaticDataIndex].alive = dataAliveIndex;
-						homeostaticData[homeostaticDataIndex].dead = countDead;
+						homeostaticData[homeostaticDataIndex].dead = dataDeadIndex;
 						homeostaticDataIndex = (homeostaticDataIndex + 1) % homeostaticDataMax;
 
 						// Find a matching oscillation period within the first half of the dataset
@@ -558,7 +604,7 @@ class CalcWorkerEngine {
 										cmd: CalcBusOutputCmd.STATS,
 										data: {
 											alive: dataAliveIndex,
-											dead: countDead,
+											dead: dataDeadIndex,
 											ips: calcCount,
 											ipsDeltaInMS: calcTimestampIPSDelta,
 											ipsTotal: calcCountTotal - homeostaticDataMax,
@@ -601,7 +647,7 @@ class CalcWorkerEngine {
 								cmd: CalcBusOutputCmd.STATS,
 								data: {
 									alive: dataAliveIndex,
-									dead: countDead,
+									dead: dataDeadIndex,
 									ips: calcCount,
 									ipsDeltaInMS: calcTimestampIPSDelta,
 									ipsTotal: calcCountTotal,
@@ -647,7 +693,7 @@ class CalcWorkerEngine {
 						cmd: CalcBusOutputCmd.STATS,
 						data: {
 							alive: dataAliveIndex,
-							dead: countDead,
+							dead: dataDeadIndex,
 							ips: calcCount,
 							ipsDeltaInMS: calcTimestampIPSDelta,
 							ipsTotal: calcCountTotal,

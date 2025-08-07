@@ -18,7 +18,6 @@ export enum VideoBusInputCmd {
 
 export interface VideoBusInputDataInit extends VideoBusInputDataResize, VideoBusInputDataSettings {
 	canvasOffscreen: OffscreenCanvas;
-	life: Uint32Array;
 }
 
 export interface VideoBusInputDataResize {

@@ -31,7 +31,6 @@ export class VideoBusEngine {
 	public static initialize(
 		canvas: HTMLCanvasElement,
 		game: HTMLElement,
-		life: Uint32Array,
 		settings: VideoBusInputDataSettings,
 		callback: (status: boolean) => void,
 	): void {
@@ -58,7 +57,6 @@ export class VideoBusEngine {
 			const videoBusInputDataInit: VideoBusInputDataInit = Object.assign(
 				{
 					canvasOffscreen: VideoBusEngine.canvasOffscreen,
-					life: life,
 				},
 				VideoBusEngine.resized(true),
 				settings,
@@ -67,7 +65,7 @@ export class VideoBusEngine {
 				cmd: VideoBusInputCmd.INIT,
 				data: videoBusInputDataInit,
 			};
-			VideoBusEngine.worker.postMessage(videoBusInputPayload, [VideoBusEngine.canvasOffscreen, life.buffer]);
+			VideoBusEngine.worker.postMessage(videoBusInputPayload, [VideoBusEngine.canvasOffscreen]);
 			VideoBusEngine.complete = true;
 		} else {
 			alert('Web Workers are not supported by your browser');
@@ -107,14 +105,11 @@ export class VideoBusEngine {
 		);
 	}
 
-	public static outputReset(data: Uint32Array): void {
-		VideoBusEngine.worker.postMessage(
-			{
-				cmd: VideoBusInputCmd.RESET,
-				data: data,
-			},
-			[data.buffer],
-		);
+	public static outputReset(): void {
+		VideoBusEngine.worker.postMessage({
+			cmd: VideoBusInputCmd.RESET,
+			data: undefined,
+		});
 	}
 
 	public static outputSettings(data: VideoBusInputDataSettings): void {
