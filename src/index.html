@@ -69,6 +69,28 @@
 					<div class="homeostatic" id="homeostatic"><span>Homeostatic</span></div>
 					<div class="fps" id="fps"></div>
 					<div class="ips-requested" id="ips-requested"></div>
+					<div class="performance" id="performance">
+						<table>
+							<tr>
+								<td class="count" id="performance-ctv"></td><td class="name">:CtoV Bus</td>
+							</tr>
+							<tr>
+								<td class="count" id="performance-draw"></td><td class="name">:Draw</td>
+							</tr>
+							<tr>
+								<td class="count" id="performance-homeostatis"></td><td class="name">:Homeostatis</td>
+							</tr>
+							<tr>
+								<td class="count" id="performance-neighbors"></td><td class="name">:Neighbors</td>
+							</tr>
+							<tr>
+								<td class="count" id="performance-process"></td><td class="name">:Process</td>
+							</tr>
+							<tr>
+								<td class="count" id="performance-state"></td><td class="name">:State</td>
+							</tr>
+						</table>
+					</div>
 					<div class="rules" id="rules">
 						<div class="wrapper">
 							<div class="header">Rules</div>
@@ -170,6 +192,10 @@
 										<tr>
 											<td>Stats: Show Alive & Dead</td>
 											<td><input autocomplete="off" id="settings-value-stats-show-alive-dead" type="checkbox" checked /></td>
+										</tr>
+										<tr>
+											<td>Stats: Show Performance</td>
+											<td><input autocomplete="off" id="settings-value-stats-show-performance" type="checkbox" /></td>
 										</tr>
 										<tr>
 											<td>Table Size</td>

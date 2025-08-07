@@ -7,7 +7,7 @@ import {
 	VideoBusOutputCmd,
 	VideoBusOutputPayload,
 } from './video.model';
-import { masks, xyWidthBits } from '../calc/calc.model';
+import { masks, Stat, Stats, xyWidthBits } from '../calc/calc.model';
 
 /**
  * @author tknight-dev
@@ -56,6 +56,7 @@ class VideoWorkerEngine {
 	private static resized: boolean;
 	private static self: Window & typeof globalThis;
 	private static settingsNew: boolean;
+	private static stats: { [key: number]: Stat } = {};
 	private static tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
 	private static tableSizeY: number;
 
@@ -73,6 +74,11 @@ class VideoWorkerEngine {
 		VideoWorkerEngine.canvasOffscreenContext.imageSmoothingEnabled = false;
 		VideoWorkerEngine.canvasOffscreenContext.shadowBlur = 0;
 		VideoWorkerEngine.self = self;
+
+		// Stats
+		VideoWorkerEngine.stats[Stats.CALC_TO_VIDEO_BUS_AVG] = new Stat();
+		VideoWorkerEngine.stats[Stats.VIDEO_DRAW_AVG] = new Stat();
+		VideoWorkerEngine.stats[Stats.VIDEO_PROCESS_AVG] = new Stat();
 
 		// Engines
 		VideoWorkerEngine.inputData(data.life);
@@ -105,6 +111,9 @@ class VideoWorkerEngine {
 	}
 
 	public static inputData(data: Uint32Array): void {
+		const diff: number = (new Date().getTime() & 0x7fffffff) - data[data.length - 1];
+		diff < 1000000 && VideoWorkerEngine.stats[Stats.CALC_TO_VIDEO_BUS_AVG].add(diff);
+
 		if (VideoWorkerEngine.reset) {
 			return;
 		}
@@ -179,6 +188,8 @@ class VideoWorkerEngine {
 			pxCellSize: number,
 			pxHeight: number,
 			pxWidth: number,
+			statDrawAvg: Stat = VideoWorkerEngine.stats[Stats.VIDEO_DRAW_AVG],
+			statProcessAvg: Stat = VideoWorkerEngine.stats[Stats.VIDEO_PROCESS_AVG],
 			tableSizeX: number,
 			x: number,
 			xy: number,
@@ -305,12 +316,16 @@ class VideoWorkerEngine {
 					data = VideoWorkerEngine.data;
 
 					// Update the effective and record new changes
-					for (xy of data) {
+					statProcessAvg.watchStart();
+					y = data.length - 1; // the last entry is a timestamp for the CtV Bus performance stat
+					for (x = 0; x < y; x++) {
+						xy = data[x];
 						cellState = (xy & xyValueAlive) !== 0 ? CellState.ALIVE : CellState.DEAD;
 						xyOnly = xy & xyMask;
 
 						dataEff.set(xyOnly, cellState);
 					}
+					statProcessAvg.watchStop();
 
 					if (data.length > dataEff.size / 2) {
 						drawDeadCellsInversion = true;
@@ -321,6 +336,8 @@ class VideoWorkerEngine {
 
 				// Draw Data
 				if (!cache) {
+					statDrawAvg.watchStart();
+
 					// Background
 					if (drawDeadCells && drawDeadCellsInversion) {
 						canvasOffscreenContext.fillStyle = 'rgb(0,64,0)';
@@ -367,6 +384,7 @@ class VideoWorkerEngine {
 					}
 
 					cache = true;
+					statDrawAvg.watchStop();
 
 					if (VideoWorkerEngine.reset) {
 						VideoWorkerEngine.reset = false;
@@ -387,8 +405,11 @@ class VideoWorkerEngine {
 			if (timestampNow - frameTimestampFPSThen > 999) {
 				VideoWorkerEngine.post([
 					{
-						cmd: VideoBusOutputCmd.FPS,
-						data: frameCount,
+						cmd: VideoBusOutputCmd.STATS,
+						data: {
+							fps: frameCount,
+							performance: VideoWorkerEngine.stats,
+						},
 					},
 				]);
 				frameCount = 0;

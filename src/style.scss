@@ -91,6 +91,7 @@ $life-spinnet-border-size-small: 10px;
 		.game-over,
 		.fps,
 		.ips-requested,
+		.performance,
 		.rules,
 		.settings,
 		.spinner,
@@ -103,10 +104,12 @@ $life-spinnet-border-size-small: 10px;
 			z-index: 1;
 		}
 
-		.alive {
-			bottom: 58px;
+		.alive,
+		.performance {
+			bottom: 60px;
 			font-family: monospace;
 			pointer-events: none;
+			right: auto;
 			z-index: 2;
 
 			&.fullscreen {
@@ -121,6 +124,7 @@ $life-spinnet-border-size-small: 10px;
 			table {
 				border: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
 				border-left: none;
+				border-bottom: none;
 				overflow: hidden;
 				width: auto;
 
@@ -128,7 +132,7 @@ $life-spinnet-border-size-small: 10px;
 					height: 20px;
 
 					td {
-						background-color: rgba(0, 0, 0, 0.5);
+						background-color: rgba(0, 0, 0, 0.75);
 						height: 20px;
 						padding: 5px;
 
@@ -138,6 +142,7 @@ $life-spinnet-border-size-small: 10px;
 						}
 
 						&.count {
+							font-family: monospace;
 							padding-left: 5px;
 						}
 
@@ -146,6 +151,17 @@ $life-spinnet-border-size-small: 10px;
 						}
 					}
 				}
+			}
+		}
+
+		.performance {
+			// display: none;
+			left: auto;
+			right: 0;
+
+			table {
+				border-left: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
+				border-right: none;
 			}
 		}
 
@@ -232,6 +248,8 @@ $life-spinnet-border-size-small: 10px;
 
 		.controls,
 		.stats {
+			background-color: rgba(0, 0, 0, 0.75);
+
 			&.fullscreen {
 				opacity: 0;
 				transition: opacity 1s linear;
@@ -244,7 +262,6 @@ $life-spinnet-border-size-small: 10px;
 
 		.controls {
 			align-items: center;
-			background-color: rgba(0, 0, 0, 0.5);
 			border-top: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
 			display: flex;
 			bottom: 0;
@@ -531,7 +548,6 @@ $life-spinnet-border-size-small: 10px;
 
 		.stats {
 			align-items: center;
-			background-color: rgba(0, 0, 0, 0.5);
 			border-bottom: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
 			display: flex;
 			font-family: monospace;

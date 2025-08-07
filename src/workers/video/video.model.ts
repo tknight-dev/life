@@ -1,3 +1,5 @@
+import { Stat } from '../calc/calc.model';
+
 /**
  * @author tknight-dev
  */
@@ -50,12 +52,17 @@ export interface VideoBusInputPayload {
  */
 
 export enum VideoBusOutputCmd {
-	FPS,
 	INIT_COMPLETE,
 	RESET_COMPLETE,
+	STATS,
+}
+
+export interface VideoBusOutputDataStats {
+	fps: number;
+	performance: { [key: number]: Stat };
 }
 
 export interface VideoBusOutputPayload {
 	cmd: VideoBusOutputCmd;
-	data: boolean | number | undefined;
+	data: boolean | VideoBusOutputDataStats | undefined;
 }

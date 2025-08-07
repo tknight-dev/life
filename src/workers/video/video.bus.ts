@@ -5,6 +5,7 @@ import {
 	VideoBusInputDataSettings,
 	VideoBusInputPayload,
 	VideoBusOutputCmd,
+	VideoBusOutputDataStats,
 	VideoBusOutputPayload,
 } from './video.model';
 
@@ -13,9 +14,9 @@ import {
  */
 
 export class VideoBusEngine {
-	private static callbackFPS: (fps: number) => void;
 	private static callbackInitComplete: (status: boolean) => void;
 	private static callbackResetComplete: () => void;
+	private static callbackStats: (data: VideoBusOutputDataStats) => void;
 	private static canvas: HTMLCanvasElement;
 	private static canvasOffscreen: OffscreenCanvas;
 	private static complete: boolean;
@@ -82,14 +83,14 @@ export class VideoBusEngine {
 
 			for (let i = 0; i < payloads.length; i++) {
 				switch (payloads[i].cmd) {
-					case VideoBusOutputCmd.FPS:
-						VideoBusEngine.callbackFPS(<number>payloads[i].data);
-						break;
 					case VideoBusOutputCmd.INIT_COMPLETE:
 						VideoBusEngine.callbackInitComplete(<boolean>payloads[i].data);
 						break;
 					case VideoBusOutputCmd.RESET_COMPLETE:
 						VideoBusEngine.callbackResetComplete();
+						break;
+					case VideoBusOutputCmd.STATS:
+						VideoBusEngine.callbackStats(<VideoBusOutputDataStats>payloads[i].data);
 						break;
 				}
 			}
@@ -199,11 +200,11 @@ export class VideoBusEngine {
 		return data;
 	}
 
-	public static setCallbackFPS(callbackFPS: (fps: number) => void): void {
-		VideoBusEngine.callbackFPS = callbackFPS;
-	}
-
 	public static setCallbackResetComplete(callbackResetComplete: () => void): void {
 		VideoBusEngine.callbackResetComplete = callbackResetComplete;
+	}
+
+	public static setCallbackStats(callbackStats: (data: VideoBusOutputDataStats) => void): void {
+		VideoBusEngine.callbackStats = callbackStats;
 	}
 }

@@ -1,5 +1,5 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
-import { CalcBusOutputDataPS, masks, xyWidthBits } from './workers/calc/calc.model';
+import { CalcBusOutputDataStats, masks, Stat, Stats, xyWidthBits } from './workers/calc/calc.model';
 import { FullscreenEngine } from './engines/fullscreen.engine';
 import { Interaction } from './interaction';
 import { KeyboardEngine, KeyAction, KeyCommon } from './engines/keyboard.engine';
@@ -8,7 +8,7 @@ import NoSleep from 'nosleep.js';
 import { Orientation, OrientationEngine } from './engines/orientation.engine';
 import { TouchEngine } from './engines/touch.engine';
 import { VideoBusEngine } from './workers/video/video.bus';
-import { VideoBusInputDataSettingsFPS } from './workers/video/video.model';
+import { VideoBusInputDataSettingsFPS, VideoBusOutputDataStats } from './workers/video/video.model';
 import { VisibilityEngine } from './engines/visibility.engine';
 import packageJSON from '../package.json';
 
@@ -39,6 +39,13 @@ class Life extends Interaction {
 	private static elementMenuContent: HTMLElement;
 	private static elementMenuRules: HTMLElement;
 	private static elementMenuSettings: HTMLElement;
+	private static elementPerformance: HTMLElement;
+	private static elementPerformanceCtV: HTMLElement;
+	private static elementPerformanceDraw: HTMLElement;
+	private static elementPerformanceHomeostatis: HTMLElement;
+	private static elementPerformanceNeighbors: HTMLElement;
+	private static elementPerformanceProcess: HTMLElement;
+	private static elementPerformanceState: HTMLElement;
 	private static elementRules: HTMLElement;
 	private static elementRulesClose: HTMLButtonElement;
 	private static elementSettings: HTMLElement;
@@ -55,6 +62,7 @@ class Life extends Interaction {
 	private static elementSettingsValueResolution: HTMLInputElement;
 	private static elementSettingsValueSeedRandom: HTMLInputElement;
 	private static elementSettingsValueStatsShowAliveDead: HTMLInputElement;
+	private static elementSettingsValueStatsShowPerformance: HTMLInputElement;
 	private static elementSettingsValueTableSize: HTMLInputElement;
 	private static elementSpinout: HTMLElement;
 	private static elementStats: HTMLElement;
@@ -289,6 +297,7 @@ class Life extends Interaction {
 				Life.elementCounts.classList.remove('fullscreen');
 				Life.elementGame.classList.remove('fullscreen');
 				Life.elementHomeostatic.classList.remove('fullscreen');
+				Life.elementPerformance.classList.remove('fullscreen');
 				Life.elementStats.classList.remove('fullscreen');
 
 				Life.elementFullscreen.classList.remove('fullscreen-exit');
@@ -309,6 +318,8 @@ class Life extends Interaction {
 				Life.elementGame.classList.add('fullscreen');
 				Life.elementHomeostatic.classList.add('fullscreen');
 				Life.elementHomeostatic.classList.add('adjust');
+				Life.elementPerformance.classList.add('fullscreen');
+				Life.elementPerformance.classList.add('adjust');
 				Life.elementStats.classList.add('fullscreen');
 				Life.elementStats.classList.add('show');
 
@@ -330,12 +341,14 @@ class Life extends Interaction {
 						Life.elementControls.classList.remove('show');
 						Life.elementCounts.classList.remove('adjust');
 						Life.elementHomeostatic.classList.remove('adjust');
+						Life.elementPerformance.classList.remove('adjust');
 						Life.elementStats.classList.remove('show');
 					}
 				} else {
 					Life.elementControls.classList.add('show');
 					Life.elementCounts.classList.add('adjust');
 					Life.elementHomeostatic.classList.add('adjust');
+					Life.elementPerformance.classList.add('adjust');
 					Life.elementStats.classList.add('show');
 
 					fullscreenFader();
@@ -349,6 +362,7 @@ class Life extends Interaction {
 					Life.elementControls.classList.remove('show');
 					Life.elementCounts.classList.remove('adjust');
 					Life.elementHomeostatic.classList.remove('adjust');
+					Life.elementPerformance.classList.remove('adjust');
 					Life.elementStats.classList.remove('show');
 				} else {
 					fullscreenFader();
@@ -359,6 +373,7 @@ class Life extends Interaction {
 			Life.elementControls.classList.add('show');
 			Life.elementCounts.classList.add('adjust');
 			Life.elementHomeostatic.classList.add('adjust');
+			Life.elementPerformance.classList.add('adjust');
 			Life.elementStats.classList.add('show');
 			clearTimeout(Life.timeoutFullscreen);
 		};
@@ -366,6 +381,7 @@ class Life extends Interaction {
 			Life.elementControls.classList.add('show');
 			Life.elementCounts.classList.add('adjust');
 			Life.elementHomeostatic.classList.add('adjust');
+			Life.elementPerformance.classList.add('adjust');
 			Life.elementStats.classList.add('show');
 			clearTimeout(Life.timeoutFullscreen);
 		};
@@ -412,6 +428,17 @@ class Life extends Interaction {
 		});
 
 		/**
+		 * Performance
+		 */
+		Life.elementPerformance = <HTMLElement>document.getElementById('performance');
+		Life.elementPerformanceCtV = <HTMLElement>document.getElementById('performance-ctv');
+		Life.elementPerformanceDraw = <HTMLElement>document.getElementById('performance-draw');
+		Life.elementPerformanceHomeostatis = <HTMLElement>document.getElementById('performance-homeostatis');
+		Life.elementPerformanceNeighbors = <HTMLElement>document.getElementById('performance-neighbors');
+		Life.elementPerformanceProcess = <HTMLElement>document.getElementById('performance-process');
+		Life.elementPerformanceState = <HTMLElement>document.getElementById('performance-state');
+
+		/**
 		 * Settings
 		 */
 		Life.elementSettings = <HTMLElement>document.getElementById('settings');
@@ -452,6 +479,12 @@ class Life extends Interaction {
 			} else {
 				Life.elementCounts.style.display = 'none';
 			}
+			Interaction.settingsStatsShowPerformance = Boolean(Life.elementSettingsValueStatsShowPerformance.checked);
+			if (Interaction.settingsStatsShowPerformance) {
+				Life.elementPerformance.style.display = 'block';
+			} else {
+				Life.elementPerformance.style.display = 'none';
+			}
 
 			/**
 			 * Main thread -> workers
@@ -485,6 +518,7 @@ class Life extends Interaction {
 		Life.elementSettingsValueResolution = <HTMLInputElement>document.getElementById('settings-value-resolution');
 		Life.elementSettingsValueSeedRandom = <HTMLInputElement>document.getElementById('settings-value-seed-random');
 		Life.elementSettingsValueStatsShowAliveDead = <HTMLInputElement>document.getElementById('settings-value-stats-show-alive-dead');
+		Life.elementSettingsValueStatsShowPerformance = <HTMLInputElement>document.getElementById('settings-value-stats-show-performance');
 		Life.elementSettingsValueTableSize = <HTMLInputElement>document.getElementById('settings-value-table-size');
 	}
 
@@ -522,6 +556,7 @@ class Life extends Interaction {
 		Interaction.rotateAvailable = true; // def true
 		Interaction.settingsSeedRandom = true; // def true
 		Interaction.settingsStatsShowAliveDead = true; // def true
+		Interaction.settingsStatsShowPerformance = false; // def false
 
 		/*
 		 * Video
@@ -556,6 +591,10 @@ class Life extends Interaction {
 		return new Promise((resolve, reject) => {
 			let data: Uint32Array[] = Life.initializeLife(),
 				then: number = performance.now();
+
+			const perf = (timeInMs: number) => {
+				return timeInMs.toFixed(1).padStart(6, '_').replaceAll('_', '&nbsp;') + 'ms';
+			};
 
 			/*
 			 * Load Calc Engine
@@ -599,17 +638,31 @@ class Life extends Interaction {
 					Life.elementHomeostatic.classList.add('show');
 				}
 			});
-			CalcBusEngine.setCallbackPS((data: CalcBusOutputDataPS) => {
+			CalcBusEngine.setCallbackSpinOut(() => {
+				Interaction.elementControlsPause.click();
+				Life.elementSpinout.style.display = 'flex';
+				setTimeout(() => {
+					Life.elementSpinout.classList.add('show');
+				}, 10);
+			});
+			CalcBusEngine.setCallbackStats((data: CalcBusOutputDataStats) => {
+				// Performance
+				Life.elementPerformanceHomeostatis.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_HOMEOSTASIS_AVG]));
+				Life.elementPerformanceNeighbors.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_NEIGHBORS_AVG]));
+				Life.elementPerformanceState.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_STATE_AVG]));
+
+				// Stats
 				Life.elementAlive.innerText = data.alive.toLocaleString('en-US');
 				Life.elementDead.innerText = data.dead.toLocaleString('en-US');
 
 				// too many i/s requests results in deltas >1s
-				let ipsEff: number = Math.max(1, (data.ips / (data.ipsDeltaInMS / 1000)) | 0);
+				const ipsEff: number = Math.max(1, (data.ips / (data.ipsDeltaInMS / 1000)) | 0);
 
 				Life.elementStatsC.innerText = data.ipsTotal.toLocaleString('en-US');
 				Life.elementStatsCPS.innerText = ipsEff.toLocaleString('en-US');
 				Life.elementStatsCPSAll.style.display = 'flex';
 
+				// I/S
 				if (ipsEff < Interaction.settingsCalc.iterationsPerSecond * 0.8) {
 					Life.elementStatsCPS.style.color = 'red';
 				} else if (ipsEff < Interaction.settingsCalc.iterationsPerSecond * 0.9) {
@@ -618,13 +671,6 @@ class Life extends Interaction {
 					Life.elementStatsCPS.style.color = 'green';
 				}
 			});
-			CalcBusEngine.setCallbackSpinOut(() => {
-				Interaction.elementControlsPause.click();
-				Life.elementSpinout.style.display = 'flex';
-				setTimeout(() => {
-					Life.elementSpinout.classList.add('show');
-				}, 10);
-			});
 			CalcBusEngine.initialize(data[0], Interaction.settingsCalc, () => {
 				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
 
@@ -632,13 +678,33 @@ class Life extends Interaction {
 				 * Load Video Engine
 				 */
 				then = performance.now();
-				VideoBusEngine.setCallbackFPS((fps: number) => {
-					if (Interaction.settingsFPSShow) {
-						Life.elementFPS.innerText = String(fps);
+				VideoBusEngine.setCallbackResetComplete(() => {
+					Interaction.spinner(false);
+				});
+				VideoBusEngine.setCallbackStats((data: VideoBusOutputDataStats) => {
+					// Performance
+					const drawAvgInMs: number = Stat.getAVG(data.performance[Stats.VIDEO_DRAW_AVG]),
+						fpsInMS: number = 1000 / Interaction.settingsVideo.fps;
 
-						if (fps < Interaction.settingsVideo.fps * 0.8) {
+					Life.elementPerformanceCtV.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_TO_VIDEO_BUS_AVG]));
+					Life.elementPerformanceDraw.innerHTML = perf(drawAvgInMs);
+					Life.elementPerformanceProcess.innerHTML = perf(Stat.getAVG(data.performance[Stats.VIDEO_PROCESS_AVG]));
+
+					if (drawAvgInMs > fpsInMS * 1.2) {
+						Life.elementPerformanceDraw.style.color = 'red';
+					} else if (drawAvgInMs > fpsInMS * 1.1) {
+						Life.elementPerformanceDraw.style.color = 'yellow';
+					} else {
+						Life.elementPerformanceDraw.style.color = 'white';
+					}
+
+					// FPS
+					if (Interaction.settingsFPSShow) {
+						Life.elementFPS.innerText = String(data.fps);
+
+						if (data.fps < Interaction.settingsVideo.fps * 0.8) {
 							Life.elementFPS.style.color = 'red';
-						} else if (fps < Interaction.settingsVideo.fps * 0.9) {
+						} else if (data.fps < Interaction.settingsVideo.fps * 0.9) {
 							Life.elementFPS.style.color = 'yellow';
 						} else {
 							Life.elementFPS.style.color = 'green';
@@ -646,9 +712,6 @@ class Life extends Interaction {
 					} else {
 						Life.elementFPS.innerText = '';
 					}
-				});
-				VideoBusEngine.setCallbackResetComplete(() => {
-					Interaction.spinner(false);
 				});
 				VideoBusEngine.initialize(
 					Interaction.elementCanvas,
@@ -683,6 +746,7 @@ class Life extends Interaction {
 				Life.elementCounts.classList.remove('fullscreen');
 				Life.elementGame.classList.remove('fullscreen');
 				Life.elementHomeostatic.classList.remove('fullscreen');
+				Life.elementPerformance.classList.remove('fullscreen');
 				Life.elementStats.classList.remove('fullscreen');
 
 				Life.elementFullscreen.classList.remove('fullscreen-exit');

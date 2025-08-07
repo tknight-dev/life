@@ -48,6 +48,7 @@ export class Interaction {
 	protected static settingsFPSShow: boolean;
 	protected static settingsSeedRandom: boolean;
 	protected static settingsStatsShowAliveDead: boolean;
+	protected static settingsStatsShowPerformance: boolean;
 	protected static settingsVideo: VideoBusInputDataSettings;
 	protected static spinnerTimeout: ReturnType<typeof setTimeout>;
 	protected static swipeLength: number;

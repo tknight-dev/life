@@ -6,6 +6,8 @@ import {
 	CalcBusOutputCmd,
 	CalcBusOutputPayload,
 	masks,
+	Stat,
+	Stats,
 	xyWidthBits,
 } from './calc.model';
 
@@ -56,6 +58,7 @@ class CalcWorkerEngine {
 	private static play: boolean;
 	private static reset: boolean;
 	private static self: Window & typeof globalThis;
+	private static stats: { [key: number]: Stat } = {};
 	private static tableSizeAltered: boolean;
 	private static tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
 	private static tableSizeY: number;
@@ -67,6 +70,11 @@ class CalcWorkerEngine {
 		// Engines
 		CalcWorkerEngine.inputLife(data.life);
 		CalcWorkerEngine.inputSettings(data);
+
+		// Stats
+		CalcWorkerEngine.stats[Stats.CALC_HOMEOSTASIS_AVG] = new Stat();
+		CalcWorkerEngine.stats[Stats.CALC_NEIGHBORS_AVG] = new Stat();
+		CalcWorkerEngine.stats[Stats.CALC_STATE_AVG] = new Stat();
 
 		// Done
 		CalcWorkerEngine.post([
@@ -148,6 +156,9 @@ class CalcWorkerEngine {
 			homeostaticDataIndex: number = 0,
 			positions: Uint32Array,
 			spinOut: boolean = false,
+			statHomeostasisAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_HOMEOSTASIS_AVG],
+			statNeighborAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_NEIGHBORS_AVG],
+			statStatAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_STATE_AVG],
 			tableSizeX: number = CalcWorkerEngine.tableSizeX,
 			tableSizeY: number = CalcWorkerEngine.tableSizeY,
 			x: number,
@@ -170,6 +181,9 @@ class CalcWorkerEngine {
 					array.push(xy | cellMeta.alive | cellMeta.dead);
 				}
 			}
+
+			// CtV Bus initial timestamp
+			array.push(new Date().getTime() & 0x7fffffff);
 
 			return Uint32Array.from(array);
 		};
@@ -337,7 +351,7 @@ class CalcWorkerEngine {
 				xMax = tableSizeX - 1;
 				yMax = tableSizeY - 1;
 
-				// Calc
+				// Calc: Neighbors
 				while (calcIterations !== 0) {
 					calcIterations--;
 
@@ -362,6 +376,7 @@ class CalcWorkerEngine {
 					 *
 					 * Consider: Diagonals, Horizontal, and Veritical cells
 					 */
+					statNeighborAvg.watchStart();
 					for ([xy, cellMeta] of data) {
 						if (cellMeta.alive === 0) {
 							continue;
@@ -417,15 +432,17 @@ class CalcWorkerEngine {
 							ySub1 !== 0 && (<any>data.get(xShiftedPlus1 | ySub1)).neighbors++;
 						}
 					}
+					statNeighborAvg.watchStop();
 
 					/**
-					 * Living Cells (reset neighbor count while iterating)
+					 * Calc: State (reset neighbor count while iterating)
 					 *
 					 * 1. Any live cell with fewer than two live neighbors		- Dies (underpopulation)
 					 * 2. Any live cell with two or three live neighbors		- Stays alive
 					 * 3. Any live cell with more than three live neighbors		- Dies (overpopulation)
 					 * 4. Any dead cell with exactly three live neighbors		- Becomes alive (reproduction)
 					 */
+					statStatAvg.watchStart();
 					countAlive = 0;
 					countDead = 0;
 					for (cellMeta of data.values()) {
@@ -450,9 +467,11 @@ class CalcWorkerEngine {
 
 						cellMeta.neighbors = 0;
 					}
+					statStatAvg.watchStop();
 
 					// Homeostasis
 					if (!homeostatic) {
+						statHomeostasisAvg.watchStart();
 						homeostaticData[homeostaticDataIndex].alive = countAlive;
 						homeostaticData[homeostaticDataIndex].dead = countDead;
 						homeostaticDataIndex = (homeostaticDataIndex + 1) % homeostaticDataMax;
@@ -477,6 +496,7 @@ class CalcWorkerEngine {
 								break;
 							}
 						}
+						statHomeostasisAvg.watchStop();
 
 						if (x === homeostaticDataMax - y) {
 							homeostatic = true;
@@ -507,13 +527,14 @@ class CalcWorkerEngine {
 								// Post stats
 								CalcWorkerEngine.post([
 									{
-										cmd: CalcBusOutputCmd.PS,
+										cmd: CalcBusOutputCmd.STATS,
 										data: {
 											alive: countAlive,
 											dead: countDead,
 											ips: calcCount,
 											ipsDeltaInMS: calcTimestampIPSDelta,
 											ipsTotal: calcCountTotal - homeostaticDataMax,
+											performance: CalcWorkerEngine.stats,
 										},
 									},
 								]);
@@ -549,13 +570,14 @@ class CalcWorkerEngine {
 						// Post stats
 						CalcWorkerEngine.post([
 							{
-								cmd: CalcBusOutputCmd.PS,
+								cmd: CalcBusOutputCmd.STATS,
 								data: {
 									alive: countAlive,
 									dead: countDead,
 									ips: calcCount,
 									ipsDeltaInMS: calcTimestampIPSDelta,
 									ipsTotal: calcCountTotal,
+									performance: CalcWorkerEngine.stats,
 								},
 							},
 						]);
@@ -593,13 +615,14 @@ class CalcWorkerEngine {
 			if (calcTimestampIPSDelta > 999) {
 				CalcWorkerEngine.post([
 					{
-						cmd: CalcBusOutputCmd.PS,
+						cmd: CalcBusOutputCmd.STATS,
 						data: {
 							alive: countAlive,
 							dead: countDead,
 							ips: calcCount,
 							ipsDeltaInMS: calcTimestampIPSDelta,
 							ipsTotal: calcCountTotal,
+							performance: CalcWorkerEngine.stats,
 						},
 					},
 				]);

@@ -25,6 +25,73 @@ masks.xyValueDead = 0x1 << (xyWidthBits * 2 + 1);
 masks.yMask = Math.pow(2, xyWidthBits) - 1;
 
 /*
+ * Stats
+ */
+
+export enum Stats {
+	CALC_HOMEOSTASIS_AVG = 0,
+	CALC_NEIGHBORS_AVG = 1,
+	CALC_STATE_AVG = 2,
+	CALC_TO_VIDEO_BUS_AVG = 3,
+	VIDEO_DRAW_AVG = 4,
+	VIDEO_PROCESS_AVG = 5,
+}
+
+export class Stat {
+	public data: number[];
+	public index: number;
+	public samples: number;
+	public size: number;
+	public timer: number;
+
+	constructor(samples: number = 5) {
+		this.data = new Array(samples);
+		this.index = 0;
+		this.samples = samples;
+		this.size = 0;
+	}
+
+	public add(value: number): void {
+		this.data[this.index++] = value;
+
+		if (this.index !== 0 && this.index % this.samples === 0) {
+			this.index = 0;
+			this.size = this.samples;
+		} else {
+			this.size++;
+		}
+	}
+
+	/**
+	 * @return 0 on no data available
+	 */
+	public static getAVG(stat: Stat): number {
+		const data: number[] = stat.data,
+			size: number = Math.min(stat.samples, stat.size);
+
+		if (size === 0) {
+			return 0;
+		}
+
+		let value: number = 0;
+
+		for (let i = 0; i < size; i++) {
+			value += data[i];
+		}
+
+		return value / size;
+	}
+
+	public watchStart(): void {
+		this.timer = performance.now();
+	}
+
+	public watchStop(): void {
+		this.add(performance.now() - this.timer);
+	}
+}
+
+/*
  * Inputs
  */
 
@@ -62,20 +129,21 @@ export enum CalcBusOutputCmd {
 	GAME_OVER,
 	HOMEOSTATIC,
 	INIT_COMPLETE,
-	PS,
 	POSITIONS,
 	SPIN_OUT,
+	STATS,
 }
 
-export interface CalcBusOutputDataPS {
+export interface CalcBusOutputDataStats {
 	alive: number;
 	dead: number;
 	ips: number;
 	ipsDeltaInMS: number;
 	ipsTotal: number;
+	performance: { [key: number]: Stat };
 }
 
 export interface CalcBusOutputPayload {
 	cmd: CalcBusOutputCmd;
-	data: CalcBusOutputDataPS | number | Uint32Array | undefined;
+	data: CalcBusOutputDataStats | number | Uint32Array | undefined;
 }

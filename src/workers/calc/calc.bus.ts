@@ -4,7 +4,7 @@ import {
 	CalcBusInputDataSettings,
 	CalcBusInputPayload,
 	CalcBusOutputCmd,
-	CalcBusOutputDataPS,
+	CalcBusOutputDataStats,
 	CalcBusOutputPayload,
 } from './calc.model';
 import { VideoBusEngine } from '../video/video.bus';
@@ -17,8 +17,8 @@ export class CalcBusEngine {
 	private static callbackGameOver: () => void;
 	private static callbackHomeostatic: () => void;
 	private static callbackInitComplete: () => void;
-	private static callbackPS: (data: CalcBusOutputDataPS) => void;
 	private static callbackSpinOut: () => void;
+	private static callbackStats: (data: CalcBusOutputDataStats) => void;
 	private static worker: Worker;
 
 	/**
@@ -74,14 +74,14 @@ export class CalcBusEngine {
 					case CalcBusOutputCmd.INIT_COMPLETE:
 						CalcBusEngine.callbackInitComplete();
 						break;
-					case CalcBusOutputCmd.PS:
-						CalcBusEngine.callbackPS(<CalcBusOutputDataPS>payloads[i].data);
-						break;
 					case CalcBusOutputCmd.POSITIONS:
 						VideoBusEngine.outputData(<Uint32Array>payloads[i].data);
 						break;
 					case CalcBusOutputCmd.SPIN_OUT:
 						CalcBusEngine.callbackSpinOut();
+						break;
+					case CalcBusOutputCmd.STATS:
+						CalcBusEngine.callbackStats(<CalcBusOutputDataStats>payloads[i].data);
 						break;
 				}
 			}
@@ -144,11 +144,11 @@ export class CalcBusEngine {
 		CalcBusEngine.callbackHomeostatic = callbackHomeostatic;
 	}
 
-	public static setCallbackPS(callbackPS: (data: CalcBusOutputDataPS) => void): void {
-		CalcBusEngine.callbackPS = callbackPS;
-	}
-
 	public static setCallbackSpinOut(callbackSpinOut: () => void): void {
 		CalcBusEngine.callbackSpinOut = callbackSpinOut;
+	}
+
+	public static setCallbackStats(callbackStats: (data: CalcBusOutputDataStats) => void): void {
+		CalcBusEngine.callbackStats = callbackStats;
 	}
 }
