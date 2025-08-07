@@ -605,7 +605,7 @@ class Life extends Interaction {
 
 	private static initializeWorkers(): Promise<boolean> {
 		return new Promise((resolve, reject) => {
-			const data: Uint32Array[] = Life.initializeLife(),
+			const data = Life.initializeLife(),
 				perf = (timeInMs: number) => {
 					return timeInMs.toFixed(1).padStart(6, '_').replaceAll('_', '&nbsp;') + 'ms';
 				};
