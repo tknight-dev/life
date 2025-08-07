@@ -29,11 +29,12 @@ masks.yMask = Math.pow(2, xyWidthBits) - 1;
  */
 
 export enum Stats {
-	CALC_HOMEOSTASIS_AVG = 0,
-	CALC_NEIGHBORS_AVG = 1,
-	CALC_STATE_AVG = 2,
-	CALC_TO_VIDEO_BUS_AVG = 3,
-	VIDEO_DRAW_AVG = 4,
+	CALC_AVG = 0,
+	CALC_HOMEOSTASIS_AVG = 1,
+	CALC_NEIGHBORS_AVG = 2,
+	CALC_STATE_AVG = 3,
+	CALC_TO_VIDEO_BUS_AVG = 4,
+	VIDEO_DRAW_AVG = 5,
 }
 
 export class Stat {

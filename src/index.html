@@ -33,10 +33,10 @@
 					<div class="alive" id="counts">
 						<table>
 							<tr>
-								<td class="name">Alive:</td><td class="count" id="alive"></td>
+								<td class="name">Alive</td><td class="count" id="alive"></td>
 							</tr>
 							<tr>
-								<td class="name">Dead:</td><td class="count" id="dead"></td>
+								<td class="name">Dead</td><td class="count" id="dead"></td>
 							</tr>
 						</table>
 					</div>
@@ -72,22 +72,34 @@
 					<div class="performance" id="performance">
 						<table>
 							<tr>
-								<td class="count" id="performance-all"></td><td class="name">:ALL CPU</td>
+								<td class="count" id="performance-all"></td><td class="name">ALL</td>
+							</tr>
+							<tr class="bar">
+								<td colspan="2"><hr></td>
 							</tr>
 							<tr>
-								<td class="count" id="performance-ctv"></td><td class="name">:CtoV Bus</td>
+								<td class="count" id="performance-calc"></td><td class="name">Calculations</td>
 							</tr>
 							<tr>
-								<td class="count" id="performance-draw"></td><td class="name">:Draw</td>
+								<td class="count" id="performance-homeostatis"></td><td class="name">Homeostasis</td>
 							</tr>
 							<tr>
-								<td class="count" id="performance-homeostatis"></td><td class="name">:Homeostatis</td>
+								<td class="count" id="performance-neighbors"></td><td class="name">Neighbors</td>
 							</tr>
 							<tr>
-								<td class="count" id="performance-neighbors"></td><td class="name">:Neighbors</td>
+								<td class="count" id="performance-state"></td><td class="name">State</td>
+							</tr>
+							<tr class="bar">
+								<td colspan="2"><hr></td>
 							</tr>
 							<tr>
-								<td class="count" id="performance-state"></td><td class="name">:State</td>
+								<td class="count" id="performance-ctv"></td><td class="name">*CtoV Bus</td>
+							</tr>
+							<tr class="bar">
+								<td colspan="2"><hr></td>
+							</tr>
+							<tr>
+								<td class="count" id="performance-draw"></td><td class="name">Video Draw</td>
 							</tr>
 						</table>
 					</div>

@@ -150,6 +150,20 @@ $life-spinnet-border-size-small: 10px;
 							font-style: italic;
 						}
 					}
+
+					&.bar {
+						height: 5px;
+
+						td {
+							height: 5px;
+							padding: 0;
+
+							hr {
+								margin: 0;
+								padding: 0;
+							}
+						}
+					}
 				}
 			}
 		}

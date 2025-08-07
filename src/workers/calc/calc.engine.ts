@@ -72,6 +72,7 @@ class CalcWorkerEngine {
 		CalcWorkerEngine.inputSettings(data);
 
 		// Stats
+		CalcWorkerEngine.stats[Stats.CALC_AVG] = new Stat();
 		CalcWorkerEngine.stats[Stats.CALC_HOMEOSTASIS_AVG] = new Stat();
 		CalcWorkerEngine.stats[Stats.CALC_NEIGHBORS_AVG] = new Stat();
 		CalcWorkerEngine.stats[Stats.CALC_STATE_AVG] = new Stat();
@@ -134,7 +135,7 @@ class CalcWorkerEngine {
 		);
 	}
 
-	private static calc(timestampNow: number): void {}
+	private static calc(_: number): void {}
 
 	private static calcBinder(): void {
 		let calcCount: number = 0,
@@ -158,6 +159,7 @@ class CalcWorkerEngine {
 			homeostaticDataIndex: number = 0,
 			positions: Uint32Array,
 			spinOut: boolean = false,
+			statCalcAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_AVG],
 			statHomeostasisAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_HOMEOSTASIS_AVG],
 			statNeighborAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_NEIGHBORS_AVG],
 			statStatAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_STATE_AVG],
@@ -377,7 +379,8 @@ class CalcWorkerEngine {
 				xMax = tableSizeX - 1;
 				yMax = tableSizeY - 1;
 
-				// Calc: Neighbors
+				// Calc
+				statCalcAvg.watchStart();
 				while (calcIterations !== 0) {
 					calcIterations--;
 
@@ -385,7 +388,7 @@ class CalcWorkerEngine {
 						break;
 					}
 
-					if (CalcWorkerEngine.cpuSpinOutProtection && performance.now() - timestampNow > 2000) {
+					if (CalcWorkerEngine.cpuSpinOutProtection && performance.now() - timestampNow > 1500) {
 						spinOut = true;
 						CalcWorkerEngine.post([
 							{
@@ -398,7 +401,7 @@ class CalcWorkerEngine {
 					}
 
 					/**
-					 * Neighbors (living cells only)
+					 * Calc: Neighbors (living cells only)
 					 *
 					 * Consider: Diagonals, Horizontal, and Veritical cells
 					 */
@@ -611,6 +614,7 @@ class CalcWorkerEngine {
 						return;
 					}
 				}
+				statCalcAvg.watchStop();
 			}
 
 			/**

@@ -41,6 +41,7 @@ class Life extends Interaction {
 	private static elementMenuSettings: HTMLElement;
 	private static elementPerformance: HTMLElement;
 	private static elementPerformanceAll: HTMLElement;
+	private static elementPerformanceCalc: HTMLElement;
 	private static elementPerformanceCtV: HTMLElement;
 	private static elementPerformanceDraw: HTMLElement;
 	private static elementPerformanceHomeostatis: HTMLElement;
@@ -434,6 +435,7 @@ class Life extends Interaction {
 		 */
 		Life.elementPerformance = <HTMLElement>document.getElementById('performance');
 		Life.elementPerformanceAll = <HTMLElement>document.getElementById('performance-all');
+		Life.elementPerformanceCalc = <HTMLElement>document.getElementById('performance-calc');
 		Life.elementPerformanceCtV = <HTMLElement>document.getElementById('performance-ctv');
 		Life.elementPerformanceDraw = <HTMLElement>document.getElementById('performance-draw');
 		Life.elementPerformanceHomeostatis = <HTMLElement>document.getElementById('performance-homeostatis');
@@ -607,7 +609,7 @@ class Life extends Interaction {
 		return new Promise((resolve, reject) => {
 			const data = Life.initializeLife(),
 				perf = (timeInMs: number) => {
-					return timeInMs.toFixed(1).padStart(6, '_').replaceAll('_', '&nbsp;') + 'ms';
+					return timeInMs.toFixed(1).padStart(7, '_').replaceAll('_', '&nbsp;') + 'ms';
 				};
 			let then: number = performance.now();
 
@@ -662,14 +664,24 @@ class Life extends Interaction {
 			});
 			CalcBusEngine.setCallbackStats((data: CalcBusOutputDataStats) => {
 				// Performance
-				const neighborsAvgInMs: number = Stat.getAVG(data.performance[Stats.CALC_NEIGHBORS_AVG]),
+				const calcAvgInMs: number = Stat.getAVG(data.performance[Stats.CALC_AVG]),
+					neighborsAvgInMs: number = Stat.getAVG(data.performance[Stats.CALC_NEIGHBORS_AVG]),
 					stateAvgInMs: number = Stat.getAVG(data.performance[Stats.CALC_STATE_AVG]);
 
 				Life.performanceCalc = neighborsAvgInMs + stateAvgInMs;
 
+				Life.elementPerformanceCalc.innerHTML = perf(calcAvgInMs);
 				Life.elementPerformanceHomeostatis.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_HOMEOSTASIS_AVG]));
 				Life.elementPerformanceNeighbors.innerHTML = perf(neighborsAvgInMs);
 				Life.elementPerformanceState.innerHTML = perf(stateAvgInMs);
+
+				if (calcAvgInMs > (1000 / Life.settingsCalc.iterationsPerSecond) * 1.2) {
+					Life.elementPerformanceCalc.style.color = 'red';
+				} else if (calcAvgInMs > 1000 / Life.settingsCalc.iterationsPerSecond) {
+					Life.elementPerformanceCalc.style.color = 'yellow';
+				} else {
+					Life.elementPerformanceCalc.style.color = 'white';
+				}
 
 				// Stats
 				Life.elementAlive.innerText = data.alive.toLocaleString('en-US');
