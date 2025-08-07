@@ -54,10 +54,10 @@ class Life extends Interaction {
 	private static elementSettingsCancel: HTMLButtonElement;
 	private static elementSettingsValueCPUSpinOutProtection: HTMLInputElement;
 	private static elementSettingsValueDrawDeadCells: HTMLInputElement;
-	private static elementSettingsValueHomeostaticPause: HTMLInputElement;
+	private static elementSettingsValueDrawGrid: HTMLInputElement;
 	private static elementSettingsValueFPS: HTMLInputElement;
 	private static elementSettingsValueFPSShow: HTMLInputElement;
-	private static elementSettingsValueDrawGrid: HTMLInputElement;
+	private static elementSettingsValueHomeostaticPause: HTMLInputElement;
 	private static elementSettingsValueIPS: HTMLInputElement;
 	private static elementSettingsValueOrientationAutoRotate: HTMLInputElement;
 	private static elementSettingsValueResolution: HTMLInputElement;
@@ -580,9 +580,9 @@ class Life extends Interaction {
 		 * Video
 		 */
 		Interaction.settingsVideo = {
-			drawDeadCells: true,
-			drawGrid: true,
-			fps: VideoBusInputDataSettingsFPS._60,
+			drawDeadCells: true, // def true
+			drawGrid: true, // def true
+			fps: VideoBusInputDataSettingsFPS._60, // def 60
 			resolution: null, // Native is null
 			tableSizeX: 112, // def: 112y
 		};
@@ -603,6 +603,92 @@ class Life extends Interaction {
 			iterationsPerSecond: 16, // def: 16
 			tableSizeX: Interaction.settingsVideo.tableSizeX,
 		};
+
+		/*
+		 * URL Params
+		 */
+		const params: URLSearchParams = new URLSearchParams(document.location.search);
+		for (let [name, value] of params.entries()) {
+			switch (name.toLowerCase()) {
+				case 'ad':
+					Interaction.settingsStatsShowAliveDead = String(value).toLowerCase() === 'true';
+					break;
+				case 'fps':
+					Interaction.settingsFPSShow = String(value).toLowerCase() === 'true';
+					break;
+				case 'i_s':
+					Interaction.settingsCalc.iterationsPerSecond = Math.round(
+						Math.max(1, Math.min(Interaction.settingsCalcIPSMax, Number(value) || 0)),
+					);
+					break;
+				case 'perf':
+					Interaction.settingsStatsShowPerformance = String(value).toLowerCase() === 'true';
+					break;
+				case 'res':
+					if (String(value).toLowerCase() === 'null') {
+						Interaction.settingsVideo.resolution = null;
+					} else {
+						switch (Number(value)) {
+							case 256:
+							case 384:
+							case 512:
+							case 640:
+							case 1280:
+							case 1920:
+								Interaction.settingsVideo.resolution = <256 | 384 | 512 | 640 | 1280 | 1920>Number(value);
+								break;
+						}
+					}
+				case 'table':
+					switch (Number(value)) {
+						case 48:
+						case 112:
+						case 240:
+						case 496:
+						case 1008:
+						case 2032:
+							Interaction.settingsCalc.tableSizeX = <48 | 112 | 240 | 496 | 1008 | 2032>Number(value);
+							Interaction.settingsVideo.tableSizeX = <48 | 112 | 240 | 496 | 1008 | 2032>Number(value);
+							break;
+					}
+					break;
+			}
+		}
+
+		/*
+		 * HTML
+		 */
+		Life.elementSettingsValueCPUSpinOutProtection.checked = Interaction.settingsCalc.cpuSpinOutProtection;
+		Life.elementSettingsValueDrawDeadCells.checked = Interaction.settingsVideo.drawDeadCells;
+		Life.elementSettingsValueDrawGrid.checked = Interaction.settingsVideo.drawGrid;
+		Life.elementSettingsValueHomeostaticPause.checked = Interaction.settingsCalc.homeostaticPause;
+		Life.elementSettingsValueIPS.value = String(Interaction.settingsCalc.iterationsPerSecond);
+		Life.elementSettingsValueFPS.value = String(Interaction.settingsCalc.fps);
+
+		Life.elementSettingsValueFPSShow.checked = Interaction.settingsFPSShow;
+		if (!Interaction.settingsFPSShow) {
+			Life.elementFPS.innerText = '';
+		}
+
+		Life.elementSettingsValueOrientationAutoRotate.checked = Interaction.rotateAvailable;
+		Life.elementSettingsValueResolution.value = String(Interaction.settingsVideo.resolution);
+		Life.elementSettingsValueSeedRandom.checked = Interaction.settingsSeedRandom;
+
+		Life.elementSettingsValueStatsShowAliveDead.checked = Interaction.settingsStatsShowAliveDead;
+		if (Interaction.settingsStatsShowAliveDead) {
+			Life.elementCounts.style.display = 'block';
+		} else {
+			Life.elementCounts.style.display = 'none';
+		}
+
+		Life.elementSettingsValueStatsShowPerformance.checked = Interaction.settingsStatsShowPerformance;
+		if (Interaction.settingsStatsShowPerformance) {
+			Life.elementPerformance.style.display = 'block';
+		} else {
+			Life.elementPerformance.style.display = 'none';
+		}
+
+		Life.elementSettingsValueTableSize.value = String(Interaction.settingsVideo.tableSizeX);
 	}
 
 	private static initializeWorkers(): Promise<boolean> {
