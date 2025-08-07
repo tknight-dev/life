@@ -125,7 +125,7 @@ class CalcWorkerEngine {
 		CalcWorkerEngine.tableSizeY = (data.tableSizeX * 9) / 16;
 	}
 
-	private static post(CalcBusWorkerPayloads: CalcBusOutputPayload[], data: any[] = []): void {
+	private static post(CalcBusWorkerPayloads: CalcBusOutputPayload[], data: Transferable[] = []): void {
 		CalcWorkerEngine.self.postMessage(
 			{
 				payloads: CalcBusWorkerPayloads,

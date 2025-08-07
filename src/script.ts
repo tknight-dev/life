@@ -202,9 +202,9 @@ class Life extends Interaction {
 		Interaction.elementControlsResetFunc = () => {
 			Interaction.spinner(true);
 
-			const data: Uint32Array[] = Life.initializeLife();
-			VideoBusEngine.outputReset(data[0]);
-			CalcBusEngine.outputReset(data[1]);
+			const data = Life.initializeLife();
+			VideoBusEngine.outputReset(data.video);
+			CalcBusEngine.outputReset(data.calc);
 			Interaction.gameover = false;
 
 			Life.elementAlive.innerText = '';
@@ -524,9 +524,10 @@ class Life extends Interaction {
 		Life.elementSettingsValueTableSize = <HTMLInputElement>document.getElementById('settings-value-table-size');
 	}
 
-	private static initializeLife(): Uint32Array[] {
+	private static initializeLife(): any {
 		if (Interaction.settingsSeedRandom) {
-			let data: Set<number> = new Set<number>(),
+			let arrayCalc: number[] = [],
+				arrayVideo: number[] = [],
 				tableSizeX: number = Interaction.settingsCalc.tableSizeX,
 				tableSizeY: number = (Interaction.settingsCalc.tableSizeX * 9) / 16,
 				x: number,
@@ -534,19 +535,32 @@ class Life extends Interaction {
 
 			const { xyValueAlive } = masks;
 
+			// Alive & Dead count
+			arrayVideo.push(0);
+
+			// CtV Bus initial timestamp
+			arrayVideo.push(new Date().getTime() & 0x7fffffff);
+
 			// Random
 			for (x = 0; x < tableSizeX; x++) {
 				for (y = 0; y < tableSizeY; y++) {
 					if (Math.random() > 0.5) {
-						data.add((x << xyWidthBits) | y | xyValueAlive);
+						arrayCalc.push((x << xyWidthBits) | y | xyValueAlive);
+						arrayVideo.push(arrayCalc[arrayCalc.length - 1]);
 					}
 				}
 			}
 
 			// The array buffer must be passed to each web worker independently
-			return [Uint32Array.from(data), Uint32Array.from(data)];
+			return {
+				calc: Uint32Array.from(arrayCalc),
+				video: Uint32Array.from(arrayVideo),
+			};
 		} else {
-			return [new Uint32Array(), new Uint32Array()];
+			return {
+				calc: new Uint32Array(),
+				video: Uint32Array.from([0, new Date().getTime() & 0x7fffffff]),
+			};
 		}
 	}
 
@@ -677,7 +691,7 @@ class Life extends Interaction {
 					Life.elementStatsCPS.style.color = 'green';
 				}
 			});
-			CalcBusEngine.initialize(data[0], Interaction.settingsCalc, () => {
+			CalcBusEngine.initialize(data.calc, Interaction.settingsCalc, () => {
 				console.log('Engine > Calculation: loaded in', performance.now() - then, 'ms');
 
 				/*
@@ -724,7 +738,7 @@ class Life extends Interaction {
 				VideoBusEngine.initialize(
 					Interaction.elementCanvas,
 					Life.elementDataContainer,
-					data[1],
+					data.video,
 					Interaction.settingsVideo,
 					(status: boolean) => {
 						if (status) {

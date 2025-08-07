@@ -110,12 +110,12 @@ class VideoWorkerEngine {
 	}
 
 	public static inputData(data: Uint32Array): void {
-		const diff: number = (new Date().getTime() & 0x7fffffff) - data[1];
-		diff < 1000000 && VideoWorkerEngine.stats[Stats.CALC_TO_VIDEO_BUS_AVG].add(diff);
+		VideoWorkerEngine.stats[Stats.CALC_TO_VIDEO_BUS_AVG].add((new Date().getTime() & 0x7fffffff) - data[1]);
 
 		if (VideoWorkerEngine.reset) {
 			return;
 		}
+
 		VideoWorkerEngine.data = data;
 		VideoWorkerEngine.dataNew = true;
 	}
