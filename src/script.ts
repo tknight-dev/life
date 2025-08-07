@@ -40,11 +40,11 @@ class Life extends Interaction {
 	private static elementMenuRules: HTMLElement;
 	private static elementMenuSettings: HTMLElement;
 	private static elementPerformance: HTMLElement;
+	private static elementPerformanceAll: HTMLElement;
 	private static elementPerformanceCtV: HTMLElement;
 	private static elementPerformanceDraw: HTMLElement;
 	private static elementPerformanceHomeostatis: HTMLElement;
 	private static elementPerformanceNeighbors: HTMLElement;
-	private static elementPerformanceProcess: HTMLElement;
 	private static elementPerformanceState: HTMLElement;
 	private static elementRules: HTMLElement;
 	private static elementRulesClose: HTMLButtonElement;
@@ -72,6 +72,8 @@ class Life extends Interaction {
 	private static elementVersion: HTMLElement;
 	private static elementWebGLNotSupported: HTMLElement;
 	private static noSleep: NoSleep = new NoSleep();
+	private static performanceCalc: number = 0;
+	private static performanceVideo: number = 0;
 	private static timeoutControl: ReturnType<typeof setTimeout>;
 	private static timeoutFullscreen: ReturnType<typeof setTimeout>;
 	private static timeoutPlay: ReturnType<typeof setTimeout>;
@@ -431,11 +433,11 @@ class Life extends Interaction {
 		 * Performance
 		 */
 		Life.elementPerformance = <HTMLElement>document.getElementById('performance');
+		Life.elementPerformanceAll = <HTMLElement>document.getElementById('performance-all');
 		Life.elementPerformanceCtV = <HTMLElement>document.getElementById('performance-ctv');
 		Life.elementPerformanceDraw = <HTMLElement>document.getElementById('performance-draw');
 		Life.elementPerformanceHomeostatis = <HTMLElement>document.getElementById('performance-homeostatis');
 		Life.elementPerformanceNeighbors = <HTMLElement>document.getElementById('performance-neighbors');
-		Life.elementPerformanceProcess = <HTMLElement>document.getElementById('performance-process');
 		Life.elementPerformanceState = <HTMLElement>document.getElementById('performance-state');
 
 		/**
@@ -589,12 +591,11 @@ class Life extends Interaction {
 
 	private static initializeWorkers(): Promise<boolean> {
 		return new Promise((resolve, reject) => {
-			let data: Uint32Array[] = Life.initializeLife(),
-				then: number = performance.now();
-
-			const perf = (timeInMs: number) => {
-				return timeInMs.toFixed(1).padStart(6, '_').replaceAll('_', '&nbsp;') + 'ms';
-			};
+			const data: Uint32Array[] = Life.initializeLife(),
+				perf = (timeInMs: number) => {
+					return timeInMs.toFixed(1).padStart(6, '_').replaceAll('_', '&nbsp;') + 'ms';
+				};
+			let then: number = performance.now();
 
 			/*
 			 * Load Calc Engine
@@ -647,9 +648,14 @@ class Life extends Interaction {
 			});
 			CalcBusEngine.setCallbackStats((data: CalcBusOutputDataStats) => {
 				// Performance
+				const neighborsAvgInMs: number = Stat.getAVG(data.performance[Stats.CALC_NEIGHBORS_AVG]),
+					stateAvgInMs: number = Stat.getAVG(data.performance[Stats.CALC_STATE_AVG]);
+
+				Life.performanceCalc = neighborsAvgInMs + stateAvgInMs;
+
 				Life.elementPerformanceHomeostatis.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_HOMEOSTASIS_AVG]));
-				Life.elementPerformanceNeighbors.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_NEIGHBORS_AVG]));
-				Life.elementPerformanceState.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_STATE_AVG]));
+				Life.elementPerformanceNeighbors.innerHTML = perf(neighborsAvgInMs);
+				Life.elementPerformanceState.innerHTML = perf(stateAvgInMs);
 
 				// Stats
 				Life.elementAlive.innerText = data.alive.toLocaleString('en-US');
@@ -686,9 +692,11 @@ class Life extends Interaction {
 					const drawAvgInMs: number = Stat.getAVG(data.performance[Stats.VIDEO_DRAW_AVG]),
 						fpsInMS: number = 1000 / Interaction.settingsVideo.fps;
 
+					Life.performanceVideo = drawAvgInMs;
+
+					Life.elementPerformanceAll.innerHTML = perf(Life.performanceCalc + Life.performanceVideo);
 					Life.elementPerformanceCtV.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_TO_VIDEO_BUS_AVG]));
 					Life.elementPerformanceDraw.innerHTML = perf(drawAvgInMs);
-					Life.elementPerformanceProcess.innerHTML = perf(Stat.getAVG(data.performance[Stats.VIDEO_PROCESS_AVG]));
 
 					if (drawAvgInMs > fpsInMS * 1.2) {
 						Life.elementPerformanceDraw.style.color = 'red';

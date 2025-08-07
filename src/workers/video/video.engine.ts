@@ -78,7 +78,6 @@ class VideoWorkerEngine {
 		// Stats
 		VideoWorkerEngine.stats[Stats.CALC_TO_VIDEO_BUS_AVG] = new Stat();
 		VideoWorkerEngine.stats[Stats.VIDEO_DRAW_AVG] = new Stat();
-		VideoWorkerEngine.stats[Stats.VIDEO_PROCESS_AVG] = new Stat();
 
 		// Engines
 		VideoWorkerEngine.inputData(data.life);
@@ -111,7 +110,7 @@ class VideoWorkerEngine {
 	}
 
 	public static inputData(data: Uint32Array): void {
-		const diff: number = (new Date().getTime() & 0x7fffffff) - data[data.length - 1];
+		const diff: number = (new Date().getTime() & 0x7fffffff) - data[1];
 		diff < 1000000 && VideoWorkerEngine.stats[Stats.CALC_TO_VIDEO_BUS_AVG].add(diff);
 
 		if (VideoWorkerEngine.reset) {
@@ -176,27 +175,27 @@ class VideoWorkerEngine {
 				powerPreference: 'high-performance',
 				preserveDrawingBuffer: true,
 			},
+			countDead: number,
 			data: Uint32Array,
-			dataEff: Map<number, CellState> = new Map(),
 			drawDeadCells: boolean,
-			drawDeadCellsInversion: boolean, // true means remove non dead cells via clearRect
+			drawDeadCellsInversion: boolean,
 			drawGrid: boolean,
 			frameCount: number = 0,
 			frameTimestampDelta: number = 0,
 			frameTimestampFPSThen: number = 0,
 			frameTimestampThen: number = 0,
+			i: number,
 			pxCellSize: number,
 			pxHeight: number,
 			pxWidth: number,
 			statDrawAvg: Stat = VideoWorkerEngine.stats[Stats.VIDEO_DRAW_AVG],
-			statProcessAvg: Stat = VideoWorkerEngine.stats[Stats.VIDEO_PROCESS_AVG],
 			tableSizeX: number,
+			tableSizeTotal: number,
 			x: number,
 			xy: number,
-			xyOnly: number,
 			y: number;
 
-		const { xyMask, xyValueAlive, yMask } = masks;
+		const { xyValueAlive, xyValueDead, yMask } = masks;
 
 		cacheCanvasCellAliveCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasCellAlive.getContext('2d', contextOptionsNoAlpha);
 		cacheCanvasCellAliveCtx.imageSmoothingEnabled = false;
@@ -232,15 +231,7 @@ class VideoWorkerEngine {
 				VideoWorkerEngine.dataNew = true;
 
 				cache = false;
-				dataEff.clear();
 				frameTimestampDelta = VideoWorkerEngine.framesPerMillisecond + 1;
-
-				// Initialize effective data set for all possible positions and set to none
-				for (x = 0; x < VideoWorkerEngine.tableSizeX; x++) {
-					for (y = 0; y < VideoWorkerEngine.tableSizeY; y++) {
-						dataEff.set((x << xyWidthBits) | y, CellState.NONE);
-					}
-				}
 			}
 
 			if (VideoWorkerEngine.resized || VideoWorkerEngine.settingsNew) {
@@ -253,6 +244,7 @@ class VideoWorkerEngine {
 				pxHeight = VideoWorkerEngine.ctxHeight;
 				pxWidth = VideoWorkerEngine.ctxWidth;
 				tableSizeX = VideoWorkerEngine.tableSizeX;
+				tableSizeTotal = VideoWorkerEngine.tableSizeX * VideoWorkerEngine.tableSizeY;
 
 				pxCellSize = Math.round((pxWidth / tableSizeX) * 1000) / 1000;
 				if (drawGrid && pxWidth / tableSizeX < 3) {
@@ -309,34 +301,10 @@ class VideoWorkerEngine {
 				frameCount++;
 
 				// Process Data
-				if (VideoWorkerEngine.dataNew) {
+				cache = false;
+				if (!cache || VideoWorkerEngine.dataNew) {
 					VideoWorkerEngine.dataNew = false;
-
-					cache = false;
 					data = VideoWorkerEngine.data;
-
-					// Update the effective and record new changes
-					statProcessAvg.watchStart();
-					y = data.length - 1; // the last entry is a timestamp for the CtV Bus performance stat
-					for (x = 0; x < y; x++) {
-						xy = data[x];
-						cellState = (xy & xyValueAlive) !== 0 ? CellState.ALIVE : CellState.DEAD;
-						xyOnly = xy & xyMask;
-
-						dataEff.set(xyOnly, cellState);
-					}
-					statProcessAvg.watchStop();
-
-					if (data.length > dataEff.size / 2) {
-						drawDeadCellsInversion = true;
-					} else {
-						drawDeadCellsInversion = false;
-					}
-				}
-
-				// Draw Data
-				if (!cache) {
-					statDrawAvg.watchStart();
 
 					// Background
 					if (drawDeadCells && drawDeadCellsInversion) {
@@ -346,8 +314,31 @@ class VideoWorkerEngine {
 						canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);
 					}
 
-					// Cells
-					for ([xy, cellState] of dataEff) {
+					// Invert dead cell draw logic?
+					countDead = data[0] & 0x7fff;
+					if (countDead > tableSizeTotal / 2) {
+						// Clear non-dead cells
+						drawDeadCellsInversion = true;
+					} else {
+						// Draw dead cells
+						drawDeadCellsInversion = false;
+					}
+
+					// Update the effective and record new changes
+					statDrawAvg.watchStart();
+					for (i = 1; i < data.length; i++) {
+						// the first entry is a timestamp for the CtV Bus performance stat
+						xy = data[i];
+
+						if ((xy & xyValueAlive) !== 0) {
+							cellState = CellState.ALIVE;
+						} else if ((xy & xyValueDead) !== 0) {
+							cellState = CellState.DEAD;
+						} else {
+							cellState = CellState.NONE;
+						}
+
+						// Cells
 						if (drawDeadCells) {
 							if (drawDeadCellsInversion) {
 								// Draw alive cells and clear non-dead cells

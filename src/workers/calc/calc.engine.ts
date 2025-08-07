@@ -178,14 +178,17 @@ class CalcWorkerEngine {
 		const dataTransform: () => Uint32Array = () => {
 			const array: number[] = [];
 
+			// Alive & Dead count
+			array.push(((dataAliveIndex & 0x7fff) << 15) | (countDead & 0x7fff));
+
+			// CtV Bus initial timestamp
+			array.push(new Date().getTime() & 0x7fffffff);
+
 			for ([xy, cellMeta] of data) {
 				if (cellMeta.alive !== 0 || cellMeta.dead !== 0) {
 					array.push(xy | cellMeta.alive | cellMeta.dead);
 				}
 			}
-
-			// CtV Bus initial timestamp
-			array.push(new Date().getTime() & 0x7fffffff);
 
 			return Uint32Array.from(array);
 		};

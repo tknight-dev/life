@@ -34,7 +34,6 @@ export enum Stats {
 	CALC_STATE_AVG = 2,
 	CALC_TO_VIDEO_BUS_AVG = 3,
 	VIDEO_DRAW_AVG = 4,
-	VIDEO_PROCESS_AVG = 5,
 }
 
 export class Stat {
