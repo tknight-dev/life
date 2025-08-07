@@ -182,6 +182,17 @@ class CalcWorkerEngine {
 			ySub1: number;
 
 		const { busMask, busDeadValue, xMask, xShifted1, xyMask, xyValueAlive, xyValueDead, yMask } = masks;
+		const arrayExpand = (array: number[], size: number) => {
+			try {
+				Array.prototype.push.apply(array, new Array(size));
+			} catch (error) {
+				let reducer: number = Math.round(size / 2);
+
+				for (; size > 0; size -= reducer) {
+					arrayExpand(array, Math.min(reducer, size));
+				}
+			}
+		};
 		const dataTransform: () => Uint32Array = () => {
 			statBusAvg.watchStart();
 			const sendDead: boolean = dataNoneIndex > dataDeadIndex, // Send the smaller of the 2 possible arrays
@@ -243,20 +254,14 @@ class CalcWorkerEngine {
 				spinOut = false;
 
 				if (dataAlive.length < tableSizeX * tableSizeY) {
-					try {
-						Array.prototype.push.apply(dataAlive, new Array(tableSizeX * tableSizeY - dataAlive.length));
-						Array.prototype.push.apply(dataDead, new Array(tableSizeX * tableSizeY - dataDead.length));
-						Array.prototype.push.apply(dataNone, new Array(tableSizeX * tableSizeY - dataNone.length));
-					} catch (error) {
-						dataAlive = new Array(tableSizeX * tableSizeY);
-						dataDead = new Array(tableSizeX * tableSizeY);
-						dataNone = new Array(tableSizeX * tableSizeY);
-					}
+					arrayExpand(dataAlive, tableSizeX * tableSizeY - dataAlive.length);
+					arrayExpand(dataDead, tableSizeX * tableSizeY - dataAlive.length);
+					arrayExpand(dataNone, tableSizeX * tableSizeY - dataAlive.length);
 				}
+
 				dataAliveIndex = 0;
 				dataDeadIndex = 0;
 				dataNoneIndex = 0;
-
 				for (x = 0; x < tableSizeX; x++) {
 					for (y = 0; y < tableSizeY; y++) {
 						xy = (x << xyWidthBits) | y;
@@ -291,29 +296,17 @@ class CalcWorkerEngine {
 
 				if (tableSizeX < CalcWorkerEngine.tableSizeX) {
 					// Grow
-					tableSizeX = CalcWorkerEngine.tableSizeX;
-					tableSizeY = CalcWorkerEngine.tableSizeY;
-
 					if (dataAlive.length < tableSizeX * tableSizeY) {
-						try {
-							Array.prototype.push.apply(dataAlive, new Array(tableSizeX * tableSizeY - dataAlive.length));
-							Array.prototype.push.apply(dataDead, new Array(tableSizeX * tableSizeY - dataDead.length));
-							Array.prototype.push.apply(dataNone, new Array(tableSizeX * tableSizeY - dataNone.length));
-						} catch (error) {
-							dataAlive = new Array(tableSizeX * tableSizeY);
-							dataDead = new Array(tableSizeX * tableSizeY);
-							dataNone = new Array(tableSizeX * tableSizeY);
-						}
+						arrayExpand(dataAlive, tableSizeX * tableSizeY - dataAlive.length);
+						arrayExpand(dataDead, tableSizeX * tableSizeY - dataAlive.length);
+						arrayExpand(dataNone, tableSizeX * tableSizeY - dataAlive.length);
 					}
-					dataAliveIndex = 0;
-					dataDeadIndex = 0;
-					dataNoneIndex = 0;
 
-					for (x = 0; x < tableSizeX; x++) {
-						for (y = 0; y < tableSizeY; y++) {
+					for (x = 0; x < CalcWorkerEngine.tableSizeX; x++) {
+						for (y = 0; y < CalcWorkerEngine.tableSizeY; y++) {
 							xy = (x << xyWidthBits) | y;
 
-							if (data.has(xy)) {
+							if (!data.has(xy)) {
 								data.set(xy, {
 									alive: 0,
 									dead: 0,
@@ -323,10 +316,14 @@ class CalcWorkerEngine {
 							}
 						}
 					}
+
+					tableSizeX = CalcWorkerEngine.tableSizeX;
+					tableSizeY = CalcWorkerEngine.tableSizeY;
 				} else {
 					// Shrink
 					tableSizeX = CalcWorkerEngine.tableSizeX;
 					tableSizeY = CalcWorkerEngine.tableSizeY;
+
 					for (xy of data.keys()) {
 						y = xy & yMask;
 						if (y >= tableSizeY) {
@@ -336,6 +333,20 @@ class CalcWorkerEngine {
 							if (x >= tableSizeX) {
 								data.delete(xy);
 							}
+						}
+					}
+
+					// Recalculate indexes
+					dataAliveIndex = 0;
+					dataDeadIndex = 0;
+					dataNoneIndex = 0;
+					for ([xy, cellMeta] of data) {
+						if (cellMeta.alive) {
+							dataAlive[dataAliveIndex++] = xy;
+						} else if (cellMeta.dead) {
+							dataDead[dataDeadIndex++] = xy;
+						} else {
+							dataNone[dataNoneIndex++] = xy;
 						}
 					}
 				}
