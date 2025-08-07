@@ -145,10 +145,12 @@ class CalcWorkerEngine {
 			calcTimestampIPSThen: number = calcTimestampFPSThen,
 			calcTimestampThen: number = 0,
 			cellMeta: CellMeta,
-			countAlive: number = 0,
 			countDead: number = 0,
 			data: Map<number, CellMeta> = new Map<number, CellMeta>(),
+			dataAlive: number[] = [],
+			dataAliveIndex: number = 0,
 			dataNew: boolean,
+			i: number,
 			life: Uint32Array[] = CalcWorkerEngine.life,
 			homeostatic: boolean,
 			homeostaticDataMax: number = 40, // is enough to catch a 20 period oscillation
@@ -212,6 +214,15 @@ class CalcWorkerEngine {
 				homeostatic = false;
 				spinOut = false;
 
+				if (dataAlive.length < tableSizeX * tableSizeY) {
+					try {
+						Array.prototype.push.apply(dataAlive, new Array(tableSizeX * tableSizeY - dataAlive.length));
+					} catch (error) {
+						dataAlive = new Array(tableSizeX * tableSizeY);
+					}
+				}
+				dataAliveIndex = 0;
+
 				for (x = 0; x < tableSizeX; x++) {
 					for (y = 0; y < tableSizeY; y++) {
 						xy = (x << xyWidthBits) | y;
@@ -247,6 +258,14 @@ class CalcWorkerEngine {
 					// Grow
 					tableSizeX = CalcWorkerEngine.tableSizeX;
 					tableSizeY = CalcWorkerEngine.tableSizeY;
+
+					if (dataAlive.length < tableSizeX * tableSizeY) {
+						try {
+							Array.prototype.push.apply(dataAlive, new Array(tableSizeX * tableSizeY - dataAlive.length));
+						} catch (error) {
+							dataAlive = new Array(tableSizeX * tableSizeY);
+						}
+					}
 
 					for (x = 0; x < tableSizeX; x++) {
 						for (y = 0; y < tableSizeY; y++) {
@@ -304,6 +323,10 @@ class CalcWorkerEngine {
 						cellMeta.alive = xy & xyValueAlive;
 						cellMeta.dead = xy & xyValueDead;
 						cellMeta.neighbors = 0;
+
+						if (cellMeta.alive) {
+							dataAlive[dataAliveIndex++] = xy & xyMask;
+						}
 					}
 				}
 
@@ -377,10 +400,9 @@ class CalcWorkerEngine {
 					 * Consider: Diagonals, Horizontal, and Veritical cells
 					 */
 					statNeighborAvg.watchStart();
-					for ([xy, cellMeta] of data) {
-						if (cellMeta.alive === 0) {
-							continue;
-						}
+					for (i = 0; i < dataAliveIndex; i++) {
+						xy = dataAlive[i];
+						cellMeta = <any>data.get(xy);
 
 						// Decode x & y
 						xShifted = xy & xMask;
@@ -443,13 +465,13 @@ class CalcWorkerEngine {
 					 * 4. Any dead cell with exactly three live neighbors		- Becomes alive (reproduction)
 					 */
 					statStatAvg.watchStart();
-					countAlive = 0;
 					countDead = 0;
-					for (cellMeta of data.values()) {
+					dataAliveIndex = 0;
+					for ([xy, cellMeta] of data) {
 						if (cellMeta.alive !== 0) {
 							if (cellMeta.neighbors === 2 || cellMeta.neighbors === 3) {
 								// Rule 2
-								countAlive++;
+								dataAlive[dataAliveIndex++] = xy & xyMask;
 							} else {
 								// Rule 1 & Rule 3
 								cellMeta.alive = 0;
@@ -460,7 +482,7 @@ class CalcWorkerEngine {
 							// Rule 4
 							cellMeta.alive = xyValueAlive;
 							cellMeta.dead = 0;
-							countAlive++;
+							dataAlive[dataAliveIndex++] = xy & xyMask;
 						} else if (cellMeta.dead !== 0) {
 							countDead++;
 						}
@@ -472,7 +494,7 @@ class CalcWorkerEngine {
 					// Homeostasis
 					if (!homeostatic) {
 						statHomeostasisAvg.watchStart();
-						homeostaticData[homeostaticDataIndex].alive = countAlive;
+						homeostaticData[homeostaticDataIndex].alive = dataAliveIndex;
 						homeostaticData[homeostaticDataIndex].dead = countDead;
 						homeostaticDataIndex = (homeostaticDataIndex + 1) % homeostaticDataMax;
 
@@ -529,7 +551,7 @@ class CalcWorkerEngine {
 									{
 										cmd: CalcBusOutputCmd.STATS,
 										data: {
-											alive: countAlive,
+											alive: dataAliveIndex,
 											dead: countDead,
 											ips: calcCount,
 											ipsDeltaInMS: calcTimestampIPSDelta,
@@ -544,7 +566,7 @@ class CalcWorkerEngine {
 						}
 					}
 
-					if (countAlive === 0) {
+					if (dataAliveIndex === 0) {
 						CalcWorkerEngine.play = false;
 
 						// Post game over
@@ -572,7 +594,7 @@ class CalcWorkerEngine {
 							{
 								cmd: CalcBusOutputCmd.STATS,
 								data: {
-									alive: countAlive,
+									alive: dataAliveIndex,
 									dead: countDead,
 									ips: calcCount,
 									ipsDeltaInMS: calcTimestampIPSDelta,
@@ -617,7 +639,7 @@ class CalcWorkerEngine {
 					{
 						cmd: CalcBusOutputCmd.STATS,
 						data: {
-							alive: countAlive,
+							alive: dataAliveIndex,
 							dead: countDead,
 							ips: calcCount,
 							ipsDeltaInMS: calcTimestampIPSDelta,
