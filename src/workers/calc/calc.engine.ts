@@ -4,6 +4,7 @@ import {
 	CalcBusInputDataSettings,
 	CalcBusInputPayload,
 	CalcBusOutputCmd,
+	CalcBusOutputDataPositions,
 	CalcBusOutputPayload,
 	masks,
 	Stat,
@@ -138,6 +139,11 @@ class CalcWorkerEngine {
 
 	private static calc(_: number): void {}
 
+	/**
+	 * Performance Tweaks: Failure Logs
+	 * 	-	Arrays (dataAlive, dataDead, etc) are 2x faster then Sets
+	 * 	-	Maps are better then Objects in high IO contexts
+	 */
 	private static calcBinder(): void {
 		let calcCount: number = 0,
 			calcCountTotal: number = 0,
@@ -181,7 +187,7 @@ class CalcWorkerEngine {
 			yPlus1: number,
 			ySub1: number;
 
-		const { busMask, busDeadValue, xMask, xShifted1, xyMask, xyValueAlive, xyValueDead, yMask } = masks;
+		const { xMask, xShifted1, xyMask, xyValueAlive, xyValueDead, yMask } = masks;
 		const arrayExpand = (array: number[], size: number) => {
 			try {
 				Array.prototype.push.apply(array, new Array(size));
@@ -193,40 +199,26 @@ class CalcWorkerEngine {
 				}
 			}
 		};
-		const dataTransform: () => Uint32Array = () => {
+		const dataPost: () => void = () => {
 			statBusAvg.watchStart();
-			const sendDead: boolean = dataNoneIndex > dataDeadIndex, // Send the smaller of the 2 possible arrays
-				array: number[] = new Array(3 + dataAliveIndex + (sendDead ? dataDeadIndex : dataNoneIndex));
-
-			// Alive & Dead/None count
-			array[0] = dataAliveIndex & busMask;
-			array[1] = (sendDead ? busDeadValue : 0) | ((sendDead ? dataDeadIndex : dataNoneIndex) & busMask);
-
-			// Alive
-			for (i = 0; i < dataAliveIndex; i++) {
-				array[i + 3] = dataAlive[i] | xyValueAlive;
-			}
-
-			x = 3 + dataAliveIndex; // Offset
-			if (sendDead) {
-				// Dead
-				for (i = 0; i < dataDeadIndex; i++) {
-					array[i + x] = dataDead[i] | xyValueDead;
-				}
-			} else {
-				// None
-				for (i = 0; i < dataNoneIndex; i++) {
-					array[i + x] = dataNone[i];
-				}
-			}
-
-			const uint32Array: Uint32Array = Uint32Array.from(array);
-			// CtV Bus initial timestamp
-			uint32Array[2] = new Date().getTime() & busMask;
-
+			const deadMode: boolean = dataNoneIndex > dataDeadIndex, // Send the smaller of the 2 possible arrays
+				ret: CalcBusOutputDataPositions = {
+					alive: Uint32Array.from(dataAlive.slice(0, dataAliveIndex)),
+					deadMode: deadMode,
+					deadOrNone: Uint32Array.from(deadMode ? dataDead.slice(0, dataDeadIndex) : dataNone.slice(0, dataNoneIndex)),
+					timestamp: new Date().getTime(),
+				};
 			statBusAvg.watchStop();
 
-			return uint32Array;
+			CalcWorkerEngine.post(
+				[
+					{
+						cmd: CalcBusOutputCmd.POSITIONS,
+						data: ret,
+					},
+				],
+				[ret.alive.buffer, ret.deadOrNone.buffer],
+			);
 		};
 
 		for (x = 0; x < homeostaticDataMax; x++) {
@@ -353,16 +345,7 @@ class CalcWorkerEngine {
 
 				if (!CalcWorkerEngine.play) {
 					// Post postions
-					positions = dataTransform();
-					CalcWorkerEngine.post(
-						[
-							{
-								cmd: CalcBusOutputCmd.POSITIONS,
-								data: positions,
-							},
-						],
-						[positions.buffer],
-					);
+					dataPost();
 				}
 			}
 
@@ -391,16 +374,7 @@ class CalcWorkerEngine {
 
 				if (!CalcWorkerEngine.play) {
 					// Post postions
-					positions = dataTransform();
-					CalcWorkerEngine.post(
-						[
-							{
-								cmd: CalcBusOutputCmd.POSITIONS,
-								data: positions,
-							},
-						],
-						[positions.buffer],
-					);
+					dataPost();
 				}
 			}
 
@@ -598,16 +572,7 @@ class CalcWorkerEngine {
 								CalcWorkerEngine.play = false;
 
 								// Post postions
-								positions = dataTransform();
-								CalcWorkerEngine.post(
-									[
-										{
-											cmd: CalcBusOutputCmd.POSITIONS,
-											data: positions,
-										},
-									],
-									[positions.buffer],
-								);
+								dataPost();
 
 								// Post stats
 								CalcWorkerEngine.post([
@@ -641,16 +606,7 @@ class CalcWorkerEngine {
 						]);
 
 						// Post postions
-						positions = dataTransform();
-						CalcWorkerEngine.post(
-							[
-								{
-									cmd: CalcBusOutputCmd.POSITIONS,
-									data: positions,
-								},
-							],
-							[positions.buffer],
-						);
+						dataPost();
 
 						// Post stats
 						CalcWorkerEngine.post([
@@ -682,16 +638,7 @@ class CalcWorkerEngine {
 				dataNew = false;
 
 				// Post postions
-				positions = dataTransform();
-				CalcWorkerEngine.post(
-					[
-						{
-							cmd: CalcBusOutputCmd.POSITIONS,
-							data: positions,
-						},
-					],
-					[positions.buffer],
-				);
+				dataPost();
 			}
 
 			/**

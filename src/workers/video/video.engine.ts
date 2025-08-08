@@ -7,7 +7,7 @@ import {
 	VideoBusOutputCmd,
 	VideoBusOutputPayload,
 } from './video.model';
-import { masks, Stat, Stats, xyWidthBits } from '../calc/calc.model';
+import { CalcBusOutputDataPositions, masks, Stat, Stats, xyWidthBits } from '../calc/calc.model';
 
 /**
  * @author tknight-dev
@@ -18,7 +18,7 @@ self.onmessage = (event: MessageEvent) => {
 
 	switch (videoBusInputPayload.cmd) {
 		case VideoBusInputCmd.DATA:
-			VideoWorkerEngine.inputData(<Uint32Array>videoBusInputPayload.data);
+			VideoWorkerEngine.inputData(<CalcBusOutputDataPositions>videoBusInputPayload.data);
 			break;
 		case VideoBusInputCmd.INIT:
 			VideoWorkerEngine.initialize(self, <VideoBusInputDataInit>videoBusInputPayload.data);
@@ -40,7 +40,7 @@ class VideoWorkerEngine {
 	private static canvasOffscreenContext: OffscreenCanvasRenderingContext2D;
 	private static ctxHeight: number;
 	private static ctxWidth: number;
-	private static data: Uint32Array;
+	private static data: CalcBusOutputDataPositions;
 	private static dataNew: boolean;
 	private static drawDeadCells: boolean;
 	private static drawGrid: boolean;
@@ -52,7 +52,6 @@ class VideoWorkerEngine {
 	private static settingsNew: boolean;
 	private static stats: { [key: number]: Stat } = {};
 	private static tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
-	private static tableSizeY: number;
 
 	public static async initialize(self: Window & typeof globalThis, data: VideoBusInputDataInit): Promise<void> {
 		// Config
@@ -74,7 +73,12 @@ class VideoWorkerEngine {
 		VideoWorkerEngine.stats[Stats.VIDEO_DRAW_AVG] = new Stat();
 
 		// Engines
-		VideoWorkerEngine.inputData(Uint32Array.from([0, masks.busDeadValue, new Date().getTime() & 0x7fffffff]));
+		VideoWorkerEngine.inputData({
+			alive: new Uint32Array(),
+			deadMode: true,
+			deadOrNone: new Uint32Array(),
+			timestamp: new Date().getTime(),
+		});
 		VideoWorkerEngine.inputResize(data);
 		VideoWorkerEngine.inputSettings(data);
 
@@ -103,10 +107,10 @@ class VideoWorkerEngine {
 		}
 	}
 
-	public static inputData(data: Uint32Array): void {
+	public static inputData(data: CalcBusOutputDataPositions): void {
 		VideoWorkerEngine.data = data;
 		VideoWorkerEngine.dataNew = true;
-		VideoWorkerEngine.stats[Stats.CALC_TO_VIDEO_BUS_AVG].add((new Date().getTime() & 0x7fffffff) - data[2]);
+		VideoWorkerEngine.stats[Stats.CALC_TO_VIDEO_BUS_AVG].add(new Date().getTime() - data.timestamp);
 	}
 
 	public static inputReset(): void {
@@ -129,7 +133,6 @@ class VideoWorkerEngine {
 		VideoWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
 		VideoWorkerEngine.settingsNew = true;
 		VideoWorkerEngine.tableSizeX = data.tableSizeX;
-		VideoWorkerEngine.tableSizeY = (data.tableSizeX * 9) / 16;
 	}
 
 	private static post(VideoBusWorkerPayloads: VideoBusOutputPayload[]): void {
@@ -140,6 +143,9 @@ class VideoWorkerEngine {
 
 	private static render(_: number): void {}
 
+	/**
+	 * Performance Tweaks: Failure Logs
+	 */
 	private static renderBinder(): boolean {
 		let cache: boolean,
 			cacheCanvasCellAlive: OffscreenCanvas = new OffscreenCanvas(1, 1),
@@ -162,19 +168,13 @@ class VideoWorkerEngine {
 				powerPreference: 'high-performance',
 				preserveDrawingBuffer: true,
 			},
-			countAlive: number,
-			countDeadMode: boolean,
-			countDeadOrNone: number,
-			data: Uint32Array,
+			data: CalcBusOutputDataPositions,
 			drawDeadCells: boolean,
 			drawGrid: boolean,
 			frameCount: number = 0,
 			frameTimestampDelta: number = 0,
 			frameTimestampFPSThen: number = 0,
 			frameTimestampThen: number = 0,
-			i: number,
-			iMax: number,
-			iMin: number,
 			pxCellSize: number,
 			pxHeight: number,
 			pxWidth: number,
@@ -184,7 +184,7 @@ class VideoWorkerEngine {
 			xy: number,
 			y: number;
 
-		const { busMask, busDeadValue, yMask } = masks;
+		const { yMask } = masks;
 
 		cacheCanvasCellAliveCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasCellAlive.getContext('2d', contextOptionsNoAlpha);
 		cacheCanvasCellAliveCtx.imageSmoothingEnabled = false;
@@ -293,17 +293,12 @@ class VideoWorkerEngine {
 					VideoWorkerEngine.dataNew = false;
 					data = VideoWorkerEngine.data;
 
-					// Gather meta
-					countAlive = data[0] & busMask;
-					countDeadMode = (data[1] & busDeadValue) !== 0;
-					countDeadOrNone = data[1] & busMask;
-
 					// Draw
-					if (countDeadOrNone + countAlive > 0) {
+					if (data.alive.length + data.deadOrNone.length > 0) {
 						statDrawAvg.watchStart();
 
 						// Draw: Background
-						if (drawDeadCells && !countDeadMode) {
+						if (drawDeadCells && !data.deadMode) {
 							canvasOffscreenContext.fillStyle = 'rgb(0,64,0)';
 							canvasOffscreenContext.fillRect(0, 0, pxWidth, pxHeight);
 						} else {
@@ -311,10 +306,7 @@ class VideoWorkerEngine {
 						}
 
 						// Draw: Living Cells
-						iMin = 3;
-						iMax = iMin + countAlive;
-						for (i = iMin; i < iMax; i++) {
-							xy = data[i];
+						for (xy of data.alive) {
 							x = (xy >> xyWidthBits) & yMask;
 							y = xy & yMask;
 							canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
@@ -322,21 +314,16 @@ class VideoWorkerEngine {
 
 						// Clear/Draw: Dead Cells
 						if (drawDeadCells) {
-							iMin = iMax;
-							iMax = iMin + countDeadOrNone;
-
-							if (countDeadMode) {
+							if (data.deadMode) {
 								// Draw dead cells
-								for (i = iMin; i < iMax; i++) {
-									xy = data[i];
+								for (xy of data.deadOrNone) {
 									x = (xy >> xyWidthBits) & yMask;
 									y = xy & yMask;
 									canvasOffscreenContext.drawImage(cacheCanvasCellDead, x * pxCellSize, y * pxCellSize);
 								}
 							} else {
 								// Clear non-dead cells
-								for (i = iMin; i < iMax; i++) {
-									xy = data[i];
+								for (xy of data.deadOrNone) {
 									x = (xy >> xyWidthBits) & yMask;
 									y = xy & yMask;
 									canvasOffscreenContext.clearRect(x * pxCellSize, y * pxCellSize, pxCellSize, pxCellSize);

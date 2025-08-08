@@ -1,4 +1,4 @@
-import { Stat } from '../calc/calc.model';
+import { CalcBusOutputDataPositions, Stat } from '../calc/calc.model';
 
 /**
  * @author tknight-dev
@@ -43,7 +43,14 @@ export enum VideoBusInputDataSettingsFPS {
 
 export interface VideoBusInputPayload {
 	cmd: VideoBusInputCmd;
-	data: boolean | VideoBusInputDataInit | VideoBusInputDataResize | VideoBusInputDataSettings | Uint32Array | undefined;
+	data:
+		| CalcBusOutputDataPositions
+		| boolean
+		| VideoBusInputDataInit
+		| VideoBusInputDataResize
+		| VideoBusInputDataSettings
+		| Uint32Array
+		| undefined;
 }
 
 /*

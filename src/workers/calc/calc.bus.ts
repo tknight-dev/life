@@ -4,6 +4,7 @@ import {
 	CalcBusInputDataSettings,
 	CalcBusInputPayload,
 	CalcBusOutputCmd,
+	CalcBusOutputDataPositions,
 	CalcBusOutputDataStats,
 	CalcBusOutputPayload,
 } from './calc.model';
@@ -75,7 +76,7 @@ export class CalcBusEngine {
 						CalcBusEngine.callbackInitComplete();
 						break;
 					case CalcBusOutputCmd.POSITIONS:
-						VideoBusEngine.outputData(<Uint32Array>payloads[i].data);
+						VideoBusEngine.outputData(<CalcBusOutputDataPositions>payloads[i].data);
 						break;
 					case CalcBusOutputCmd.SPIN_OUT:
 						CalcBusEngine.callbackSpinOut();

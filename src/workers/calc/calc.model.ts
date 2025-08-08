@@ -8,8 +8,6 @@ import { VideoBusInputDataSettingsFPS } from '../video/video.model';
  * Masks
  */
 export const masks = {
-	busMask: 0x7fffffff,
-	busDeadValue: 0,
 	xMask: 0,
 	xShifted1: 0,
 	xyMask: 0,
@@ -19,7 +17,6 @@ export const masks = {
 };
 export const xyWidthBits: number = 11;
 
-masks.busDeadValue = 1 << 31;
 masks.xMask = (Math.pow(2, xyWidthBits) - 1) << xyWidthBits;
 masks.xShifted1 = 0x1 << xyWidthBits;
 masks.xyMask = ((Math.pow(2, xyWidthBits) - 1) << xyWidthBits) | (Math.pow(2, xyWidthBits) - 1);
@@ -138,6 +135,13 @@ export enum CalcBusOutputCmd {
 	STATS,
 }
 
+export interface CalcBusOutputDataPositions {
+	alive: Uint32Array;
+	deadMode: boolean;
+	deadOrNone: Uint32Array;
+	timestamp: number;
+}
+
 export interface CalcBusOutputDataStats {
 	alive: number;
 	dead: number;
@@ -149,5 +153,5 @@ export interface CalcBusOutputDataStats {
 
 export interface CalcBusOutputPayload {
 	cmd: CalcBusOutputCmd;
-	data: CalcBusOutputDataStats | number | Uint32Array | undefined;
+	data: CalcBusOutputDataPositions | CalcBusOutputDataStats | number | Uint32Array | undefined;
 }

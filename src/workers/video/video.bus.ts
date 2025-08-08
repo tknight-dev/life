@@ -8,6 +8,7 @@ import {
 	VideoBusOutputDataStats,
 	VideoBusOutputPayload,
 } from './video.model';
+import { CalcBusOutputDataPositions } from '../calc/calc.model';
 
 /**
  * @author tknight-dev
@@ -95,13 +96,13 @@ export class VideoBusEngine {
 		};
 	}
 
-	public static outputData(data: Uint32Array): void {
+	public static outputData(data: CalcBusOutputDataPositions): void {
 		VideoBusEngine.worker.postMessage(
 			{
 				cmd: VideoBusInputCmd.DATA,
 				data: data,
 			},
-			[data.buffer],
+			[data.alive.buffer, data.deadOrNone.buffer],
 		);
 	}
 
