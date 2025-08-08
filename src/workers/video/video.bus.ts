@@ -1,5 +1,6 @@
 import {
 	VideoBusInputCmd,
+	VideoBusInputDataCamera,
 	VideoBusInputDataInit,
 	VideoBusInputDataResize,
 	VideoBusInputDataSettings,
@@ -94,6 +95,13 @@ export class VideoBusEngine {
 				}
 			}
 		};
+	}
+
+	public static outputCamera(data: VideoBusInputDataCamera): void {
+		VideoBusEngine.worker.postMessage({
+			cmd: VideoBusInputCmd.CAMERA,
+			data: data,
+		});
 	}
 
 	public static outputData(data: CalcBusOutputDataPositions): void {

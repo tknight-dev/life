@@ -1,5 +1,6 @@
 import {
 	VideoBusInputCmd,
+	VideoBusInputDataCamera,
 	VideoBusInputDataInit,
 	VideoBusInputDataResize,
 	VideoBusInputDataSettings,
@@ -19,6 +20,9 @@ self.onmessage = (event: MessageEvent) => {
 	const videoBusInputPayload: VideoBusInputPayload = event.data;
 
 	switch (videoBusInputPayload.cmd) {
+		case VideoBusInputCmd.CAMERA:
+			VideoWorkerEngine.inputCamera(<VideoBusInputDataCamera>videoBusInputPayload.data);
+			break;
 		case VideoBusInputCmd.DATA:
 			VideoWorkerEngine.inputData(<CalcBusOutputDataPositions>videoBusInputPayload.data);
 			break;
@@ -107,6 +111,10 @@ class VideoWorkerEngine {
 				VideoWorkerEngine.frameRequest = requestAnimationFrame(VideoWorkerEngine.render);
 			}
 		}
+	}
+
+	public static inputCamera(data: VideoBusInputDataCamera): void {
+		console.log('inputCamera', data);
 	}
 
 	public static inputData(data: CalcBusOutputDataPositions): void {

@@ -1,5 +1,6 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
 import { CalcBusInputDataSettings, masks, xyWidthBits } from './workers/calc/calc.model';
+import { DoubleLinkedList } from './models/double-linked-list.model';
 import { MouseAction, MouseCmd, MouseEngine, MousePosition } from './engines/mouse.engine';
 import { TouchAction, TouchCmd, TouchEngine, TouchPosition } from './engines/touch.engine';
 import { Orientation, OrientationEngine } from './engines/orientation.engine';
@@ -12,13 +13,25 @@ import { VideoBusInputDataSettings } from './workers/video/video.model';
  */
 const { xyValueAlive, xyValueDead } = masks;
 
-interface Placement {
-	x: number;
-	y: number;
+interface InteractionEntry {
+	down: boolean | undefined;
+	move: boolean;
+	position: MousePosition | TouchPosition;
+	position2: MousePosition | TouchPosition;
+	touch: boolean;
+	zoom: boolean;
+}
+
+export enum InteractionMode {
+	DRAW_LIFE,
+	DRAW_DEATH,
+	ERASE,
+	STANDARD,
 }
 
 export class Interaction {
 	protected static buffer: Set<number> = new Set();
+	protected static bufferInteraction: DoubleLinkedList<InteractionEntry> = new DoubleLinkedList<InteractionEntry>();
 	protected static domRect: DOMRect;
 	protected static editActive: boolean;
 	protected static editInterval: ReturnType<typeof setInterval>;
@@ -38,7 +51,8 @@ export class Interaction {
 	protected static elementSpinner: HTMLElement;
 	protected static elementRotator: HTMLElement;
 	protected static gameover: boolean;
-	protected static mode: boolean | null = null;
+	protected static interactionRequest: number;
+	protected static mode: InteractionMode = InteractionMode.STANDARD;
 	protected static mobile: boolean;
 	protected static moved: boolean;
 	protected static rotateAvailable: boolean;
@@ -52,7 +66,7 @@ export class Interaction {
 	protected static settingsVideo: VideoBusInputDataSettings;
 	protected static spinnerTimeout: ReturnType<typeof setTimeout>;
 	protected static swipeLength: number;
-	protected static swipeLengthAccepted: number = 9;
+	protected static swipeLengthAccepted: number = 200;
 	protected static swipePositionPrevious: number;
 	protected static pxCellSize: number;
 	protected static readonly touchDoubleWindow: number = 300;
@@ -70,30 +84,73 @@ export class Interaction {
 		});
 		MouseEngine.setCallback((action: MouseAction) => {
 			if (action.cmd === MouseCmd.WHEEL) {
-				if (action.down) {
-					Interaction.elementControlsBackwardFunc();
-				} else {
-					Interaction.elementControlsForwardFunc();
-				}
+				Interaction.bufferInteraction.pushStart({
+					down: action.down,
+					move: false,
+					position: action.position,
+					position2: action.position,
+					touch: false,
+					zoom: true,
+				});
 			} else if (action.cmd === MouseCmd.MOVE) {
-				Interaction.handler(false, true, action.position, false);
+				Interaction.bufferInteraction.pushStart({
+					down: undefined,
+					move: true,
+					position: action.position,
+					position2: action.position,
+					touch: false,
+					zoom: false,
+				});
 			} else {
-				if (action.down === true) {
-					Interaction.handler(true, false, action.position, false);
-				} else if (action.down === false) {
-					Interaction.handler(false, false, action.position, false);
-				}
+				Interaction.bufferInteraction.pushStart({
+					down: action.down,
+					move: false,
+					position: action.position,
+					position2: action.position,
+					touch: false,
+					zoom: false,
+				});
 			}
 		});
 		TouchEngine.setCallback((action: TouchAction) => {
 			if (action.cmd === TouchCmd.CLICK) {
-				if (action.down === true) {
-					Interaction.handler(true, false, action.positions[0], true);
-				} else if (action.down === false) {
-					Interaction.handler(false, false, action.positions[0], true);
-				}
+				Interaction.bufferInteraction.pushStart({
+					down: action.down,
+					move: false,
+					position: action.positions[0],
+					position2: action.positions[0],
+					touch: true,
+					zoom: false,
+				});
 			} else if (action.cmd === TouchCmd.CLICK_MOVE) {
-				Interaction.handler(false, true, action.positions[0], true);
+				Interaction.bufferInteraction.pushStart({
+					down: true,
+					move: true,
+					position: action.positions[0],
+					position2: action.positions[0],
+					touch: true,
+					zoom: false,
+				});
+			}
+
+			if (action.cmd === TouchCmd.ZOOM) {
+				Interaction.bufferInteraction.pushStart({
+					down: action.down,
+					move: false,
+					position: action.positions[0],
+					position2: action.positions[1],
+					touch: true,
+					zoom: true,
+				});
+			} else if (action.cmd === TouchCmd.ZOOM_MOVE) {
+				Interaction.bufferInteraction.pushStart({
+					down: undefined,
+					move: true,
+					position: action.positions[0],
+					position2: action.positions[1],
+					touch: true,
+					zoom: true,
+				});
 			}
 		});
 		ResizeEngine.initialize();
@@ -105,170 +162,307 @@ export class Interaction {
 		});
 
 		// Done
+		Interaction.processorBinder();
+		Interaction.interactionRequest = requestAnimationFrame(Interaction.processor);
 		Interaction.rotator(OrientationEngine.getOrientation());
 		setTimeout(() => {
 			Interaction.pxSizeCalc();
 		}, 100);
 	}
 
-	private static handler(down: boolean, move: boolean, position: MousePosition | TouchPosition, touch: boolean): void {
-		// Standard edit interaction
-		if (Interaction.mode !== null) {
-			const buffer = Interaction.buffer,
-				devicePixelRatio: number = Math.round(window.devicePixelRatio * 1000) / 1000,
-				domRect: DOMRect = Interaction.domRect,
-				elementEditStyle: CSSStyleDeclaration = Interaction.elementEdit.style,
-				pxCellSize: number = Interaction.pxCellSize;
+	private static processor(_: number): void {}
 
-			let out: boolean = false,
-				px: number = position.x / devicePixelRatio,
-				py: number = position.y / devicePixelRatio,
-				tx: number,
-				ty: number;
+	private static processorBinder(): void {
+		let cameraRelX: number = 0,
+			cameraRelY: number = 0,
+			cameraUpdated: boolean = false,
+			cameraZoom: number = 100,
+			cameraZoomMax: number = 100,
+			cameraZoomMin: number = 1,
+			cameraZoomStep: number = 1,
+			down: boolean,
+			entry: InteractionEntry | undefined,
+			mode: InteractionMode = InteractionMode.STANDARD,
+			move: boolean,
+			position: MousePosition | TouchPosition,
+			position2: MousePosition | TouchPosition,
+			touch: boolean,
+			touchDistance: number,
+			touchDistancePrevious: number = -1,
+			touchDistanceRelX: number,
+			touchDistanceRelY: number,
+			zoom: boolean;
 
-			if (Interaction.rotated) {
-				px = position.y / devicePixelRatio;
-				py = domRect.width - position.x / devicePixelRatio;
+		// Limit how often a camera update can be sent via the bus
+		setInterval(() => {
+			if (cameraUpdated) {
+				cameraUpdated = false;
 
-				if (px === 0 || py === 0 || py === domRect.width || px === domRect.height) {
-					out = true;
-				}
-			} else {
-				if (px === 0 || py === 0 || px === domRect.width || py === domRect.height) {
-					out = true;
-				}
+				VideoBusEngine.outputCamera({
+					relX: cameraRelX,
+					relY: cameraRelY,
+					zoom: cameraZoom,
+				});
 			}
+		}, 40);
 
-			tx = (px / pxCellSize) | 0;
-			ty = (py / pxCellSize) | 0;
+		/**
+		 * Buffer and processing ensures inputs are serially processed
+		 */
+		let processor = (timestampNow: number) => {
+			// Start the request for the next frame
+			Interaction.interactionRequest = requestAnimationFrame(processor);
+			timestampNow |= 0;
 
-			px = tx * pxCellSize;
-			py = ty * pxCellSize;
+			while (true) {
+				entry = Interaction.bufferInteraction.popEnd();
 
-			if (move) {
-				if (out) {
-					Interaction.editActive = false;
-					elementEditStyle.display = 'none';
-				} else {
-					if (!touch) {
-						elementEditStyle.display = 'block';
-
-						elementEditStyle.left = px + 'px';
-						elementEditStyle.top = py + 'px';
-					} else {
-						elementEditStyle.display = 'none';
-					}
-
-					if (Interaction.editActive) {
-						buffer.add((tx << xyWidthBits) | ty | (Interaction.mode ? xyValueAlive : xyValueDead));
-					}
-				}
-			} else if (!out) {
-				Interaction.editActive = down;
-
-				// Single touches can be registered a click by the browser
-				if (!touch || Interaction.mobile) {
-					elementEditStyle.display = 'none';
+				if (!entry) {
+					break;
 				}
 
-				if (down) {
-					if (!touch) {
-						buffer.add((tx << xyWidthBits) | ty | (Interaction.mode ? xyValueAlive : xyValueDead));
-					}
-
-					clearInterval(Interaction.editInterval);
-					Interaction.editInterval = setInterval(() => {
-						if (buffer.size) {
-							CalcBusEngine.outputLife(Uint32Array.from(buffer));
-							buffer.clear();
-						}
-					}, 40);
-				} else {
-					clearInterval(Interaction.editInterval);
-					if (buffer.size) {
-						CalcBusEngine.outputLife(Uint32Array.from(buffer));
-						buffer.clear();
-					}
+				// Pull data
+				if (entry.down !== undefined) {
+					down = entry.down;
 				}
-			}
-		} else if (touch) {
-			// Swipe for speedup or speeddown
-			const domRect: DOMRect = Interaction.domRect;
+				// move = entry.move;
+				position = entry.position;
+				position2 = entry.position2;
+				touch = entry.touch;
+				zoom = entry.zoom;
 
-			let now: number,
-				out: boolean = false,
-				px: number = position.x / devicePixelRatio,
-				py: number = position.y / devicePixelRatio;
+				// Mode variables
+				if (mode !== Interaction.mode) {
+					mode = Interaction.mode;
 
-			if (px === 0 || py === 0 || px === domRect.width || py === domRect.height) {
-				out = true;
-			}
-
-			if (move) {
-				if (out) {
-					Interaction.editActive = false;
-				} else if (Interaction.editActive) {
-					Interaction.swipeLength = px - Interaction.swipePositionPrevious;
-					Interaction.swipePositionPrevious = px;
+					touchDistancePrevious = -1; // Reset touch based zoom
 				}
-			} else if (!out) {
-				Interaction.editActive = down;
 
-				if (down) {
-					Interaction.swipeLength = 0;
-					Interaction.swipePositionPrevious = px;
-
-					clearInterval(Interaction.editInterval);
-					Interaction.editInterval = setInterval(() => {
-						if (Math.abs(Interaction.swipeLength) > Interaction.swipeLengthAccepted) {
-							if (Interaction.swipeLength > 0) {
-								Interaction.elementControlsForwardFunc();
+				if (mode === InteractionMode.STANDARD) {
+					// Modify "camera"
+					if (zoom) {
+						// Zoom
+						if (touch) {
+							// Touch
+							if (touchDistancePrevious !== -1) {
+								touchDistance = <number>(<TouchPosition>entry.position).distance;
+								if (Math.abs(touchDistance - touchDistancePrevious) > 100) {
+									cameraRelX = touchDistanceRelX;
+									cameraRelY = touchDistanceRelY;
+									cameraZoom = Math.max(
+										cameraZoomMin,
+										Math.min(
+											cameraZoomMax,
+											cameraZoom + (touchDistance - touchDistancePrevious > 0 ? cameraZoomStep : -cameraZoomStep),
+										),
+									);
+									cameraUpdated = true;
+								}
 							} else {
-								Interaction.elementControlsBackwardFunc();
+								touchDistancePrevious = <number>(<TouchPosition>entry.position).distance;
+								touchDistanceRelX = (position.xRel + position2.xRel) / 2;
+								touchDistanceRelY = (position.xRel + position2.xRel) / 2;
 							}
-
-							Interaction.moved = true;
-							Interaction.swipeLength = 0;
-							Interaction.swipePositionPrevious = px;
-						}
-					}, 120);
-				} else {
-					now = performance.now();
-					if (now - Interaction.touchUpTimestamp < Interaction.touchDoubleWindow) {
-						if (Interaction.elementControlsPlay.style.display !== 'none') {
-							Interaction.elementControlsPlayFunc();
 						} else {
-							Interaction.elementControlsPauseFunc();
-						}
+							touchDistancePrevious = -1; // Reset touch based zoom
 
-						clearTimeout(Interaction.touchDownClickTimeout);
-						Interaction.touchUpTimestamp = 0;
+							// Mouse
+							if (down) {
+								if (cameraZoom !== cameraZoomMax) {
+									cameraRelX = position.xRel;
+									cameraRelY = position.yRel;
+									cameraZoom = Math.min(cameraZoomMax, cameraZoom + cameraZoomStep);
+									cameraUpdated = true;
+								}
+							} else {
+								if (cameraZoom !== cameraZoomMin) {
+									cameraRelX = position.xRel;
+									cameraRelY = position.yRel;
+									cameraZoom = Math.max(cameraZoomMin, cameraZoom - cameraZoomStep);
+									cameraUpdated = true;
+								}
+							}
+						}
 					} else {
-						Interaction.touchUpTimestamp = now;
-					}
+						touchDistancePrevious = -1; // Reset touch based zoom
 
-					clearInterval(Interaction.editInterval);
-					if (Math.abs(Interaction.swipeLength) > Interaction.swipeLengthAccepted) {
-						if (Interaction.swipeLength > 0) {
-							Interaction.elementControlsForwardFunc();
-						} else {
-							Interaction.elementControlsBackwardFunc();
+						// Move
+						if (down && cameraRelX !== position.xRel && cameraRelY !== position.yRel) {
+							cameraRelX = position.xRel;
+							cameraRelY = position.yRel;
+							cameraUpdated = true;
 						}
-
-						Interaction.moved = true;
-						Interaction.swipeLength = 0;
-						Interaction.swipePositionPrevious = px;
-					} else if (!Interaction.moved) {
-						clearTimeout(Interaction.touchDownClickTimeout);
-						Interaction.touchDownClickTimeout = setTimeout(() => {
-							Interaction.elementCanvasInteractive.click();
-						}, Interaction.touchDoubleWindow + 100);
 					}
-
-					Interaction.moved = false;
+				} else {
 				}
+
+				// // Standard edit interaction
+				// if (Interaction.mode !== null) {
+				// 	const buffer = Interaction.buffer,
+				// 		devicePixelRatio: number = Math.round(window.devicePixelRatio * 1000) / 1000,
+				// 		domRect: DOMRect = Interaction.domRect,
+				// 		elementEditStyle: CSSStyleDeclaration = Interaction.elementEdit.style,
+				// 		pxCellSize: number = Interaction.pxCellSize;
+
+				// 	let out: boolean = false,
+				// 		px: number = position.x / devicePixelRatio,
+				// 		py: number = position.y / devicePixelRatio,
+				// 		tx: number,
+				// 		ty: number;
+
+				// 	if (Interaction.rotated) {
+				// 		px = position.y / devicePixelRatio;
+				// 		py = domRect.width - position.x / devicePixelRatio;
+
+				// 		if (px === 0 || py === 0 || py === domRect.width || px === domRect.height) {
+				// 			out = true;
+				// 		}
+				// 	} else {
+				// 		if (px === 0 || py === 0 || px === domRect.width || py === domRect.height) {
+				// 			out = true;
+				// 		}
+				// 	}
+
+				// 	tx = (px / pxCellSize) | 0;
+				// 	ty = (py / pxCellSize) | 0;
+
+				// 	px = tx * pxCellSize;
+				// 	py = ty * pxCellSize;
+
+				// 	if (move) {
+				// 		if (out) {
+				// 			Interaction.editActive = false;
+				// 			elementEditStyle.display = 'none';
+				// 		} else {
+				// 			if (!touch) {
+				// 				elementEditStyle.display = 'block';
+
+				// 				elementEditStyle.left = px + 'px';
+				// 				elementEditStyle.top = py + 'px';
+				// 			} else {
+				// 				elementEditStyle.display = 'none';
+				// 			}
+
+				// 			if (Interaction.editActive) {
+				// 				buffer.add((tx << xyWidthBits) | ty | (Interaction.mode ? xyValueAlive : xyValueDead));
+				// 			}
+				// 		}
+				// 	} else if (!out) {
+				// 		Interaction.editActive = down;
+
+				// 		// Single touches can be registered a click by the browser
+				// 		if (!touch || Interaction.mobile) {
+				// 			elementEditStyle.display = 'none';
+				// 		}
+
+				// 		if (down) {
+				// 			if (!touch) {
+				// 				buffer.add((tx << xyWidthBits) | ty | (Interaction.mode ? xyValueAlive : xyValueDead));
+				// 			}
+
+				// 			clearInterval(Interaction.editInterval);
+				// 			Interaction.editInterval = setInterval(() => {
+				// 				if (buffer.size) {
+				// 					CalcBusEngine.outputLife(Uint32Array.from(buffer));
+				// 					buffer.clear();
+				// 				}
+				// 			}, 40);
+				// 		} else {
+				// 			clearInterval(Interaction.editInterval);
+				// 			if (buffer.size) {
+				// 				CalcBusEngine.outputLife(Uint32Array.from(buffer));
+				// 				buffer.clear();
+				// 			}
+				// 		}
+				// 	}
+				// } else if (touch) {
+				// 	// Swipe for speedup or speeddown
+				// 	const domRect: DOMRect = Interaction.domRect;
+
+				// 	let now: number,
+				// 		out: boolean = false,
+				// 		px: number = position.x / devicePixelRatio,
+				// 		py: number = position.y / devicePixelRatio;
+
+				// 	if (px === 0 || py === 0 || px === domRect.width || py === domRect.height) {
+				// 		out = true;
+				// 	}
+
+				// 	if (move) {
+				// 		if (out) {
+				// 			Interaction.editActive = false;
+				// 		} else if (Interaction.editActive) {
+				// 			console.log('ADD', px - Interaction.swipePositionPrevious);
+				// 			Interaction.swipeLength += px - Interaction.swipePositionPrevious;
+				// 			Interaction.swipePositionPrevious = px;
+				// 		}
+				// 	} else if (!out) {
+				// 		Interaction.editActive = down;
+
+				// 		if (down) {
+				// 			Interaction.swipeLength = 0;
+				// 			Interaction.swipePositionPrevious = px;
+
+				// 			clearInterval(Interaction.editInterval);
+				// 			Interaction.editInterval = setInterval(() => {
+				// 				if (Math.abs(Interaction.swipeLength) > Interaction.swipeLengthAccepted) {
+				// 					console.log('GOT!', Interaction.swipeLength);
+
+				// 					let forward: boolean = Interaction.swipeLength > 0;
+				// 					Interaction.swipeLength = 0;
+				// 					Interaction.moved = true;
+				// 					Interaction.swipePositionPrevious = px;
+
+				// 					if (forward) {
+				// 						Interaction.elementControlsForwardFunc();
+				// 					} else {
+				// 						Interaction.elementControlsBackwardFunc();
+				// 					}
+				// 				} else {
+				// 					console.log('PASS', Interaction.swipeLength);
+				// 				}
+				// 			}, 40);
+				// 		} else {
+				// 			now = performance.now();
+				// 			if (now - Interaction.touchUpTimestamp < Interaction.touchDoubleWindow) {
+				// 				if (Interaction.elementControlsPlay.style.display !== 'none') {
+				// 					Interaction.elementControlsPlayFunc();
+				// 				} else {
+				// 					Interaction.elementControlsPauseFunc();
+				// 				}
+
+				// 				clearTimeout(Interaction.touchDownClickTimeout);
+				// 				Interaction.touchUpTimestamp = 0;
+				// 			} else {
+				// 				Interaction.touchUpTimestamp = now;
+				// 			}
+
+				// 			console.log('FINAL');
+				// 			clearInterval(Interaction.editInterval);
+				// 			if (Math.abs(Interaction.swipeLength) > Interaction.swipeLengthAccepted) {
+				// 				if (Interaction.swipeLength > 0) {
+				// 					Interaction.elementControlsForwardFunc();
+				// 				} else {
+				// 					Interaction.elementControlsBackwardFunc();
+				// 				}
+
+				// 				Interaction.moved = true;
+				// 				Interaction.swipeLength = 0;
+				// 				Interaction.swipePositionPrevious = px;
+				// 			} else if (!Interaction.moved) {
+				// 				clearTimeout(Interaction.touchDownClickTimeout);
+				// 				Interaction.touchDownClickTimeout = setTimeout(() => {
+				// 					Interaction.elementCanvasInteractive.click();
+				// 				}, Interaction.touchDoubleWindow + 100);
+				// 			}
+
+				// 			Interaction.moved = false;
+				// 		}
+				// 	}
+				// }
 			}
-		}
+		};
+		Interaction.processor = processor;
 	}
 
 	protected static pxSizeCalc(): void {

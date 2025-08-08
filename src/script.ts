@@ -1,7 +1,7 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
 import { CalcBusOutputDataStats, masks, Stat, Stats, xyWidthBits } from './workers/calc/calc.model';
 import { FullscreenEngine } from './engines/fullscreen.engine';
-import { Interaction } from './interaction';
+import { Interaction, InteractionMode } from './interaction';
 import { KeyboardEngine, KeyAction, KeyCommon } from './engines/keyboard.engine';
 import { MouseEngine } from './engines/mouse.engine';
 import NoSleep from 'nosleep.js';
@@ -179,7 +179,7 @@ class Life extends Interaction {
 			Interaction.elementControlsPlay.style.display = 'none';
 			Interaction.elementControlsPause.style.display = 'block';
 
-			Interaction.mode = null;
+			Interaction.mode = InteractionMode.STANDARD;
 			Interaction.elementEdit.style.display = 'none';
 			Life.elementEditAdd.classList.remove('active');
 			Life.elementEditNone.classList.add('active');
@@ -243,8 +243,8 @@ class Life extends Interaction {
 		 */
 		Life.elementEditAdd = <HTMLElement>document.getElementById('edit-add');
 		Life.elementEditAdd.onclick = () => {
-			if (Interaction.mode !== true) {
-				Interaction.mode = true;
+			if (Interaction.mode !== InteractionMode.DRAW_LIFE) {
+				Interaction.mode = InteractionMode.DRAW_LIFE;
 
 				Life.elementEditAdd.classList.add('active');
 				Life.elementEditNone.classList.remove('active');
@@ -260,8 +260,8 @@ class Life extends Interaction {
 		};
 		Life.elementEditNone = <HTMLElement>document.getElementById('edit-none');
 		Life.elementEditNone.onclick = () => {
-			if (Interaction.mode !== null) {
-				Interaction.mode = null;
+			if (Interaction.mode !== InteractionMode.STANDARD) {
+				Interaction.mode = InteractionMode.STANDARD;
 
 				Life.elementEditAdd.classList.remove('active');
 				Life.elementEditNone.classList.add('active');
@@ -272,8 +272,8 @@ class Life extends Interaction {
 		};
 		Life.elementEditRemove = <HTMLElement>document.getElementById('edit-remove');
 		Life.elementEditRemove.onclick = () => {
-			if (Interaction.mode !== false) {
-				Interaction.mode = false;
+			if (Interaction.mode !== InteractionMode.ERASE) {
+				Interaction.mode = InteractionMode.ERASE;
 
 				Life.elementEditAdd.classList.remove('active');
 				Life.elementEditNone.classList.remove('active');

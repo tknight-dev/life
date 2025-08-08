@@ -45,10 +45,8 @@ export class TouchEngine {
 
 		for (let i = 0; i < touchList.length; i++) {
 			touch = touchList[i];
-			let xEff: number =
-				Math.round(Math.max(domRect.x, Math.min(domRect.right, touch.clientX)) - domRect.x) * window.devicePixelRatio;
-			let yEff: number =
-				Math.round(Math.max(domRect.y, Math.min(domRect.bottom, touch.clientY)) - domRect.y) * window.devicePixelRatio;
+			let xEff: number = Math.round(Math.max(domRect.x, Math.min(domRect.right, touch.clientX)) - domRect.x);
+			let yEff: number = Math.round(Math.max(domRect.y, Math.min(domRect.bottom, touch.clientY)) - domRect.y);
 
 			touchPositions.push({
 				x: Math.round(xEff),

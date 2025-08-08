@@ -35,10 +35,6 @@ export class MouseEngine {
 			xEff: number = Math.round(Math.max(domRect.x, Math.min(domRect.right, event.clientX)) - domRect.x),
 			yEff: number = Math.round(Math.max(domRect.y, Math.min(domRect.bottom, event.clientY)) - domRect.y);
 
-		//console.log('mouse', domRect.width, domRect.x, xEff, Math.round((xEff / domRect.width) * 1000) / 1000);
-		xEff *= window.devicePixelRatio;
-		yEff *= window.devicePixelRatio;
-
 		return {
 			x: Math.round(xEff),
 			xRel: Math.round((xEff / domRect.width) * 1000) / 1000,
