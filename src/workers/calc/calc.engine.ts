@@ -18,6 +18,8 @@ import {
  * @author tknight-dev
  */
 
+const { xMask, xShifted1, xyMask, xyValueAlive, xyValueDead, yMask } = masks;
+
 self.onmessage = (event: MessageEvent) => {
 	const videoBusInputPayload: CalcBusInputPayload = event.data;
 
@@ -44,8 +46,8 @@ self.onmessage = (event: MessageEvent) => {
 };
 
 interface CellMeta {
-	alive: number;
-	dead: number;
+	alive: boolean;
+	dead: boolean;
 	neighbors: number;
 }
 
@@ -165,7 +167,9 @@ class CalcWorkerEngine {
 			life: Uint32Array[] = CalcWorkerEngine.life,
 			homeostatic: boolean,
 			homeostaticDataMax: number = 40, // is enough to catch a 20 period oscillation
-			homeostaticData: any[] = new Array(homeostaticDataMax),
+			homeostaticData: any[] = [...new Array(homeostaticDataMax)].map((_, i) => {
+				return { alive: i, dead: i };
+			}),
 			homeostaticDataIndex: number = 0,
 			positions: Uint32Array,
 			spinOut: boolean = false,
@@ -187,7 +191,6 @@ class CalcWorkerEngine {
 			yPlus1: number,
 			ySub1: number;
 
-		const { xMask, xShifted1, xyMask, xyValueAlive, xyValueDead, yMask } = masks;
 		const arrayExpand = (array: number[], size: number) => {
 			try {
 				Array.prototype.push.apply(array, new Array(size));
@@ -221,13 +224,6 @@ class CalcWorkerEngine {
 			);
 		};
 
-		for (x = 0; x < homeostaticDataMax; x++) {
-			homeostaticData[x] = {
-				alive: x,
-				dead: x,
-			};
-		}
-
 		const calc = (timestampNow: number) => {
 			// Start the request for the next frame
 			CalcWorkerEngine.calcRequest = requestAnimationFrame(calc);
@@ -247,8 +243,8 @@ class CalcWorkerEngine {
 
 				if (dataAlive.length < tableSizeX * tableSizeY) {
 					arrayExpand(dataAlive, tableSizeX * tableSizeY - dataAlive.length);
-					arrayExpand(dataDead, tableSizeX * tableSizeY - dataAlive.length);
-					arrayExpand(dataNone, tableSizeX * tableSizeY - dataAlive.length);
+					arrayExpand(dataDead, tableSizeX * tableSizeY - dataDead.length);
+					arrayExpand(dataNone, tableSizeX * tableSizeY - dataNone.length);
 				}
 
 				dataAliveIndex = 0;
@@ -258,16 +254,16 @@ class CalcWorkerEngine {
 					for (y = 0; y < tableSizeY; y++) {
 						xy = (x << xyWidthBits) | y;
 
-						cellMeta = <any>data.get(xy);
+						cellMeta = <CellMeta>data.get(xy);
 						dataNone[dataNoneIndex++] = xy;
 						if (cellMeta) {
-							cellMeta.alive = 0;
-							cellMeta.dead = 0;
+							cellMeta.alive = false;
+							cellMeta.dead = false;
 							cellMeta.neighbors = 0;
 						} else {
 							data.set(xy, {
-								alive: 0,
-								dead: 0,
+								alive: false,
+								dead: false,
 								neighbors: 0,
 							});
 						}
@@ -287,36 +283,40 @@ class CalcWorkerEngine {
 				CalcWorkerEngine.tableSizeAltered = false;
 
 				if (tableSizeX < CalcWorkerEngine.tableSizeX) {
+					tableSizeX = CalcWorkerEngine.tableSizeX;
+					tableSizeY = CalcWorkerEngine.tableSizeY;
+
 					// Grow
 					if (dataAlive.length < tableSizeX * tableSizeY) {
 						arrayExpand(dataAlive, tableSizeX * tableSizeY - dataAlive.length);
-						arrayExpand(dataDead, tableSizeX * tableSizeY - dataAlive.length);
-						arrayExpand(dataNone, tableSizeX * tableSizeY - dataAlive.length);
+						arrayExpand(dataDead, tableSizeX * tableSizeY - dataDead.length);
+						arrayExpand(dataNone, tableSizeX * tableSizeY - dataNone.length);
 					}
 
-					for (x = 0; x < CalcWorkerEngine.tableSizeX; x++) {
-						for (y = 0; y < CalcWorkerEngine.tableSizeY; y++) {
+					for (x = 0; x < tableSizeX; x++) {
+						for (y = 0; y < tableSizeY; y++) {
 							xy = (x << xyWidthBits) | y;
 
+							// Checking has() is the same performance as x & y range checks (x >= tableSizeX ... etc)
 							if (!data.has(xy)) {
 								data.set(xy, {
-									alive: 0,
-									dead: 0,
+									alive: false,
+									dead: false,
 									neighbors: 0,
 								});
 								dataNone[dataNoneIndex++] = xy;
 							}
 						}
 					}
-
-					tableSizeX = CalcWorkerEngine.tableSizeX;
-					tableSizeY = CalcWorkerEngine.tableSizeY;
 				} else {
 					// Shrink
+					dataAliveIndex = 0;
+					dataDeadIndex = 0;
+					dataNoneIndex = 0;
 					tableSizeX = CalcWorkerEngine.tableSizeX;
 					tableSizeY = CalcWorkerEngine.tableSizeY;
 
-					for (xy of data.keys()) {
+					for ([xy, cellMeta] of data) {
 						y = xy & yMask;
 						if (y >= tableSizeY) {
 							data.delete(xy);
@@ -324,21 +324,15 @@ class CalcWorkerEngine {
 							x = (xy >> xyWidthBits) & yMask;
 							if (x >= tableSizeX) {
 								data.delete(xy);
+							} else {
+								if (cellMeta.alive) {
+									dataAlive[dataAliveIndex++] = xy;
+								} else if (cellMeta.dead) {
+									dataDead[dataDeadIndex++] = xy;
+								} else {
+									dataNone[dataNoneIndex++] = xy;
+								}
 							}
-						}
-					}
-
-					// Recalculate indexes
-					dataAliveIndex = 0;
-					dataDeadIndex = 0;
-					dataNoneIndex = 0;
-					for ([xy, cellMeta] of data) {
-						if (cellMeta.alive) {
-							dataAlive[dataAliveIndex++] = xy;
-						} else if (cellMeta.dead) {
-							dataDead[dataDeadIndex++] = xy;
-						} else {
-							dataNone[dataNoneIndex++] = xy;
 						}
 					}
 				}
@@ -357,17 +351,19 @@ class CalcWorkerEngine {
 					positions = <Uint32Array>life.pop();
 
 					for (xy of positions) {
-						cellMeta = <any>data.get(xy & xyMask);
-						cellMeta.alive = xy & xyValueAlive;
-						cellMeta.dead = xy & xyValueDead;
+						i = xy & xyMask;
+
+						cellMeta = <CellMeta>data.get(i);
+						cellMeta.alive = (xy & xyValueAlive) !== 0;
+						cellMeta.dead = (xy & xyValueDead) !== 0;
 						cellMeta.neighbors = 0;
 
 						if (cellMeta.alive) {
-							dataAlive[dataAliveIndex++] = xy & xyMask;
+							dataAlive[dataAliveIndex++] = i;
 						} else if (cellMeta.dead) {
-							dataDead[dataDeadIndex++] = xy & xyMask;
+							dataDead[dataDeadIndex++] = i;
 						} else {
-							dataNone[dataNoneIndex++] = xy & xyMask;
+							dataNone[dataNoneIndex++] = i;
 						}
 					}
 				}
@@ -436,7 +432,7 @@ class CalcWorkerEngine {
 					statNeighborAvg.watchStart();
 					for (i = 0; i < dataAliveIndex; i++) {
 						xy = dataAlive[i];
-						cellMeta = <any>data.get(xy);
+						cellMeta = <CellMeta>data.get(xy);
 
 						// Decode x & y
 						xShifted = xy & xMask;
@@ -447,7 +443,7 @@ class CalcWorkerEngine {
 						if (y !== yMax) {
 							// Neighbors: Above
 							yPlus1 = y + 1;
-							(<any>data.get(xShifted | yPlus1)).neighbors++;
+							(<CellMeta>data.get(xShifted | yPlus1)).neighbors++;
 						} else {
 							yPlus1 = 0;
 						}
@@ -455,7 +451,7 @@ class CalcWorkerEngine {
 						if (y !== 0) {
 							// Neighbors: Below
 							ySub1 = y - 1;
-							(<any>data.get(xShifted | ySub1)).neighbors++;
+							(<CellMeta>data.get(xShifted | ySub1)).neighbors++;
 						} else {
 							ySub1 = 0;
 						}
@@ -465,13 +461,13 @@ class CalcWorkerEngine {
 							xShiftedSub1 = xShifted - xShifted1;
 
 							// Neighbors: Above
-							yPlus1 !== 0 && (<any>data.get(xShiftedSub1 | yPlus1)).neighbors++;
+							yPlus1 !== 0 && (<CellMeta>data.get(xShiftedSub1 | yPlus1)).neighbors++;
 
 							// Neighbors: Middle
-							(<any>data.get(xShiftedSub1 | y)).neighbors++;
+							(<CellMeta>data.get(xShiftedSub1 | y)).neighbors++;
 
 							// Neighbors: Below
-							ySub1 !== 0 && (<any>data.get(xShiftedSub1 | ySub1)).neighbors++;
+							ySub1 !== 0 && (<CellMeta>data.get(xShiftedSub1 | ySub1)).neighbors++;
 						}
 
 						// Neighbors: Right
@@ -479,13 +475,13 @@ class CalcWorkerEngine {
 							xShiftedPlus1 = xShifted + xShifted1;
 
 							// Neighbors: Above
-							yPlus1 !== 0 && (<any>data.get(xShiftedPlus1 | yPlus1)).neighbors++;
+							yPlus1 !== 0 && (<CellMeta>data.get(xShiftedPlus1 | yPlus1)).neighbors++;
 
 							// Neighbors: Middle
-							(<any>data.get(xShiftedPlus1 | y)).neighbors++;
+							(<CellMeta>data.get(xShiftedPlus1 | y)).neighbors++;
 
 							// Neighbors: Below
-							ySub1 !== 0 && (<any>data.get(xShiftedPlus1 | ySub1)).neighbors++;
+							ySub1 !== 0 && (<CellMeta>data.get(xShiftedPlus1 | ySub1)).neighbors++;
 						}
 					}
 					statNeighborAvg.watchStop();
@@ -503,25 +499,25 @@ class CalcWorkerEngine {
 					dataDeadIndex = 0;
 					dataNoneIndex = 0;
 					for ([xy, cellMeta] of data) {
-						if (cellMeta.alive !== 0) {
+						if (cellMeta.alive) {
 							if (cellMeta.neighbors === 2 || cellMeta.neighbors === 3) {
 								// Rule 2
-								dataAlive[dataAliveIndex++] = xy & xyMask;
+								dataAlive[dataAliveIndex++] = xy;
 							} else {
 								// Rule 1 & Rule 3
-								cellMeta.alive = 0;
-								cellMeta.dead = xyValueDead;
-								dataDead[dataDeadIndex++] = xy & xyMask;
+								cellMeta.alive = false;
+								cellMeta.dead = true;
+								dataDead[dataDeadIndex++] = xy;
 							}
 						} else if (cellMeta.neighbors === 3) {
 							// Rule 4
-							cellMeta.alive = xyValueAlive;
-							cellMeta.dead = 0;
-							dataAlive[dataAliveIndex++] = xy & xyMask;
-						} else if (cellMeta.dead !== 0) {
-							dataDead[dataDeadIndex++] = xy & xyMask;
+							cellMeta.alive = true;
+							cellMeta.dead = false;
+							dataAlive[dataAliveIndex++] = xy;
+						} else if (cellMeta.dead) {
+							dataDead[dataDeadIndex++] = xy;
 						} else {
-							dataNone[dataNoneIndex++] = xy & xyMask;
+							dataNone[dataNoneIndex++] = xy;
 						}
 
 						cellMeta.neighbors = 0;

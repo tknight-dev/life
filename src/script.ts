@@ -536,17 +536,12 @@ class Life extends Interaction {
 				tableSizeX: number = Interaction.settingsCalc.tableSizeX,
 				tableSizeY: number = (Interaction.settingsCalc.tableSizeX * 9) / 16,
 				x: number,
-				xy: number,
 				y: number;
 
 			// Random
 			for (x = 0; x < tableSizeX; x++) {
 				for (y = 0; y < tableSizeY; y++) {
-					xy = (x << xyWidthBits) | y;
-
-					if (Math.random() > 0.5) {
-						arrayCalc.push(xy | xyValueAlive);
-					}
+					Math.random() > 0.5 && arrayCalc.push((x << xyWidthBits) | y | xyValueAlive);
 				}
 			}
 

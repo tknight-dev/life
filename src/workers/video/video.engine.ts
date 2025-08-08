@@ -13,6 +13,8 @@ import { CalcBusOutputDataPositions, masks, Stat, Stats, xyWidthBits } from '../
  * @author tknight-dev
  */
 
+const { yMask } = masks;
+
 self.onmessage = (event: MessageEvent) => {
 	const videoBusInputPayload: VideoBusInputPayload = event.data;
 
@@ -184,8 +186,6 @@ class VideoWorkerEngine {
 			xy: number,
 			y: number;
 
-		const { yMask } = masks;
-
 		cacheCanvasCellAliveCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasCellAlive.getContext('2d', contextOptionsNoAlpha);
 		cacheCanvasCellAliveCtx.imageSmoothingEnabled = false;
 		cacheCanvasCellAliveCtx.shadowBlur = 0;
@@ -331,10 +331,8 @@ class VideoWorkerEngine {
 							}
 						}
 
-						// Grid
-						if (drawGrid) {
-							canvasOffscreenContext.drawImage(cacheCanvasGrids, 0, 0);
-						}
+						// Draw: Grid
+						drawGrid && canvasOffscreenContext.drawImage(cacheCanvasGrids, 0, 0);
 
 						cache = true;
 						statDrawAvg.watchStop();
