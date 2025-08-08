@@ -171,17 +171,6 @@ $life-spinnet-border-size-small: 10px;
 			}
 		}
 
-		.performance {
-			display: none;
-			left: auto;
-			right: 0;
-
-			table {
-				border-left: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
-				border-right: none;
-			}
-		}
-
 		.canvas {
 			align-items: center;
 			display: flex;
@@ -393,6 +382,17 @@ $life-spinnet-border-size-small: 10px;
 			right: auto;
 			top: 1px;
 			z-index: 4;
+		}
+
+		.performance {
+			display: none;
+			left: auto;
+			right: 0;
+
+			table {
+				border-left: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
+				border-right: none;
+			}
 		}
 
 		.rules,
