@@ -257,8 +257,8 @@ export class Interaction {
 										);
 
 										if (cameraZoom !== cameraZoomPrevious) {
-											cameraRelX = touchDistanceRelX;
-											cameraRelY = touchDistanceRelY;
+											// cameraRelX = touchDistanceRelX;
+											// cameraRelY = touchDistanceRelY;
 											cameraUpdated = true;
 										}
 
@@ -282,20 +282,23 @@ export class Interaction {
 
 							down = false;
 							if (cameraZoom !== cameraZoomPrevious) {
-								cameraRelX = position.xRel;
-								cameraRelY = position.yRel;
+								// cameraRelX = position.xRel;
+								// cameraRelY = position.yRel;
 								cameraUpdated = true;
 							}
 						}
 					} else {
 						if (!move) {
 							downMode = down;
+						} else if (downMode && (position.x === 0 || position.y === 0)) {
+							// Out of area
+							downMode = false;
 						}
 
 						// Move
 						if (downMode && cameraRelX !== position.xRel && cameraRelY !== position.yRel) {
-							cameraRelX = position.xRel;
-							cameraRelY = position.yRel;
+							cameraRelX = 1 - position.xRel;
+							cameraRelY = 1 - position.yRel;
 							cameraUpdated = true;
 						}
 					}
