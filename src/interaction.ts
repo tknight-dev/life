@@ -176,11 +176,11 @@ export class Interaction {
 		let cameraRelX: number = 0,
 			cameraRelY: number = 0,
 			cameraUpdated: boolean = false,
-			cameraZoom: number = 100,
+			cameraZoom: number = 1,
 			cameraZoomMax: number = 100,
 			cameraZoomMin: number = 1,
 			cameraZoomPrevious: number,
-			cameraZoomStep: number = 1,
+			cameraZoomStep: number = 5,
 			down: boolean,
 			downMode: boolean,
 			entry: InteractionEntry | undefined,
@@ -227,7 +227,7 @@ export class Interaction {
 				if (entry.down !== undefined) {
 					down = entry.down;
 				}
-				// move = entry.move;
+				move = entry.move;
 				position = entry.position;
 				position2 = entry.position2;
 				touch = entry.touch;
@@ -246,34 +246,38 @@ export class Interaction {
 						// Zoom
 						if (touch) {
 							// Touch
-							if (touchDistancePrevious !== -1) {
-								touchDistance = <number>(<TouchPosition>entry.position).distance - touchDistancePrevious;
-								if (Math.abs(touchDistance) > 100) {
-									cameraZoomPrevious = cameraZoom;
-									cameraZoom = Math.max(
-										cameraZoomMin,
-										Math.min(cameraZoomMax, cameraZoom + (touchDistance > 0 ? cameraZoomStep : -cameraZoomStep)),
-									);
+							if (down) {
+								if (touchDistancePrevious !== -1) {
+									touchDistance = <number>(<TouchPosition>entry.position).distance - touchDistancePrevious;
+									if (Math.abs(touchDistance) > 20) {
+										cameraZoomPrevious = cameraZoom;
+										cameraZoom = Math.max(
+											cameraZoomMin,
+											Math.min(cameraZoomMax, cameraZoom + (touchDistance > 0 ? cameraZoomStep : -cameraZoomStep)),
+										);
 
-									if (cameraZoom !== cameraZoomPrevious) {
-										cameraRelX = touchDistanceRelX;
-										cameraRelY = touchDistanceRelY;
-										cameraUpdated = true;
+										if (cameraZoom !== cameraZoomPrevious) {
+											cameraRelX = touchDistanceRelX;
+											cameraRelY = touchDistanceRelY;
+											cameraUpdated = true;
+										}
+
+										touchDistancePrevious = <number>(<TouchPosition>entry.position).distance;
 									}
+								} else {
+									touchDistancePrevious = <number>(<TouchPosition>entry.position).distance;
+									touchDistanceRelX = (position.xRel + position2.xRel) / 2;
+									touchDistanceRelY = (position.yRel + position2.yRel) / 2;
 								}
 							} else {
-								touchDistancePrevious = <number>(<TouchPosition>entry.position).distance;
-								touchDistanceRelX = (position.xRel + position2.xRel) / 2;
-								touchDistanceRelY = (position.xRel + position2.xRel) / 2;
+								touchDistancePrevious = -1;
 							}
 						} else {
-							touchDistancePrevious = -1; // Reset touch based zoom
-
 							// Mouse
 							cameraZoomPrevious = cameraZoom;
 							cameraZoom = Math.max(
 								cameraZoomMin,
-								Math.min(cameraZoomMax, cameraZoom + (down ? cameraZoomStep : -cameraZoomStep)),
+								Math.min(cameraZoomMax, cameraZoom + (down ? -cameraZoomStep : cameraZoomStep)),
 							);
 
 							down = false;
@@ -284,9 +288,7 @@ export class Interaction {
 							}
 						}
 					} else {
-						touchDistancePrevious = -1; // Reset touch based zoom
-
-						if (!entry.move) {
+						if (!move) {
 							downMode = down;
 						}
 

@@ -76,6 +76,7 @@ export class TouchEngine {
 
 		((restrictTo || document) as HTMLElement).addEventListener('touchcancel', (event: TouchEvent) => {
 			event.preventDefault();
+			event.stopPropagation();
 
 			if (!TouchEngine.suspend && TouchEngine.callback && TouchEngine.cmdActiveStatus) {
 				TouchEngine.cmdActiveStatus = false;
@@ -87,10 +88,13 @@ export class TouchEngine {
 					positions: TouchEngine.positionsLast,
 				});
 			}
+
+			return false;
 		});
 
 		((restrictTo || document) as HTMLElement).addEventListener('touchend', (event: TouchEvent) => {
 			event.preventDefault();
+			event.stopPropagation();
 
 			if (!TouchEngine.suspend && TouchEngine.callback && TouchEngine.cmdActiveStatus) {
 				TouchEngine.cmdActiveStatus = false;
@@ -101,10 +105,13 @@ export class TouchEngine {
 					positions: TouchEngine.positionsLast,
 				});
 			}
+
+			return false;
 		});
 
 		((restrictTo || document) as HTMLElement).addEventListener('touchmove', (event: TouchEvent) => {
 			event.preventDefault();
+			event.stopPropagation();
 
 			if (!TouchEngine.suspend && TouchEngine.callback && TouchEngine.cmdActiveStatus) {
 				let timestamp = performance.now();
@@ -131,10 +138,13 @@ export class TouchEngine {
 					}, 20);
 				}
 			}
+
+			return false;
 		});
 
 		((restrictTo || document) as HTMLElement).addEventListener('touchstart', (event: TouchEvent) => {
 			event.preventDefault();
+			event.stopPropagation();
 
 			if (!TouchEngine.suspend && TouchEngine.callback && !TouchEngine.cmdActiveStatus) {
 				clearTimeout(TouchEngine.timeout);
@@ -151,6 +161,8 @@ export class TouchEngine {
 					});
 				}, 20);
 			}
+
+			return false;
 		});
 	}
 

@@ -42,6 +42,8 @@ self.onmessage = (event: MessageEvent) => {
 };
 
 class VideoWorkerEngine {
+	private static camera: VideoBusInputDataCamera;
+	private static cameraUpdated: boolean;
 	private static canvasOffscreen: OffscreenCanvas;
 	private static canvasOffscreenContext: OffscreenCanvasRenderingContext2D;
 	private static ctxHeight: number;
@@ -61,6 +63,11 @@ class VideoWorkerEngine {
 
 	public static async initialize(self: Window & typeof globalThis, data: VideoBusInputDataInit): Promise<void> {
 		// Config
+		VideoWorkerEngine.camera = {
+			relX: 0,
+			relY: 0,
+			zoom: 1,
+		};
 		VideoWorkerEngine.canvasOffscreen = data.canvasOffscreen;
 		VideoWorkerEngine.canvasOffscreenContext = <OffscreenCanvasRenderingContext2D>data.canvasOffscreen.getContext('2d', {
 			alpha: true,
@@ -114,7 +121,8 @@ class VideoWorkerEngine {
 	}
 
 	public static inputCamera(data: VideoBusInputDataCamera): void {
-		console.log('inputCamera', data);
+		VideoWorkerEngine.camera = data;
+		VideoWorkerEngine.cameraUpdated = true;
 	}
 
 	public static inputData(data: CalcBusOutputDataPositions): void {
@@ -168,6 +176,9 @@ class VideoWorkerEngine {
 			cacheCanvasGridsCtx: OffscreenCanvasRenderingContext2D,
 			cacheCanvasGridVertical: OffscreenCanvas = new OffscreenCanvas(1, 1),
 			cacheCanvasGridVerticalCtx: OffscreenCanvasRenderingContext2D,
+			cameraRelX: number = VideoWorkerEngine.camera.relX,
+			cameraRelY: number = VideoWorkerEngine.camera.relY,
+			cameraZoom: number = VideoWorkerEngine.camera.zoom,
 			canvasOffscreen: OffscreenCanvas = VideoWorkerEngine.canvasOffscreen,
 			canvasOffscreenContext: OffscreenCanvasRenderingContext2D = VideoWorkerEngine.canvasOffscreenContext,
 			contextOptionsNoAlpha = {
@@ -190,10 +201,18 @@ class VideoWorkerEngine {
 			pxWidth: number,
 			statDrawAvg: Stat = VideoWorkerEngine.stats[Stats.VIDEO_DRAW_AVG],
 			tableSizeX: number,
+			viewPortMode: boolean,
+			viewPortWidthStartCx: number,
+			viewPortWidthStartPx: number,
+			viewPortWidthStopCx: number,
+			viewPortWidthStopPx: number,
 			x: number,
 			xy: number,
 			y: number;
 
+		/*
+		 * Canvas: Init
+		 */
 		cacheCanvasCellAliveCtx = <OffscreenCanvasRenderingContext2D>cacheCanvasCellAlive.getContext('2d', contextOptionsNoAlpha);
 		cacheCanvasCellAliveCtx.imageSmoothingEnabled = false;
 		cacheCanvasCellAliveCtx.shadowBlur = 0;
@@ -217,6 +236,12 @@ class VideoWorkerEngine {
 		cacheCanvasGridVerticalCtx.imageSmoothingEnabled = false;
 		cacheCanvasGridVerticalCtx.shadowBlur = 0;
 
+		/*
+		 * Functions
+		 */
+		const scale = (v: number, a: number, b: number, y: number, z: number) => {
+			return ((v - a) * (z - y)) / (b - a) + y;
+		};
 		const render = (timestampNow: number) => {
 			timestampNow |= 0;
 
@@ -231,29 +256,49 @@ class VideoWorkerEngine {
 				frameTimestampDelta = VideoWorkerEngine.framesPerMillisecond + 1;
 			}
 
-			if (VideoWorkerEngine.resized || VideoWorkerEngine.settingsNew) {
-				VideoWorkerEngine.resized = false;
+			if (VideoWorkerEngine.cameraUpdated || VideoWorkerEngine.resized || VideoWorkerEngine.settingsNew) {
+				VideoWorkerEngine.cameraUpdated = false;
 				VideoWorkerEngine.settingsNew = false;
 
+				// Cache: variables
 				cache = false;
+				cameraRelX = VideoWorkerEngine.camera.relX;
+				cameraRelY = VideoWorkerEngine.camera.relY;
+				cameraZoom = VideoWorkerEngine.camera.zoom;
 				drawDeadCells = VideoWorkerEngine.drawDeadCells;
 				drawGrid = VideoWorkerEngine.drawGrid;
 				pxHeight = VideoWorkerEngine.ctxHeight;
 				pxWidth = VideoWorkerEngine.ctxWidth;
 				tableSizeX = VideoWorkerEngine.tableSizeX;
 
-				pxCellSize = Math.round((pxWidth / tableSizeX) * 1000) / 1000;
+				// Grid: auto enable/disable
 				if (drawGrid && pxWidth / tableSizeX < 3) {
 					drawGrid = false;
 				}
 
-				// console.log('pxCellSize', pxCellSize);
-				// console.log('pxHeight', pxHeight);
-				// console.log('pxWidth', pxWidth);
+				// Canvas: Resize
+				if (VideoWorkerEngine.resized) {
+					canvasOffscreen.height = pxHeight;
+					canvasOffscreen.width = pxWidth;
 
-				canvasOffscreen.height = pxHeight;
-				canvasOffscreen.width = pxWidth;
+					VideoWorkerEngine.resized = false;
+				}
 
+				// Calc: pixel size
+				pxCellSize = Math.round((pxWidth / tableSizeX) * 1000) / 1000;
+				if (cameraZoom !== 1) {
+					pxCellSize *= scale(cameraZoom, 1, 100, 1, scale(tableSizeX, 48, 2023, 2, 85));
+
+					// Determine how many cells can fit in the screen for viewport
+
+					viewPortMode = true;
+					// viewPortWidthStartPx = 0;
+					// viewPortWidthStopPx = 0;
+				} else {
+					viewPortMode = false;
+				}
+
+				// Cache: Cells
 				cacheCanvasCellAlive.height = pxCellSize;
 				cacheCanvasCellAlive.width = pxCellSize;
 				cacheCanvasCellAliveCtx.fillStyle = 'rgb(0,255,0)';
@@ -264,6 +309,7 @@ class VideoWorkerEngine {
 				cacheCanvasCellDeadCtx.fillStyle = 'rgb(0,64,0)';
 				cacheCanvasCellDeadCtx.fillRect(0, 0, pxCellSize, pxCellSize);
 
+				// Cache: Grid
 				if (drawGrid) {
 					cacheCanvasGridHorizontal.height = 1;
 					cacheCanvasGridHorizontal.width = pxWidth;
@@ -278,6 +324,7 @@ class VideoWorkerEngine {
 					cacheCanvasGrids.height = pxHeight;
 					cacheCanvasGrids.width = pxWidth;
 
+					// Grid: Horizontal
 					for (y = 0; y < pxHeight; y += pxCellSize) {
 						cacheCanvasGridsCtx.drawImage(cacheCanvasGridHorizontal, 0, y);
 					}
@@ -298,6 +345,7 @@ class VideoWorkerEngine {
 
 				// Process Data
 				if (!cache || VideoWorkerEngine.dataNew) {
+					VideoWorkerEngine.cameraUpdated = false;
 					VideoWorkerEngine.dataNew = false;
 					data = VideoWorkerEngine.data;
 
