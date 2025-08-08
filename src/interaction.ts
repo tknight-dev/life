@@ -179,8 +179,10 @@ export class Interaction {
 			cameraZoom: number = 100,
 			cameraZoomMax: number = 100,
 			cameraZoomMin: number = 1,
+			cameraZoomPrevious: number,
 			cameraZoomStep: number = 1,
 			down: boolean,
+			downMode: boolean,
 			entry: InteractionEntry | undefined,
 			mode: InteractionMode = InteractionMode.STANDARD,
 			move: boolean,
@@ -245,18 +247,19 @@ export class Interaction {
 						if (touch) {
 							// Touch
 							if (touchDistancePrevious !== -1) {
-								touchDistance = <number>(<TouchPosition>entry.position).distance;
-								if (Math.abs(touchDistance - touchDistancePrevious) > 100) {
-									cameraRelX = touchDistanceRelX;
-									cameraRelY = touchDistanceRelY;
+								touchDistance = <number>(<TouchPosition>entry.position).distance - touchDistancePrevious;
+								if (Math.abs(touchDistance) > 100) {
+									cameraZoomPrevious = cameraZoom;
 									cameraZoom = Math.max(
 										cameraZoomMin,
-										Math.min(
-											cameraZoomMax,
-											cameraZoom + (touchDistance - touchDistancePrevious > 0 ? cameraZoomStep : -cameraZoomStep),
-										),
+										Math.min(cameraZoomMax, cameraZoom + (touchDistance > 0 ? cameraZoomStep : -cameraZoomStep)),
 									);
-									cameraUpdated = true;
+
+									if (cameraZoom !== cameraZoomPrevious) {
+										cameraRelX = touchDistanceRelX;
+										cameraRelY = touchDistanceRelY;
+										cameraUpdated = true;
+									}
 								}
 							} else {
 								touchDistancePrevious = <number>(<TouchPosition>entry.position).distance;
@@ -267,27 +270,28 @@ export class Interaction {
 							touchDistancePrevious = -1; // Reset touch based zoom
 
 							// Mouse
-							if (down) {
-								if (cameraZoom !== cameraZoomMax) {
-									cameraRelX = position.xRel;
-									cameraRelY = position.yRel;
-									cameraZoom = Math.min(cameraZoomMax, cameraZoom + cameraZoomStep);
-									cameraUpdated = true;
-								}
-							} else {
-								if (cameraZoom !== cameraZoomMin) {
-									cameraRelX = position.xRel;
-									cameraRelY = position.yRel;
-									cameraZoom = Math.max(cameraZoomMin, cameraZoom - cameraZoomStep);
-									cameraUpdated = true;
-								}
+							cameraZoomPrevious = cameraZoom;
+							cameraZoom = Math.max(
+								cameraZoomMin,
+								Math.min(cameraZoomMax, cameraZoom + (down ? cameraZoomStep : -cameraZoomStep)),
+							);
+
+							down = false;
+							if (cameraZoom !== cameraZoomPrevious) {
+								cameraRelX = position.xRel;
+								cameraRelY = position.yRel;
+								cameraUpdated = true;
 							}
 						}
 					} else {
 						touchDistancePrevious = -1; // Reset touch based zoom
 
+						if (!entry.move) {
+							downMode = down;
+						}
+
 						// Move
-						if (down && cameraRelX !== position.xRel && cameraRelY !== position.yRel) {
+						if (downMode && cameraRelX !== position.xRel && cameraRelY !== position.yRel) {
 							cameraRelX = position.xRel;
 							cameraRelY = position.yRel;
 							cameraUpdated = true;
