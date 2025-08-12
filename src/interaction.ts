@@ -1,24 +1,41 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
-import { CalcBusInputDataSettings, masks, xyWidthBits } from './workers/calc/calc.model';
+import { CalcBusInputDataSettings, masks, scalePx, xyWidthBits } from './workers/calc/calc.model';
+import { DoubleLinkedList } from './models/double-linked-list.model';
 import { MouseAction, MouseCmd, MouseEngine, MousePosition } from './engines/mouse.engine';
 import { TouchAction, TouchCmd, TouchEngine, TouchPosition } from './engines/touch.engine';
 import { Orientation, OrientationEngine } from './engines/orientation.engine';
 import { ResizeEngine } from './engines/resize.engine';
 import { VideoBusEngine } from './workers/video/video.bus';
-import { VideoBusInputDataSettings } from './workers/video/video.model';
+import { VideoBusInputDataSettings, VideoBusOutputDataCamera } from './workers/video/video.model';
 
 /**
  * @author tknight-dev
  */
 const { xyValueAlive, xyValueDead } = masks;
 
-interface Placement {
-	x: number;
-	y: number;
+interface InteractionEntry {
+	down: boolean | undefined;
+	move: boolean;
+	position: MousePosition | TouchPosition;
+	position2: MousePosition | TouchPosition;
+	touch: boolean;
+	zoom: boolean;
+}
+
+export enum InteractionMode {
+	DRAW_LIFE,
+	DRAW_DEATH,
+	ERASE,
+	MOVE_ZOOM,
 }
 
 export class Interaction {
-	protected static buffer: Set<number> = new Set();
+	protected static bufferInteraction: DoubleLinkedList<InteractionEntry> = new DoubleLinkedList<InteractionEntry>();
+	protected static cameraViewportHeightC: number = 0;
+	protected static cameraViewportStartXC: number = 0;
+	protected static cameraViewportStartYC: number = 0;
+	protected static cameraViewportWidthC: number = 0;
+	protected static cameraZoom: number = 1;
 	protected static domRect: DOMRect;
 	protected static editActive: boolean;
 	protected static editInterval: ReturnType<typeof setInterval>;
@@ -38,7 +55,8 @@ export class Interaction {
 	protected static elementSpinner: HTMLElement;
 	protected static elementRotator: HTMLElement;
 	protected static gameover: boolean;
-	protected static mode: boolean | null = null;
+	protected static interactionRequest: number;
+	protected static mode: InteractionMode = InteractionMode.MOVE_ZOOM;
 	protected static mobile: boolean;
 	protected static moved: boolean;
 	protected static rotateAvailable: boolean;
@@ -52,7 +70,7 @@ export class Interaction {
 	protected static settingsVideo: VideoBusInputDataSettings;
 	protected static spinnerTimeout: ReturnType<typeof setTimeout>;
 	protected static swipeLength: number;
-	protected static swipeLengthAccepted: number = 9;
+	protected static swipeLengthAccepted: number = 200;
 	protected static swipePositionPrevious: number;
 	protected static pxCellSize: number;
 	protected static readonly touchDoubleWindow: number = 300;
@@ -70,30 +88,73 @@ export class Interaction {
 		});
 		MouseEngine.setCallback((action: MouseAction) => {
 			if (action.cmd === MouseCmd.WHEEL) {
-				if (action.down) {
-					Interaction.elementControlsBackwardFunc();
-				} else {
-					Interaction.elementControlsForwardFunc();
-				}
+				Interaction.bufferInteraction.pushStart({
+					down: action.down,
+					move: false,
+					position: action.position,
+					position2: action.position,
+					touch: false,
+					zoom: true,
+				});
 			} else if (action.cmd === MouseCmd.MOVE) {
-				Interaction.handler(false, true, action.position, false);
+				Interaction.bufferInteraction.pushStart({
+					down: undefined,
+					move: true,
+					position: action.position,
+					position2: action.position,
+					touch: false,
+					zoom: false,
+				});
 			} else {
-				if (action.down === true) {
-					Interaction.handler(true, false, action.position, false);
-				} else if (action.down === false) {
-					Interaction.handler(false, false, action.position, false);
-				}
+				Interaction.bufferInteraction.pushStart({
+					down: action.down,
+					move: false,
+					position: action.position,
+					position2: action.position,
+					touch: false,
+					zoom: false,
+				});
 			}
 		});
 		TouchEngine.setCallback((action: TouchAction) => {
 			if (action.cmd === TouchCmd.CLICK) {
-				if (action.down === true) {
-					Interaction.handler(true, false, action.positions[0], true);
-				} else if (action.down === false) {
-					Interaction.handler(false, false, action.positions[0], true);
-				}
+				Interaction.bufferInteraction.pushStart({
+					down: action.down,
+					move: false,
+					position: action.positions[0],
+					position2: action.positions[0],
+					touch: true,
+					zoom: false,
+				});
 			} else if (action.cmd === TouchCmd.CLICK_MOVE) {
-				Interaction.handler(false, true, action.positions[0], true);
+				Interaction.bufferInteraction.pushStart({
+					down: true,
+					move: true,
+					position: action.positions[0],
+					position2: action.positions[0],
+					touch: true,
+					zoom: false,
+				});
+			}
+
+			if (action.cmd === TouchCmd.ZOOM) {
+				Interaction.bufferInteraction.pushStart({
+					down: action.down,
+					move: false,
+					position: action.positions[0],
+					position2: action.positions[1],
+					touch: true,
+					zoom: true,
+				});
+			} else if (action.cmd === TouchCmd.ZOOM_MOVE) {
+				Interaction.bufferInteraction.pushStart({
+					down: undefined,
+					move: true,
+					position: action.positions[0],
+					position2: action.positions[1],
+					touch: true,
+					zoom: true,
+				});
 			}
 		});
 		ResizeEngine.initialize();
@@ -103,172 +164,253 @@ export class Interaction {
 				Interaction.pxSizeCalc();
 			}, 100);
 		});
+		VideoBusEngine.setCallbackCamera((data: VideoBusOutputDataCamera) => {
+			Interaction.cameraViewportHeightC = data.heightC;
+			Interaction.cameraViewportStartXC = data.startXC;
+			Interaction.cameraViewportStartYC = data.startYC;
+			Interaction.cameraViewportWidthC = data.widthC;
+		});
+		Interaction.pxSizeCalc();
 
 		// Done
+		Interaction.processorBinder();
+		Interaction.interactionRequest = requestAnimationFrame(Interaction.processor);
 		Interaction.rotator(OrientationEngine.getOrientation());
 		setTimeout(() => {
 			Interaction.pxSizeCalc();
 		}, 100);
 	}
 
-	private static handler(down: boolean, move: boolean, position: MousePosition | TouchPosition, touch: boolean): void {
-		// Standard edit interaction
-		if (Interaction.mode !== null) {
-			const buffer = Interaction.buffer,
-				devicePixelRatio: number = Math.round(window.devicePixelRatio * 1000) / 1000,
-				domRect: DOMRect = Interaction.domRect,
-				elementEditStyle: CSSStyleDeclaration = Interaction.elementEdit.style,
-				pxCellSize: number = Interaction.pxCellSize;
+	private static processor(_: number): void {}
 
-			let out: boolean = false,
-				px: number = position.x / devicePixelRatio,
-				py: number = position.y / devicePixelRatio,
-				tx: number,
-				ty: number;
+	private static processorBinder(): void {
+		let buffer: Set<number> = new Set(),
+			cameraMove: boolean = false,
+			cameraRelX: number = 0,
+			cameraRelY: number = 0,
+			cameraViewportHeightC: number = 0,
+			cameraViewportStartXC: number = 0,
+			cameraViewportStartYC: number = 0,
+			cameraViewportWidthC: number = 0,
+			cameraUpdated: boolean = false,
+			cameraZoom: number = 1,
+			cameraZoomMax: number = 100,
+			cameraZoomMin: number = 1,
+			cameraZoomPrevious: number,
+			cameraZoomStep: number = 5,
+			domRect: DOMRect,
+			pxCellSize: number,
+			down: boolean,
+			downMode: boolean,
+			elementEditStyle: CSSStyleDeclaration = Interaction.elementEdit.style,
+			entry: InteractionEntry | undefined,
+			mode: InteractionMode = InteractionMode.MOVE_ZOOM,
+			move: boolean,
+			relX1: number,
+			relX2: number,
+			relY1: number,
+			relY2: number,
+			touch: boolean,
+			touchDistance: number,
+			touchDistancePrevious: number = -1,
+			// touchDistanceRelX: number,
+			// touchDistanceRelY: number,
+			value: number,
+			x1: number,
+			y1: number,
+			zoom: boolean;
 
-			if (Interaction.rotated) {
-				px = position.y / devicePixelRatio;
-				py = domRect.width - position.x / devicePixelRatio;
+		// Limit how often a camera update can be sent via the bus
+		setInterval(() => {
+			if (cameraUpdated) {
+				cameraUpdated = false;
 
-				if (px === 0 || py === 0 || py === domRect.width || px === domRect.height) {
-					out = true;
+				if (Interaction.cameraZoom !== cameraZoom) {
+					Interaction.cameraZoom = cameraZoom;
+					Interaction.pxSizeCalc();
 				}
-			} else {
-				if (px === 0 || py === 0 || px === domRect.width || py === domRect.height) {
-					out = true;
-				}
+
+				VideoBusEngine.outputCamera({
+					move: cameraMove,
+					relX: cameraRelX,
+					relY: cameraRelY,
+					zoom: cameraZoom,
+				});
 			}
+		}, 16); // 16 ~= 16.6 (60FPS)
 
-			tx = (px / pxCellSize) | 0;
-			ty = (py / pxCellSize) | 0;
+		/**
+		 * Buffer and processing ensures inputs are serially processed
+		 */
+		let processor = (timestampNow: number) => {
+			// Start the request for the next frame
+			Interaction.interactionRequest = requestAnimationFrame(processor);
+			timestampNow |= 0;
 
-			px = tx * pxCellSize;
-			py = ty * pxCellSize;
+			while (true) {
+				entry = Interaction.bufferInteraction.popEnd();
 
-			if (move) {
-				if (out) {
-					Interaction.editActive = false;
-					elementEditStyle.display = 'none';
-				} else {
-					if (!touch) {
-						elementEditStyle.display = 'block';
-
-						elementEditStyle.left = px + 'px';
-						elementEditStyle.top = py + 'px';
-					} else {
-						elementEditStyle.display = 'none';
-					}
-
-					if (Interaction.editActive) {
-						buffer.add((tx << xyWidthBits) | ty | (Interaction.mode ? xyValueAlive : xyValueDead));
-					}
-				}
-			} else if (!out) {
-				Interaction.editActive = down;
-
-				// Single touches can be registered a click by the browser
-				if (!touch || Interaction.mobile) {
-					elementEditStyle.display = 'none';
+				if (!entry) {
+					break;
 				}
 
-				if (down) {
-					if (!touch) {
-						buffer.add((tx << xyWidthBits) | ty | (Interaction.mode ? xyValueAlive : xyValueDead));
-					}
+				cameraViewportHeightC = Interaction.cameraViewportHeightC;
+				cameraViewportStartXC = Interaction.cameraViewportStartXC;
+				cameraViewportStartYC = Interaction.cameraViewportStartYC;
+				cameraViewportWidthC = Interaction.cameraViewportWidthC;
+				domRect = Interaction.domRect;
+				pxCellSize = Interaction.pxCellSize;
+				mode = Interaction.mode;
+				move = entry.move;
+				relX1 = Interaction.rotated ? entry.position.yRel : entry.position.xRel;
+				relX2 = Interaction.rotated ? entry.position2.yRel : entry.position2.xRel;
+				relY1 = Interaction.rotated ? 1 - entry.position.xRel : entry.position.yRel;
+				relY2 = Interaction.rotated ? 1 - entry.position2.xRel : entry.position2.yRel;
+				touch = entry.touch;
+				x1 = Interaction.rotated ? entry.position.y : entry.position.x;
+				y1 = Interaction.rotated ? domRect.width - entry.position.x : entry.position.y;
+				zoom = entry.zoom;
 
-					clearInterval(Interaction.editInterval);
-					Interaction.editInterval = setInterval(() => {
-						if (buffer.size) {
-							CalcBusEngine.outputLife(Uint32Array.from(buffer));
-							buffer.clear();
-						}
-					}, 40);
-				} else {
-					clearInterval(Interaction.editInterval);
-					if (buffer.size) {
-						CalcBusEngine.outputLife(Uint32Array.from(buffer));
-						buffer.clear();
-					}
+				// Set down state only when defined
+				if (entry.down !== undefined) {
+					down = entry.down;
 				}
-			}
-		} else if (touch) {
-			// Swipe for speedup or speeddown
-			const domRect: DOMRect = Interaction.domRect;
 
-			let now: number,
-				out: boolean = false,
-				px: number = position.x / devicePixelRatio,
-				py: number = position.y / devicePixelRatio;
-
-			if (px === 0 || py === 0 || px === domRect.width || py === domRect.height) {
-				out = true;
-			}
-
-			if (move) {
-				if (out) {
-					Interaction.editActive = false;
-				} else if (Interaction.editActive) {
-					Interaction.swipeLength = px - Interaction.swipePositionPrevious;
-					Interaction.swipePositionPrevious = px;
+				if (relX1 === 0 || relY1 === 0 || relX1 > 0.99 || relY1 > 0.99) {
+					down = false;
+					move = false;
 				}
-			} else if (!out) {
-				Interaction.editActive = down;
 
-				if (down) {
-					Interaction.swipeLength = 0;
-					Interaction.swipePositionPrevious = px;
+				// Operate mode
+				if (mode === InteractionMode.MOVE_ZOOM) {
+					// Modify "camera"
+					if (zoom) {
+						// Zoom
+						if (touch) {
+							// Touch
+							if (down) {
+								if (touchDistancePrevious !== -1) {
+									touchDistance = <number>(<TouchPosition>entry.position).distance - touchDistancePrevious;
+									if (Math.abs(touchDistance) > 20) {
+										cameraZoomPrevious = cameraZoom;
+										cameraZoom = Math.max(
+											cameraZoomMin,
+											Math.min(cameraZoomMax, cameraZoom + (touchDistance > 0 ? cameraZoomStep : -cameraZoomStep)),
+										);
 
-					clearInterval(Interaction.editInterval);
-					Interaction.editInterval = setInterval(() => {
-						if (Math.abs(Interaction.swipeLength) > Interaction.swipeLengthAccepted) {
-							if (Interaction.swipeLength > 0) {
-								Interaction.elementControlsForwardFunc();
+										if (cameraZoom !== cameraZoomPrevious) {
+											// cameraRelX = touchDistanceRelX;
+											// cameraRelY = touchDistanceRelY;
+											cameraUpdated = true;
+										}
+
+										touchDistancePrevious = <number>(<TouchPosition>entry.position).distance;
+									}
+								} else {
+									touchDistancePrevious = <number>(<TouchPosition>entry.position).distance;
+									// touchDistanceRelX = (relX1 + relX2) / 2;
+									// touchDistanceRelY = (relY1 + relY2) / 2;
+								}
 							} else {
-								Interaction.elementControlsBackwardFunc();
+								touchDistancePrevious = -1;
 							}
-
-							Interaction.moved = true;
-							Interaction.swipeLength = 0;
-							Interaction.swipePositionPrevious = px;
-						}
-					}, 120);
-				} else {
-					now = performance.now();
-					if (now - Interaction.touchUpTimestamp < Interaction.touchDoubleWindow) {
-						if (Interaction.elementControlsPlay.style.display !== 'none') {
-							Interaction.elementControlsPlayFunc();
 						} else {
-							Interaction.elementControlsPauseFunc();
-						}
+							// Mouse
+							cameraZoomPrevious = cameraZoom;
+							cameraZoom = Math.max(
+								cameraZoomMin,
+								Math.min(cameraZoomMax, cameraZoom + (down ? -cameraZoomStep : cameraZoomStep)),
+							);
 
-						clearTimeout(Interaction.touchDownClickTimeout);
-						Interaction.touchUpTimestamp = 0;
+							down = false;
+							if (cameraZoom !== cameraZoomPrevious) {
+								// cameraRelX = relX1;
+								// cameraRelY = relY1;
+								cameraUpdated = true;
+							}
+						}
 					} else {
-						Interaction.touchUpTimestamp = now;
-					}
-
-					clearInterval(Interaction.editInterval);
-					if (Math.abs(Interaction.swipeLength) > Interaction.swipeLengthAccepted) {
-						if (Interaction.swipeLength > 0) {
-							Interaction.elementControlsForwardFunc();
-						} else {
-							Interaction.elementControlsBackwardFunc();
+						if (!move) {
+							cameraMove = false;
+							downMode = down;
 						}
 
-						Interaction.moved = true;
-						Interaction.swipeLength = 0;
-						Interaction.swipePositionPrevious = px;
-					} else if (!Interaction.moved) {
-						clearTimeout(Interaction.touchDownClickTimeout);
-						Interaction.touchDownClickTimeout = setTimeout(() => {
-							Interaction.elementCanvasInteractive.click();
-						}, Interaction.touchDoubleWindow + 100);
+						// Move
+						if (move) {
+							if (downMode && cameraRelX !== relX1 && cameraRelY !== relY1) {
+								cameraMove = true;
+								cameraRelX = 1 - relX1;
+								cameraRelY = 1 - relY1;
+								cameraUpdated = true;
+							}
+						} else {
+							VideoBusEngine.outputCamera({
+								move: false,
+								relX: 1 - relX1,
+								relY: 1 - relY1,
+								zoom: cameraZoom,
+							});
+						}
+					}
+				} else if (!zoom) {
+					switch (mode) {
+						case InteractionMode.DRAW_DEATH:
+							value = xyValueDead;
+							break;
+						case InteractionMode.DRAW_LIFE:
+							value = xyValueAlive;
+							break;
+						case InteractionMode.ERASE:
+						default:
+							value = 0;
+							break;
 					}
 
-					Interaction.moved = false;
+					if (move) {
+						if (touch) {
+							elementEditStyle.display = 'none';
+						} else {
+							elementEditStyle.display = 'block';
+							elementEditStyle.left = x1 - ((x1 + (cameraViewportStartXC % 1) * pxCellSize) % pxCellSize) + 'px';
+							elementEditStyle.top = y1 - ((y1 + (cameraViewportStartYC % 1) * pxCellSize) % pxCellSize) + 'px';
+						}
+
+						if (Interaction.editActive) {
+							buffer.add(
+								(((cameraViewportStartXC + cameraViewportWidthC * relX1) | 0) << xyWidthBits) |
+									((cameraViewportStartYC + cameraViewportHeightC * relY1) | 0) |
+									value,
+							);
+						}
+					} else {
+						Interaction.editActive = down;
+
+						if (down) {
+							buffer.add(
+								(((cameraViewportStartXC + cameraViewportWidthC * relX1) | 0) << xyWidthBits) |
+									((cameraViewportStartYC + cameraViewportHeightC * relY1) | 0) |
+									value,
+							);
+
+							clearInterval(Interaction.editInterval);
+							Interaction.editInterval = setInterval(() => {
+								if (buffer.size) {
+									CalcBusEngine.outputLife(Uint32Array.from(buffer));
+									buffer.clear();
+								}
+							}, 40);
+						} else {
+							clearInterval(Interaction.editInterval);
+							if (buffer.size) {
+								CalcBusEngine.outputLife(Uint32Array.from(buffer));
+								buffer.clear();
+							}
+						}
+					}
 				}
 			}
-		}
+		};
+		Interaction.processor = processor;
 	}
 
 	protected static pxSizeCalc(): void {
@@ -279,6 +421,10 @@ export class Interaction {
 			pxCellSize = Math.round((domRect.height / Interaction.settingsVideo.tableSizeX) * 1000) / 1000;
 		} else {
 			pxCellSize = Math.round((domRect.width / Interaction.settingsVideo.tableSizeX) * 1000) / 1000;
+		}
+
+		if (Interaction.cameraZoom !== 1) {
+			pxCellSize *= scalePx(Interaction.cameraZoom, Interaction.settingsVideo.tableSizeX);
 		}
 
 		Interaction.domRect = domRect;

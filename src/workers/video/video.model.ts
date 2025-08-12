@@ -9,6 +9,7 @@ import { CalcBusOutputDataPositions, Stat } from '../calc/calc.model';
  */
 
 export enum VideoBusInputCmd {
+	CAMERA,
 	DATA,
 	INIT,
 	RESET,
@@ -18,6 +19,13 @@ export enum VideoBusInputCmd {
 
 export interface VideoBusInputDataInit extends VideoBusInputDataResize, VideoBusInputDataSettings {
 	canvasOffscreen: OffscreenCanvas;
+}
+
+export interface VideoBusInputDataCamera {
+	move: boolean;
+	relX: number;
+	relY: number;
+	zoom: number;
 }
 
 export interface VideoBusInputDataResize {
@@ -46,6 +54,7 @@ export interface VideoBusInputPayload {
 	data:
 		| CalcBusOutputDataPositions
 		| boolean
+		| VideoBusInputDataCamera
 		| VideoBusInputDataInit
 		| VideoBusInputDataResize
 		| VideoBusInputDataSettings
@@ -58,9 +67,17 @@ export interface VideoBusInputPayload {
  */
 
 export enum VideoBusOutputCmd {
+	CAMERA,
 	INIT_COMPLETE,
 	RESET_COMPLETE,
 	STATS,
+}
+
+export interface VideoBusOutputDataCamera {
+	heightC: number;
+	startXC: number;
+	startYC: number;
+	widthC: number;
 }
 
 export interface VideoBusOutputDataStats {
@@ -70,5 +87,5 @@ export interface VideoBusOutputDataStats {
 
 export interface VideoBusOutputPayload {
 	cmd: VideoBusOutputCmd;
-	data: boolean | VideoBusOutputDataStats | undefined;
+	data: boolean | VideoBusOutputDataCamera | VideoBusOutputDataStats | undefined;
 }

@@ -357,14 +357,19 @@ class CalcWorkerEngine {
 						cellMeta.alive = (xy & xyValueAlive) !== 0;
 						cellMeta.dead = (xy & xyValueDead) !== 0;
 						cellMeta.neighbors = 0;
+					}
+				}
 
-						if (cellMeta.alive) {
-							dataAlive[dataAliveIndex++] = i;
-						} else if (cellMeta.dead) {
-							dataDead[dataDeadIndex++] = i;
-						} else {
-							dataNone[dataNoneIndex++] = i;
-						}
+				dataAliveIndex = 0;
+				dataDeadIndex = 0;
+				dataNoneIndex = 0;
+				for ([xy, cellMeta] of data) {
+					if (cellMeta.alive) {
+						dataAlive[dataAliveIndex++] = xy;
+					} else if (cellMeta.dead) {
+						dataDead[dataDeadIndex++] = xy;
+					} else {
+						dataNone[dataNoneIndex++] = xy;
 					}
 				}
 
