@@ -54,6 +54,7 @@ export class Interaction {
 	protected static elementEdit: HTMLElement;
 	protected static elementSpinner: HTMLElement;
 	protected static elementRotator: HTMLElement;
+	protected static fullscreenClickFunc: () => void;
 	protected static gameover: boolean;
 	protected static interactionRequest: number;
 	protected static mode: InteractionMode = InteractionMode.MOVE_ZOOM;
@@ -118,6 +119,7 @@ export class Interaction {
 		});
 		TouchEngine.setCallback((action: TouchAction) => {
 			if (action.cmd === TouchCmd.CLICK) {
+				console.log('TOUCH CLICK');
 				Interaction.bufferInteraction.pushStart({
 					down: action.down,
 					move: false,
@@ -276,6 +278,8 @@ export class Interaction {
 					down = entry.down;
 				}
 
+				touch && console.log('entry', entry);
+
 				if (relX1 === 0 || relY1 === 0 || relX1 > 0.99 || relY1 > 0.99) {
 					down = false;
 					move = false;
@@ -331,6 +335,8 @@ export class Interaction {
 						}
 					} else {
 						if (!move) {
+							!cameraMove && !down && Interaction.fullscreenClickFunc();
+
 							cameraMove = false;
 							downMode = down;
 						}
@@ -383,6 +389,8 @@ export class Interaction {
 							);
 						}
 					} else {
+						Interaction.fullscreenClickFunc();
+
 						Interaction.editActive = down;
 
 						if (down) {

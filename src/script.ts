@@ -369,16 +369,14 @@ class Life extends Interaction {
 				}, 100);
 			}
 		};
-		document.addEventListener('click', (event) => {
+		Interaction.fullscreenClickFunc = () => {
 			if (FullscreenEngine.isOpen()) {
-				if ((event.target as HTMLElement).id === 'canvas-interactive' && Life.elementControls.classList.contains('show')) {
-					if (Interaction.mode === null) {
-						Life.elementControls.classList.remove('show');
-						Life.elementCounts.classList.remove('adjust');
-						Life.elementHomeostatic.classList.remove('adjust');
-						Life.elementPerformance.classList.remove('adjust');
-						Life.elementStats.classList.remove('show');
-					}
+				if (Interaction.mode === InteractionMode.MOVE_ZOOM && Life.elementControls.classList.contains('show')) {
+					Life.elementControls.classList.remove('show');
+					Life.elementCounts.classList.remove('adjust');
+					Life.elementHomeostatic.classList.remove('adjust');
+					Life.elementPerformance.classList.remove('adjust');
+					Life.elementStats.classList.remove('show');
 				} else {
 					Life.elementControls.classList.add('show');
 					Life.elementCounts.classList.add('adjust');
@@ -389,20 +387,19 @@ class Life extends Interaction {
 					fullscreenFader();
 				}
 			}
-		});
+		};
+		Interaction.elementCanvasInteractive.addEventListener('click', Interaction.fullscreenClickFunc);
 		const fullscreenFader = () => {
 			clearTimeout(Life.timeoutFullscreen);
-			Life.timeoutFullscreen = setTimeout(() => {
-				if (Interaction.mode === null) {
+			if (Interaction.mode === InteractionMode.MOVE_ZOOM) {
+				Life.timeoutFullscreen = setTimeout(() => {
 					Life.elementControls.classList.remove('show');
 					Life.elementCounts.classList.remove('adjust');
 					Life.elementHomeostatic.classList.remove('adjust');
 					Life.elementPerformance.classList.remove('adjust');
 					Life.elementStats.classList.remove('show');
-				} else {
-					fullscreenFader();
-				}
-			}, 3000);
+				}, 3000);
+			}
 		};
 		Life.elementControls.onmouseenter = () => {
 			Life.elementControls.classList.add('show');
