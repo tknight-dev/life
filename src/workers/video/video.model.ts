@@ -22,6 +22,7 @@ export interface VideoBusInputDataInit extends VideoBusInputDataResize, VideoBus
 }
 
 export interface VideoBusInputDataCamera {
+	move: boolean;
 	relX: number;
 	relY: number;
 	zoom: number;

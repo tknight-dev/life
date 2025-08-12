@@ -160,6 +160,7 @@ export class Interaction {
 				Interaction.pxSizeCalc();
 			}, 100);
 		});
+		Interaction.pxSizeCalc();
 
 		// Done
 		Interaction.processorBinder();
@@ -173,7 +174,8 @@ export class Interaction {
 	private static processor(_: number): void {}
 
 	private static processorBinder(): void {
-		let cameraRelX: number = 0,
+		let cameraMove: boolean = false,
+			cameraRelX: number = 0,
 			cameraRelY: number = 0,
 			cameraUpdated: boolean = false,
 			cameraZoom: number = 1,
@@ -186,8 +188,10 @@ export class Interaction {
 			entry: InteractionEntry | undefined,
 			mode: InteractionMode = InteractionMode.STANDARD,
 			move: boolean,
-			position: MousePosition | TouchPosition,
-			position2: MousePosition | TouchPosition,
+			relX1: number,
+			relX2: number,
+			relY1: number,
+			relY2: number,
 			touch: boolean,
 			touchDistance: number,
 			touchDistancePrevious: number = -1,
@@ -201,12 +205,13 @@ export class Interaction {
 				cameraUpdated = false;
 
 				VideoBusEngine.outputCamera({
+					move: cameraMove,
 					relX: cameraRelX,
 					relY: cameraRelY,
 					zoom: cameraZoom,
 				});
 			}
-		}, 40);
+		}, 16); // 16 ~= 16.6 (60FPS)
 
 		/**
 		 * Buffer and processing ensures inputs are serially processed
@@ -228,9 +233,13 @@ export class Interaction {
 					down = entry.down;
 				}
 				move = entry.move;
-				position = entry.position;
-				position2 = entry.position2;
+				relX1 = Interaction.rotated ? entry.position.yRel : entry.position.xRel;
+				relX2 = Interaction.rotated ? entry.position2.yRel : entry.position2.xRel;
+				relY1 = Interaction.rotated ? 1 - entry.position.xRel : entry.position.yRel;
+				relY2 = Interaction.rotated ? 1 - entry.position2.xRel : entry.position2.yRel;
 				touch = entry.touch;
+				// x1 = Interaction.rotated ? entry.position.y : entry.position.x;
+				// y1 = Interaction.rotated ? entry.position.x : entry.position.y;
 				zoom = entry.zoom;
 
 				// Mode variables
@@ -266,8 +275,8 @@ export class Interaction {
 									}
 								} else {
 									touchDistancePrevious = <number>(<TouchPosition>entry.position).distance;
-									touchDistanceRelX = (position.xRel + position2.xRel) / 2;
-									touchDistanceRelY = (position.yRel + position2.yRel) / 2;
+									touchDistanceRelX = (relX1 + relX2) / 2;
+									touchDistanceRelY = (relY1 + relY2) / 2;
 								}
 							} else {
 								touchDistancePrevious = -1;
@@ -282,24 +291,32 @@ export class Interaction {
 
 							down = false;
 							if (cameraZoom !== cameraZoomPrevious) {
-								// cameraRelX = position.xRel;
-								// cameraRelY = position.yRel;
+								// cameraRelX = relX1;
+								// cameraRelY = relY1;
 								cameraUpdated = true;
 							}
 						}
 					} else {
 						if (!move) {
+							cameraMove = false;
 							downMode = down;
-						} else if (downMode && (position.x === 0 || position.y === 0)) {
-							// Out of area
-							downMode = false;
 						}
 
 						// Move
-						if (downMode && cameraRelX !== position.xRel && cameraRelY !== position.yRel) {
-							cameraRelX = 1 - position.xRel;
-							cameraRelY = 1 - position.yRel;
-							cameraUpdated = true;
+						if (move) {
+							if (downMode && cameraRelX !== relX1 && cameraRelY !== relY1) {
+								cameraMove = true;
+								cameraRelX = 1 - relX1;
+								cameraRelY = 1 - relY1;
+								cameraUpdated = true;
+							}
+						} else {
+							VideoBusEngine.outputCamera({
+								move: false,
+								relX: 1 - relX1,
+								relY: 1 - relY1,
+								zoom: cameraZoom,
+							});
 						}
 					}
 				} else {
