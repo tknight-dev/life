@@ -7,6 +7,7 @@ import { VideoBusInputDataSettingsFPS } from '../video/video.model';
 /*
  * Masks
  */
+
 export const masks = {
 	xMask: 0,
 	xShifted1: 0,
@@ -91,6 +92,15 @@ export class Stat {
 		this.add(performance.now() - this.timer);
 	}
 }
+
+/*
+ * Util
+ */
+export const scale = (v: number, a: number, b: number, y: number, z: number) => {
+	return ((v - a) * (z - y)) / (b - a) + y;
+};
+
+export const scalePx = (cameraZoom: number, tableSizeX: number) => scale(cameraZoom, 1, 100, 1, scale(tableSizeX, 48, 2023, 2, 30));
 
 /*
  * Inputs

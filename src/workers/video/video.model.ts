@@ -67,9 +67,17 @@ export interface VideoBusInputPayload {
  */
 
 export enum VideoBusOutputCmd {
+	CAMERA,
 	INIT_COMPLETE,
 	RESET_COMPLETE,
 	STATS,
+}
+
+export interface VideoBusOutputDataCamera {
+	heightC: number;
+	startXC: number;
+	startYC: number;
+	widthC: number;
 }
 
 export interface VideoBusOutputDataStats {
@@ -79,5 +87,5 @@ export interface VideoBusOutputDataStats {
 
 export interface VideoBusOutputPayload {
 	cmd: VideoBusOutputCmd;
-	data: boolean | VideoBusOutputDataStats | undefined;
+	data: boolean | VideoBusOutputDataCamera | VideoBusOutputDataStats | undefined;
 }

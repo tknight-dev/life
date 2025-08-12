@@ -8,7 +8,7 @@ import {
 	VideoBusOutputCmd,
 	VideoBusOutputPayload,
 } from './video.model';
-import { CalcBusOutputDataPositions, masks, Stat, Stats, xyWidthBits } from '../calc/calc.model';
+import { CalcBusOutputDataPositions, masks, scale, scalePx, Stat, Stats, xyWidthBits } from '../calc/calc.model';
 
 /**
  * @author tknight-dev
@@ -117,6 +117,7 @@ class VideoWorkerEngine {
 
 			if (status) {
 				// Start rendering thread
+				VideoWorkerEngine.cameraUpdated = true; // Force viewport callback on init
 				VideoWorkerEngine.frameRequest = requestAnimationFrame(VideoWorkerEngine.render);
 			}
 		}
@@ -215,14 +216,18 @@ class VideoWorkerEngine {
 			viewPortHeightC: number = VideoWorkerEngine.tableSizeY,
 			viewPortHeightPx: number = VideoWorkerEngine.ctxHeight,
 			viewPortHeightStartC: number = 0,
+			viewPortHeightStartCEff: number,
 			viewPortHeightStartPx: number = 0,
 			viewPortHeightStopC: number = viewPortHeightStartC + viewPortHeightC,
+			viewPortHeightStopCEff: number,
 			viewPortHeightStopPx: number = viewPortHeightStartPx + viewPortHeightPx,
 			viewPortWidthC: number = VideoWorkerEngine.tableSizeX,
 			viewPortWidthPx: number = VideoWorkerEngine.ctxWidth,
 			viewPortWidthStartC: number = 0,
+			viewPortWidthStartCEff: number,
 			viewPortWidthStartPx: number = 0,
 			viewPortWidthStopC: number = viewPortWidthStartC + viewPortWidthC,
+			viewPortWidthStopCEff: number,
 			viewPortWidthStopPx: number = viewPortWidthStartPx + viewPortWidthPx,
 			x: number,
 			xy: number,
@@ -257,9 +262,6 @@ class VideoWorkerEngine {
 		/*
 		 * Functions
 		 */
-		const scale = (v: number, a: number, b: number, y: number, z: number) => {
-			return ((v - a) * (z - y)) / (b - a) + y;
-		};
 		const render = (timestampNow: number) => {
 			timestampNow |= 0;
 
@@ -275,7 +277,6 @@ class VideoWorkerEngine {
 			}
 
 			if (VideoWorkerEngine.cameraUpdated || VideoWorkerEngine.resized || VideoWorkerEngine.settingsNew) {
-				VideoWorkerEngine.cameraUpdated = false;
 				VideoWorkerEngine.settingsNew = false;
 
 				// Cache: variables
@@ -299,7 +300,7 @@ class VideoWorkerEngine {
 				// Calc: pixel size
 				pxCellSize = Math.round((pxWidth / tableSizeX) * 1000) / 1000;
 				if (cameraZoom !== 1) {
-					pxCellSize *= scale(cameraZoom, 1, 100, 1, scale(tableSizeX, 48, 2023, 2, 85));
+					pxCellSize *= scalePx(cameraZoom, tableSizeX);
 
 					// Viewport: Calc
 					viewPortMode = true;
@@ -312,8 +313,8 @@ class VideoWorkerEngine {
 
 					// Viewport: Camera pan
 					if (VideoWorkerEngine.camera.move) {
-						cameraPanX = (VideoWorkerEngine.camera.relX - cameraPanXOriginal) * viewPortWidthC * 0.7; // * 0.x is scroll smoothing factor
-						cameraPanY = (VideoWorkerEngine.camera.relY - cameraPanYOriginal) * viewPortHeightC * 0.7;
+						cameraPanX = (VideoWorkerEngine.camera.relX - cameraPanXOriginal) * viewPortWidthC;
+						cameraPanY = (VideoWorkerEngine.camera.relY - cameraPanYOriginal) * viewPortHeightC;
 					} else {
 						cameraCX += cameraPanX;
 						cameraCY += cameraPanY;
@@ -328,6 +329,7 @@ class VideoWorkerEngine {
 					if (viewPortHeightStartC < 0) {
 						cameraCY = viewPortHeightC / 2;
 						cameraPanY = 0;
+						cameraPanYOriginal = VideoWorkerEngine.camera.relY;
 
 						viewPortHeightStartC = 0;
 						viewPortHeightStartPx = 0;
@@ -337,6 +339,7 @@ class VideoWorkerEngine {
 					} else if (viewPortHeightStartC + viewPortHeightC > tableSizeY) {
 						cameraCY = tableSizeY - viewPortHeightC / 2;
 						cameraPanY = 0;
+						cameraPanYOriginal = VideoWorkerEngine.camera.relY;
 
 						viewPortHeightStopC = tableSizeY;
 						viewPortHeightStopPx = Math.round(viewPortHeightStopC * pxCellSize * 1000) / 1000;
@@ -354,6 +357,7 @@ class VideoWorkerEngine {
 					if (viewPortWidthStartC < 0) {
 						cameraCX = viewPortWidthC / 2;
 						cameraPanX = 0;
+						cameraPanXOriginal = VideoWorkerEngine.camera.relX;
 
 						viewPortWidthStartC = 0;
 						viewPortWidthStartPx = 0;
@@ -363,6 +367,7 @@ class VideoWorkerEngine {
 					} else if (viewPortWidthStartC + viewPortWidthC > tableSizeX) {
 						cameraCX = tableSizeX - viewPortWidthC / 2;
 						cameraPanX = 0;
+						cameraPanXOriginal = VideoWorkerEngine.camera.relX;
 
 						viewPortWidthStopC = tableSizeX;
 						viewPortWidthStopPx = Math.round(viewPortWidthStopC * pxCellSize * 1000) / 1000;
@@ -393,6 +398,21 @@ class VideoWorkerEngine {
 					viewPortWidthStopPx = viewPortWidthStartPx + viewPortWidthPx;
 				}
 
+				if (VideoWorkerEngine.cameraUpdated) {
+					VideoWorkerEngine.cameraUpdated = false;
+					VideoWorkerEngine.post([
+						{
+							cmd: VideoBusOutputCmd.CAMERA,
+							data: {
+								heightC: viewPortHeightC,
+								startXC: viewPortWidthStartC,
+								startYC: viewPortHeightStartC,
+								widthC: viewPortWidthC,
+							},
+						},
+					]);
+				}
+
 				// Cache: Cells
 				cacheCanvasCellAlive.height = pxCellSize;
 				cacheCanvasCellAlive.width = pxCellSize;
@@ -405,7 +425,7 @@ class VideoWorkerEngine {
 				cacheCanvasCellDeadCtx.fillRect(0, 0, pxCellSize, pxCellSize);
 
 				// Grid: Enable/Disable (auto)
-				if (pxCellSize < 7) {
+				if (pxCellSize < 5) {
 					drawGrid = false;
 				}
 
@@ -453,29 +473,30 @@ class VideoWorkerEngine {
 					data = VideoWorkerEngine.data;
 
 					// Draw
-					if (data.alive.length + data.deadOrNone.length > 0) {
-						statDrawAvg.watchStart();
+					statDrawAvg.watchStart();
 
-						// Draw: Background
-						if (drawDeadCells && !data.deadMode) {
-							canvasOffscreenContext.fillStyle = 'rgb(0,64,0)';
-							canvasOffscreenContext.fillRect(0, 0, pxWidth, pxHeight);
-						} else {
-							canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);
-						}
+					// Draw: Background
+					if (drawDeadCells && !data.deadMode) {
+						canvasOffscreenContext.fillStyle = 'rgb(0,64,0)';
+						canvasOffscreenContext.fillRect(0, 0, pxWidth, pxHeight);
+					} else {
+						canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);
+					}
 
-						if (viewPortMode) {
-							// Draw: Living Cells
-							for (xy of data.alive) {
-								x = (xy >> xyWidthBits) & yMask;
+					if (viewPortMode) {
+						viewPortWidthStartCEff = viewPortWidthStartC - 1;
+						viewPortWidthStopCEff = viewPortWidthStopC + 1;
+						viewPortHeightStartCEff = viewPortHeightStartC - 1;
+						viewPortHeightStopCEff = viewPortHeightStopC + 1;
+
+						// Draw: Living Cells
+						for (xy of data.alive) {
+							x = (xy >> xyWidthBits) & yMask;
+
+							if (x > viewPortWidthStartCEff && x < viewPortWidthStopCEff) {
 								y = xy & yMask;
 
-								if (
-									x > viewPortWidthStartC - 1 &&
-									x < viewPortWidthStopC + 1 &&
-									y > viewPortHeightStartC - 1 &&
-									y < viewPortHeightStopC + 1
-								) {
+								if (y > viewPortHeightStartCEff && y < viewPortHeightStopCEff) {
 									canvasOffscreenContext.drawImage(
 										cacheCanvasCellAlive,
 										(x - viewPortWidthStartC) * pxCellSize,
@@ -483,21 +504,19 @@ class VideoWorkerEngine {
 									);
 								}
 							}
+						}
 
-							// Clear/Draw: Dead Cells
-							if (drawDeadCells) {
-								if (data.deadMode) {
-									// Draw dead cells
-									for (xy of data.deadOrNone) {
-										x = (xy >> xyWidthBits) & yMask;
+						// Clear/Draw: Dead Cells
+						if (drawDeadCells) {
+							if (data.deadMode) {
+								// Draw dead cells
+								for (xy of data.deadOrNone) {
+									x = (xy >> xyWidthBits) & yMask;
+
+									if (x > viewPortWidthStartCEff && x < viewPortWidthStopCEff) {
 										y = xy & yMask;
 
-										if (
-											x > viewPortWidthStartC - 1 &&
-											x < viewPortWidthStopC + 1 &&
-											y > viewPortHeightStartC - 1 &&
-											y < viewPortHeightStopC + 1
-										) {
+										if (y > viewPortHeightStartCEff && y < viewPortHeightStopCEff) {
 											canvasOffscreenContext.drawImage(
 												cacheCanvasCellDead,
 												(x - viewPortWidthStartC) * pxCellSize,
@@ -505,18 +524,16 @@ class VideoWorkerEngine {
 											);
 										}
 									}
-								} else {
-									// Clear non-dead cells
-									for (xy of data.deadOrNone) {
-										x = (xy >> xyWidthBits) & yMask;
+								}
+							} else {
+								// Clear non-dead cells
+								for (xy of data.deadOrNone) {
+									x = (xy >> xyWidthBits) & yMask;
+
+									if (x > viewPortWidthStartCEff && x < viewPortWidthStopCEff) {
 										y = xy & yMask;
 
-										if (
-											x > viewPortWidthStartC - 1 &&
-											x < viewPortWidthStopC + 1 &&
-											y > viewPortHeightStartC - 1 &&
-											y < viewPortHeightStopC + 1
-										) {
+										if (y > viewPortHeightStartCEff && y < viewPortHeightStopCEff) {
 											canvasOffscreenContext.clearRect(
 												(x - viewPortWidthStartC) * pxCellSize,
 												(y - viewPortHeightStartC) * pxCellSize,
@@ -527,58 +544,58 @@ class VideoWorkerEngine {
 									}
 								}
 							}
+						}
 
-							// Draw: Grid
-							drawGrid &&
-								canvasOffscreenContext.drawImage(
-									cacheCanvasGrids,
-									pxCellSize - (viewPortWidthStartPx % pxCellSize) - pxCellSize,
-									pxCellSize - (viewPortHeightStartPx % pxCellSize) - pxCellSize,
-								);
-						} else {
-							// Draw: Living Cells
-							for (xy of data.alive) {
-								x = (xy >> xyWidthBits) & yMask;
-								y = xy & yMask;
-								canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
-							}
+						// Draw: Grid
+						drawGrid &&
+							canvasOffscreenContext.drawImage(
+								cacheCanvasGrids,
+								pxCellSize - (viewPortWidthStartPx % pxCellSize) - pxCellSize,
+								pxCellSize - (viewPortHeightStartPx % pxCellSize) - pxCellSize,
+							);
+					} else {
+						// Draw: Living Cells
+						for (xy of data.alive) {
+							x = (xy >> xyWidthBits) & yMask;
+							y = xy & yMask;
+							canvasOffscreenContext.drawImage(cacheCanvasCellAlive, x * pxCellSize, y * pxCellSize);
+						}
 
-							// Clear/Draw: Dead Cells
-							if (drawDeadCells) {
-								if (data.deadMode) {
-									// Draw dead cells
-									for (xy of data.deadOrNone) {
-										x = (xy >> xyWidthBits) & yMask;
-										y = xy & yMask;
-										canvasOffscreenContext.drawImage(cacheCanvasCellDead, x * pxCellSize, y * pxCellSize);
-									}
-								} else {
-									// Clear non-dead cells
-									for (xy of data.deadOrNone) {
-										x = (xy >> xyWidthBits) & yMask;
-										y = xy & yMask;
-										canvasOffscreenContext.clearRect(x * pxCellSize, y * pxCellSize, pxCellSize, pxCellSize);
-									}
+						// Clear/Draw: Dead Cells
+						if (drawDeadCells) {
+							if (data.deadMode) {
+								// Draw dead cells
+								for (xy of data.deadOrNone) {
+									x = (xy >> xyWidthBits) & yMask;
+									y = xy & yMask;
+									canvasOffscreenContext.drawImage(cacheCanvasCellDead, x * pxCellSize, y * pxCellSize);
+								}
+							} else {
+								// Clear non-dead cells
+								for (xy of data.deadOrNone) {
+									x = (xy >> xyWidthBits) & yMask;
+									y = xy & yMask;
+									canvasOffscreenContext.clearRect(x * pxCellSize, y * pxCellSize, pxCellSize, pxCellSize);
 								}
 							}
-
-							// Draw: Grid
-							drawGrid && canvasOffscreenContext.drawImage(cacheCanvasGrids, 0, 0);
 						}
 
-						cache = true;
-						statDrawAvg.watchStop();
+						// Draw: Grid
+						drawGrid && canvasOffscreenContext.drawImage(cacheCanvasGrids, 0, 0);
+					}
 
-						if (VideoWorkerEngine.reset) {
-							VideoWorkerEngine.reset = false;
+					cache = true;
+					statDrawAvg.watchStop();
 
-							VideoWorkerEngine.post([
-								{
-									cmd: VideoBusOutputCmd.RESET_COMPLETE,
-									data: undefined,
-								},
-							]);
-						}
+					if (VideoWorkerEngine.reset) {
+						VideoWorkerEngine.reset = false;
+
+						VideoWorkerEngine.post([
+							{
+								cmd: VideoBusOutputCmd.RESET_COMPLETE,
+								data: undefined,
+							},
+						]);
 					}
 				}
 			}

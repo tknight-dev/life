@@ -6,6 +6,7 @@ import {
 	VideoBusInputDataSettings,
 	VideoBusInputPayload,
 	VideoBusOutputCmd,
+	VideoBusOutputDataCamera,
 	VideoBusOutputDataStats,
 	VideoBusOutputPayload,
 } from './video.model';
@@ -16,6 +17,7 @@ import { CalcBusOutputDataPositions } from '../calc/calc.model';
  */
 
 export class VideoBusEngine {
+	private static callbackCamera: (data: VideoBusOutputDataCamera) => void;
 	private static callbackInitComplete: (status: boolean) => void;
 	private static callbackResetComplete: () => void;
 	private static callbackStats: (data: VideoBusOutputDataStats) => void;
@@ -83,6 +85,9 @@ export class VideoBusEngine {
 
 			for (let i = 0; i < payloads.length; i++) {
 				switch (payloads[i].cmd) {
+					case VideoBusOutputCmd.CAMERA:
+						VideoBusEngine.callbackCamera(<VideoBusOutputDataCamera>payloads[i].data);
+						break;
 					case VideoBusOutputCmd.INIT_COMPLETE:
 						VideoBusEngine.callbackInitComplete(<boolean>payloads[i].data);
 						break;
@@ -202,6 +207,10 @@ export class VideoBusEngine {
 		}
 
 		return data;
+	}
+
+	public static setCallbackCamera(callbackCamera: (data: VideoBusOutputDataCamera) => void): void {
+		VideoBusEngine.callbackCamera = callbackCamera;
 	}
 
 	public static setCallbackResetComplete(callbackResetComplete: () => void): void {

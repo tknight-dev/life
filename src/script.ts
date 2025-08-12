@@ -25,8 +25,9 @@ class Life extends Interaction {
 	private static elementCounts: HTMLElement;
 	private static elementDead: HTMLElement;
 	private static elementDataContainer: HTMLElement;
-	private static elementEditAdd: HTMLElement;
-	private static elementEditNone: HTMLElement;
+	private static elementEditAddDeath: HTMLElement;
+	private static elementEditAddLife: HTMLElement;
+	private static elementEditMove: HTMLElement;
 	private static elementEditRemove: HTMLElement;
 	private static elementGame: HTMLElement;
 	private static elementGameOver: HTMLElement;
@@ -179,11 +180,7 @@ class Life extends Interaction {
 			Interaction.elementControlsPlay.style.display = 'none';
 			Interaction.elementControlsPause.style.display = 'block';
 
-			Interaction.mode = InteractionMode.STANDARD;
-			Interaction.elementEdit.style.display = 'none';
-			Life.elementEditAdd.classList.remove('active');
-			Life.elementEditNone.classList.add('active');
-			Life.elementEditRemove.classList.remove('active');
+			Life.elementEditMove.click();
 
 			Life.elementHomeostatic.classList.remove('show');
 			Life.elementStatsCPS.style.display = 'block';
@@ -217,12 +214,13 @@ class Life extends Interaction {
 			Interaction.elementControlsPlay.style.display = 'block';
 			Interaction.elementControlsPause.style.display = 'none';
 
-			Life.elementEditAdd.style.display = 'flex';
-			Life.elementEditNone.style.display = 'flex';
+			Life.elementEditAddDeath.style.display = 'flex';
+			Life.elementEditAddLife.style.display = 'flex';
+			Life.elementEditMove.style.display = 'flex';
 			Life.elementEditRemove.style.display = 'flex';
 
 			if (!Interaction.settingsSeedRandom) {
-				Life.elementEditAdd.click();
+				Life.elementEditAddLife.click();
 			}
 
 			Life.elementGameOver.classList.remove('show');
@@ -241,31 +239,60 @@ class Life extends Interaction {
 		/**
 		 * Edit
 		 */
-		Life.elementEditAdd = <HTMLElement>document.getElementById('edit-add');
-		Life.elementEditAdd.onclick = () => {
-			if (Interaction.mode !== InteractionMode.DRAW_LIFE) {
-				Interaction.mode = InteractionMode.DRAW_LIFE;
+		Life.elementEditAddDeath = <HTMLElement>document.getElementById('edit-add-death');
+		Life.elementEditAddDeath.onclick = () => {
+			if (Interaction.mode !== InteractionMode.DRAW_DEATH && Interaction.settingsVideo.drawDeadCells) {
+				Interaction.mode = InteractionMode.DRAW_DEATH;
 
-				Life.elementEditAdd.classList.add('active');
-				Life.elementEditNone.classList.remove('active');
+				Life.elementEditAddDeath.classList.add('active');
+				Life.elementEditAddLife.classList.remove('active');
+				Life.elementEditMove.classList.remove('active');
 				Life.elementEditRemove.classList.remove('active');
 
 				Life.elementEdit.classList.add('add');
 				Life.elementEdit.classList.remove('remove');
+
+				Interaction.elementCanvasInteractive.classList.add('cursor-crosshair');
+				Interaction.elementCanvasInteractive.classList.remove('cursor-grab');
 
 				if (Interaction.elementControlsPause.style.display === 'block') {
 					Interaction.elementControlsPause.click();
 				}
 			}
 		};
-		Life.elementEditNone = <HTMLElement>document.getElementById('edit-none');
-		Life.elementEditNone.onclick = () => {
-			if (Interaction.mode !== InteractionMode.STANDARD) {
-				Interaction.mode = InteractionMode.STANDARD;
+		Life.elementEditAddLife = <HTMLElement>document.getElementById('edit-add-life');
+		Life.elementEditAddLife.onclick = () => {
+			if (Interaction.mode !== InteractionMode.DRAW_LIFE) {
+				Interaction.mode = InteractionMode.DRAW_LIFE;
 
-				Life.elementEditAdd.classList.remove('active');
-				Life.elementEditNone.classList.add('active');
+				Life.elementEditAddDeath.classList.remove('active');
+				Life.elementEditAddLife.classList.add('active');
+				Life.elementEditMove.classList.remove('active');
 				Life.elementEditRemove.classList.remove('active');
+
+				Life.elementEdit.classList.add('add');
+				Life.elementEdit.classList.remove('remove');
+
+				Interaction.elementCanvasInteractive.classList.add('cursor-crosshair');
+				Interaction.elementCanvasInteractive.classList.remove('cursor-grab');
+
+				if (Interaction.elementControlsPause.style.display === 'block') {
+					Interaction.elementControlsPause.click();
+				}
+			}
+		};
+		Life.elementEditMove = <HTMLElement>document.getElementById('edit-move');
+		Life.elementEditMove.onclick = () => {
+			if (Interaction.mode !== InteractionMode.MOVE_ZOOM) {
+				Interaction.mode = InteractionMode.MOVE_ZOOM;
+
+				Life.elementEditAddDeath.classList.remove('active');
+				Life.elementEditAddLife.classList.remove('active');
+				Life.elementEditMove.classList.add('active');
+				Life.elementEditRemove.classList.remove('active');
+
+				Interaction.elementCanvasInteractive.classList.remove('cursor-crosshair');
+				Interaction.elementCanvasInteractive.classList.add('cursor-grab');
 
 				Interaction.elementEdit.style.display = 'none';
 			}
@@ -275,9 +302,13 @@ class Life extends Interaction {
 			if (Interaction.mode !== InteractionMode.ERASE) {
 				Interaction.mode = InteractionMode.ERASE;
 
-				Life.elementEditAdd.classList.remove('active');
-				Life.elementEditNone.classList.remove('active');
+				Life.elementEditAddDeath.classList.remove('active');
+				Life.elementEditAddLife.classList.remove('active');
+				Life.elementEditMove.classList.remove('active');
 				Life.elementEditRemove.classList.add('active');
+
+				Interaction.elementCanvasInteractive.classList.add('cursor-crosshair');
+				Interaction.elementCanvasInteractive.classList.remove('cursor-grab');
 
 				Life.elementEdit.classList.remove('add');
 				Life.elementEdit.classList.add('remove');
@@ -473,6 +504,15 @@ class Life extends Interaction {
 				tableSizeX: Interaction.settingsCalc.tableSizeX,
 			};
 
+			if (Interaction.settingsVideo.drawDeadCells) {
+				Life.elementEditAddDeath.classList.remove('disable');
+			} else {
+				Life.elementEditAddDeath.classList.add('disable');
+
+				if (Interaction.mode === InteractionMode.DRAW_DEATH) {
+					Life.elementEditMove.click();
+				}
+			}
 			Interaction.settingsFPSShow = Boolean(Life.elementSettingsValueFPSShow.checked);
 			if (!Interaction.settingsFPSShow) {
 				Life.elementFPS.innerText = '';
@@ -624,6 +664,9 @@ class Life extends Interaction {
 								break;
 						}
 					}
+				case 'seedrandom':
+					Interaction.settingsSeedRandom = String(value).toLowerCase() === 'true';
+					break;
 				case 'table':
 					switch (Number(value)) {
 						case 48:
@@ -696,8 +739,9 @@ class Life extends Interaction {
 				Interaction.elementControlsPlay.style.display = 'none';
 				Interaction.elementControlsPause.style.display = 'none';
 
-				Life.elementEditAdd.style.display = 'none';
-				Life.elementEditNone.style.display = 'none';
+				Interaction.mode = InteractionMode.ERASE;
+				Life.elementEditMove.click();
+				Life.elementEditAddLife.style.display = 'none';
 				Life.elementEditRemove.style.display = 'none';
 
 				Life.elementStatsCPSAll.style.display = 'none';
@@ -910,6 +954,11 @@ class Life extends Interaction {
 
 			// Last
 			Life.initializeInteraction();
+
+			// Default to add life if no life current on the board
+			if (!Interaction.settingsSeedRandom) {
+				Life.elementEditAddLife.click();
+			}
 		} else {
 			CalcBusEngine.outputPause();
 
