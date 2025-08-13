@@ -63,7 +63,7 @@ class CalcWorkerEngine {
 	private static self: Window & typeof globalThis;
 	private static stats: { [key: number]: Stat } = {};
 	private static tableSizeAltered: boolean;
-	private static tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
+	private static tableSizeX: 32 | 80 | 160 | 320 | 640 | 960 | 1280 | 1920 | 2560;
 	private static tableSizeY: number;
 
 	public static async initialize(self: Window & typeof globalThis, data: CalcBusInputDataInit): Promise<void> {

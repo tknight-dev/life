@@ -25,10 +25,9 @@ export class VideoBusEngine {
 	private static canvasOffscreen: OffscreenCanvas;
 	private static complete: boolean;
 	private static game: HTMLElement;
-	private static resolution: null | 256 | 384 | 512 | 640 | 1280 | 1920;
-	private static tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
+	private static resolution: null | 160 | 320 | 640 | 1280 | 1920 | 2560;
+	private static tableSizeX: 32 | 80 | 160 | 320 | 640 | 960 | 1280 | 1920 | 2560;
 	private static worker: Worker;
-
 	/**
 	 * Start the video streams in another thread
 	 */
@@ -149,32 +148,12 @@ export class VideoBusEngine {
 			tableSizeX: number = VideoBusEngine.tableSizeX,
 			width: null | number = VideoBusEngine.resolution;
 
-		switch (width) {
-			case 128:
-				height = 72;
-				break;
-			case 256:
-				height = 144;
-				break;
-			case 384:
-				height = 216;
-				break;
-			case 512:
-				height = 288;
-				break;
-			case 640: // 360p
-				height = 360;
-				break;
-			case 1280: // 720p
-				height = 720;
-				break;
-			case 1920: // 1080p
-				height = 1080;
-				break;
-			default: // native
-				height = domRect.height;
-				width = domRect.width;
-				break;
+		// Resolution
+		if (width === null) {
+			height = domRect.height;
+			width = domRect.width;
+		} else {
+			height = (width * 9) / 16;
 		}
 
 		// Canvas cells must be atleast 1 px in size

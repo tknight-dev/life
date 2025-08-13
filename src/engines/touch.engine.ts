@@ -135,7 +135,7 @@ export class TouchEngine {
 							elementId: (<HTMLElement>event.target).id,
 							positions: TouchEngine.positionsLast,
 						});
-					}, 20);
+					}, 7); // 7 ~= 6.9444ms (144FPS)
 				}
 			}
 
@@ -159,7 +159,7 @@ export class TouchEngine {
 						elementId: (<HTMLElement>event.target).id,
 						positions: TouchEngine.positionsLast,
 					});
-				}, 20);
+				}, 7); // 7 ~= 6.9444ms (144FPS)
 			}
 
 			return false;

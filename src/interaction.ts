@@ -35,6 +35,7 @@ export class Interaction {
 	protected static cameraViewportStartXC: number = 0;
 	protected static cameraViewportStartYC: number = 0;
 	protected static cameraViewportWidthC: number = 0;
+	protected static cameraReset: boolean;
 	protected static cameraZoom: number = 1;
 	protected static domRect: DOMRect;
 	protected static editActive: boolean;
@@ -119,7 +120,6 @@ export class Interaction {
 		});
 		TouchEngine.setCallback((action: TouchAction) => {
 			if (action.cmd === TouchCmd.CLICK) {
-				console.log('TOUCH CLICK');
 				Interaction.bufferInteraction.pushStart({
 					down: action.down,
 					move: false,
@@ -209,9 +209,9 @@ export class Interaction {
 			mode: InteractionMode = InteractionMode.MOVE_ZOOM,
 			move: boolean,
 			relX1: number,
-			relX2: number,
+			// relX2: number,
 			relY1: number,
-			relY2: number,
+			// relY2: number,
 			touch: boolean,
 			touchDistance: number,
 			touchDistancePrevious: number = -1,
@@ -239,7 +239,7 @@ export class Interaction {
 					zoom: cameraZoom,
 				});
 			}
-		}, 16); // 16 ~= 16.6 (60FPS)
+		}, 7); // 7 ~= 6.9444ms (144FPS)
 
 		/**
 		 * Buffer and processing ensures inputs are serially processed
@@ -248,6 +248,14 @@ export class Interaction {
 			// Start the request for the next frame
 			Interaction.interactionRequest = requestAnimationFrame(processor);
 			timestampNow |= 0;
+
+			if (Interaction.cameraReset) {
+				Interaction.cameraReset = false;
+
+				cameraZoom = 1;
+
+				cameraUpdated = true;
+			}
 
 			while (true) {
 				entry = Interaction.bufferInteraction.popEnd();
@@ -265,9 +273,9 @@ export class Interaction {
 				mode = Interaction.mode;
 				move = entry.move;
 				relX1 = Interaction.rotated ? entry.position.yRel : entry.position.xRel;
-				relX2 = Interaction.rotated ? entry.position2.yRel : entry.position2.xRel;
+				// relX2 = Interaction.rotated ? entry.position2.yRel : entry.position2.xRel;
 				relY1 = Interaction.rotated ? 1 - entry.position.xRel : entry.position.yRel;
-				relY2 = Interaction.rotated ? 1 - entry.position2.xRel : entry.position2.yRel;
+				// relY2 = Interaction.rotated ? 1 - entry.position2.xRel : entry.position2.yRel;
 				touch = entry.touch;
 				x1 = Interaction.rotated ? entry.position.y : entry.position.x;
 				y1 = Interaction.rotated ? domRect.width - entry.position.x : entry.position.y;

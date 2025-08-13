@@ -8,7 +8,7 @@ import {
 	VideoBusOutputCmd,
 	VideoBusOutputPayload,
 } from './video.model';
-import { CalcBusOutputDataPositions, masks, scale, scalePx, Stat, Stats, xyWidthBits } from '../calc/calc.model';
+import { CalcBusOutputDataPositions, masks, scalePx, Stat, Stats, xyWidthBits } from '../calc/calc.model';
 
 /**
  * @author tknight-dev
@@ -59,7 +59,7 @@ class VideoWorkerEngine {
 	private static self: Window & typeof globalThis;
 	private static settingsNew: boolean;
 	private static stats: { [key: number]: Stat } = {};
-	private static tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032 | 8176 | 16368 | 32752;
+	private static tableSizeX: 32 | 80 | 160 | 320 | 640 | 960 | 1280 | 1920 | 2560;
 	private static tableSizeY: number;
 
 	public static async initialize(self: Window & typeof globalThis, data: VideoBusInputDataInit): Promise<void> {
@@ -220,7 +220,7 @@ class VideoWorkerEngine {
 			viewPortHeightStartPx: number = 0,
 			viewPortHeightStopC: number = viewPortHeightStartC + viewPortHeightC,
 			viewPortHeightStopCEff: number,
-			viewPortHeightStopPx: number = viewPortHeightStartPx + viewPortHeightPx,
+			// viewPortHeightStopPx: number = viewPortHeightStartPx + viewPortHeightPx,
 			viewPortWidthC: number = VideoWorkerEngine.tableSizeX,
 			viewPortWidthPx: number = VideoWorkerEngine.ctxWidth,
 			viewPortWidthStartC: number = 0,
@@ -228,7 +228,7 @@ class VideoWorkerEngine {
 			viewPortWidthStartPx: number = 0,
 			viewPortWidthStopC: number = viewPortWidthStartC + viewPortWidthC,
 			viewPortWidthStopCEff: number,
-			viewPortWidthStopPx: number = viewPortWidthStartPx + viewPortWidthPx,
+			// viewPortWidthStopPx: number = viewPortWidthStartPx + viewPortWidthPx,
 			x: number,
 			xy: number,
 			y: number;
@@ -335,21 +335,21 @@ class VideoWorkerEngine {
 						viewPortHeightStartPx = 0;
 
 						viewPortHeightStopC = viewPortHeightC;
-						viewPortHeightStopPx = Math.round(viewPortHeightStopC * pxCellSize * 1000) / 1000;
+						// viewPortHeightStopPx = Math.round(viewPortHeightStopC * pxCellSize * 1000) / 1000;
 					} else if (viewPortHeightStartC + viewPortHeightC > tableSizeY) {
 						cameraCY = tableSizeY - viewPortHeightC / 2;
 						cameraPanY = 0;
 						cameraPanYOriginal = VideoWorkerEngine.camera.relY;
 
 						viewPortHeightStopC = tableSizeY;
-						viewPortHeightStopPx = Math.round(viewPortHeightStopC * pxCellSize * 1000) / 1000;
+						// viewPortHeightStopPx = Math.round(viewPortHeightStopC * pxCellSize * 1000) / 1000;
 
 						viewPortHeightStartC = viewPortHeightStopC - viewPortHeightC;
 						viewPortHeightStartPx = Math.round(viewPortHeightStartC * pxCellSize * 1000) / 1000;
 					} else {
 						viewPortHeightStartPx = Math.round(viewPortHeightStartC * pxCellSize * 1000) / 1000;
 						viewPortHeightStopC = Math.round((viewPortHeightStartC + viewPortHeightC) * 1000) / 1000;
-						viewPortHeightStopPx = Math.round(viewPortHeightStopC * pxCellSize * 1000) / 1000;
+						// viewPortHeightStopPx = Math.round(viewPortHeightStopC * pxCellSize * 1000) / 1000;
 					}
 
 					// Viewport: width + position bounded
@@ -363,21 +363,21 @@ class VideoWorkerEngine {
 						viewPortWidthStartPx = 0;
 
 						viewPortWidthStopC = viewPortWidthC;
-						viewPortWidthStopPx = Math.round(viewPortWidthStopC * pxCellSize * 1000) / 1000;
+						// viewPortWidthStopPx = Math.round(viewPortWidthStopC * pxCellSize * 1000) / 1000;
 					} else if (viewPortWidthStartC + viewPortWidthC > tableSizeX) {
 						cameraCX = tableSizeX - viewPortWidthC / 2;
 						cameraPanX = 0;
 						cameraPanXOriginal = VideoWorkerEngine.camera.relX;
 
 						viewPortWidthStopC = tableSizeX;
-						viewPortWidthStopPx = Math.round(viewPortWidthStopC * pxCellSize * 1000) / 1000;
+						// viewPortWidthStopPx = Math.round(viewPortWidthStopC * pxCellSize * 1000) / 1000;
 
 						viewPortWidthStartC = viewPortWidthStopC - viewPortWidthC;
 						viewPortWidthStartPx = Math.round(viewPortWidthStartC * pxCellSize * 1000) / 1000;
 					} else {
 						viewPortWidthStartPx = Math.round(viewPortWidthStartC * pxCellSize * 1000) / 1000;
 						viewPortWidthStopC = Math.round((viewPortWidthStartC + viewPortWidthC) * 1000) / 1000;
-						viewPortWidthStopPx = Math.round(viewPortWidthStopC * pxCellSize * 1000) / 1000;
+						// viewPortWidthStopPx = Math.round(viewPortWidthStopC * pxCellSize * 1000) / 1000;
 					}
 				} else {
 					viewPortMode = false;
@@ -388,14 +388,14 @@ class VideoWorkerEngine {
 					viewPortHeightStartC = 0;
 					viewPortHeightStartPx = 0;
 					viewPortHeightStopC = viewPortHeightStartC + viewPortHeightC;
-					viewPortHeightStopPx = viewPortHeightStartPx + viewPortHeightPx;
+					// viewPortHeightStopPx = viewPortHeightStartPx + viewPortHeightPx;
 
 					viewPortWidthC = tableSizeX;
 					viewPortWidthPx = pxWidth;
 					viewPortWidthStartC = 0;
 					viewPortWidthStartPx = 0;
 					viewPortWidthStopC = viewPortWidthStartC + viewPortWidthC;
-					viewPortWidthStopPx = viewPortWidthStartPx + viewPortWidthPx;
+					// viewPortWidthStopPx = viewPortWidthStartPx + viewPortWidthPx;
 				}
 
 				if (VideoWorkerEngine.cameraUpdated) {

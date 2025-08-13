@@ -27,8 +27,11 @@ class Life extends Interaction {
 	private static elementDataContainer: HTMLElement;
 	private static elementEditAddDeath: HTMLElement;
 	private static elementEditAddLife: HTMLElement;
+	private static elementEditLoad: HTMLElement;
 	private static elementEditMove: HTMLElement;
 	private static elementEditRemove: HTMLElement;
+	private static elementEditSave: HTMLElement;
+	private static elementEditScreenshot: HTMLElement;
 	private static elementGame: HTMLElement;
 	private static elementGameOver: HTMLElement;
 	private static elementHomeostatic: HTMLElement;
@@ -204,6 +207,7 @@ class Life extends Interaction {
 			const data: Uint32Array = Life.initializeLife();
 			VideoBusEngine.outputReset();
 			CalcBusEngine.outputReset(data);
+			Interaction.cameraReset = true;
 			Interaction.gameover = false;
 
 			Life.elementAlive.innerText = '';
@@ -281,6 +285,7 @@ class Life extends Interaction {
 				}
 			}
 		};
+		Life.elementEditLoad = <HTMLElement>document.getElementById('edit-load');
 		Life.elementEditMove = <HTMLElement>document.getElementById('edit-move');
 		Life.elementEditMove.onclick = () => {
 			if (Interaction.mode !== InteractionMode.MOVE_ZOOM) {
@@ -318,6 +323,38 @@ class Life extends Interaction {
 				}
 			}
 		};
+		Life.elementEditScreenshot = <HTMLElement>document.getElementById('edit-screenshot');
+		Life.elementEditScreenshot.onclick = () => {
+			Interaction.spinner(true);
+
+			setTimeout(() => {
+				const a: HTMLAnchorElement = document.createElement('a');
+
+				// Set anchor
+				Interaction.elementCanvas.toBlob(
+					(blob: Blob | null) => {
+						let data: any = URL.createObjectURL(<Blob>blob);
+						a.href = data;
+						a.name = 'screenshot.png';
+						a.rel = 'noreferrer';
+						a.target = '_blank';
+
+						// Open new tab
+						document.body.appendChild(a);
+						a.click();
+						document.body.removeChild(a);
+
+						setTimeout(() => {
+							URL.revokeObjectURL(data);
+							Interaction.spinner(false);
+						}, 250);
+					},
+					'image/png',
+					1,
+				);
+			}, 250);
+		};
+		Life.elementEditSave = <HTMLElement>document.getElementById('edit-save');
 
 		/**
 		 * Fullscreen
@@ -606,13 +643,12 @@ class Life extends Interaction {
 			drawGrid: true, // def true
 			fps: VideoBusInputDataSettingsFPS._60, // def 60
 			resolution: null, // Native is null
-			tableSizeX: 112, // def: 112y
+			tableSizeX: 80, // def: 80
 		};
 
 		if (Interaction.isMobileOrTablet()) {
 			// Mobile devices utilize sub-pixel rendering with their canvas API implementations
-			Interaction.settingsVideo.resolution = 512;
-			Life.elementSettingsValueResolution.value = '512';
+			Interaction.settingsVideo.resolution = 640;
 		}
 
 		/*
@@ -657,7 +693,8 @@ class Life extends Interaction {
 							case 640:
 							case 1280:
 							case 1920:
-								Interaction.settingsVideo.resolution = <256 | 384 | 512 | 640 | 1280 | 1920>Number(value);
+							case 2560:
+								Interaction.settingsVideo.resolution = <160 | 320 | 640 | 1280 | 1920 | 2560>Number(value);
 								break;
 						}
 					}
@@ -669,11 +706,13 @@ class Life extends Interaction {
 						case 48:
 						case 112:
 						case 240:
-						case 496:
-						case 1008:
-						case 2032:
-							Interaction.settingsCalc.tableSizeX = <48 | 112 | 240 | 496 | 1008 | 2032>Number(value);
-							Interaction.settingsVideo.tableSizeX = <48 | 112 | 240 | 496 | 1008 | 2032>Number(value);
+						case 480:
+						case 960:
+						case 1280:
+						case 1920:
+						case 2560:
+							Interaction.settingsCalc.tableSizeX = <32 | 80 | 160 | 320 | 640 | 960 | 1280 | 1920 | 2560>Number(value);
+							Interaction.settingsVideo.tableSizeX = <32 | 80 | 160 | 320 | 640 | 960 | 1280 | 1920 | 2560>Number(value);
 							break;
 					}
 					break;

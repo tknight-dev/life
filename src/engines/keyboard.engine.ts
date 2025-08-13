@@ -75,7 +75,7 @@ export class KeyboardEngine {
 					}
 				}
 			}
-		}, 20);
+		}, 7); // 7 ~= 6.9444ms (144FPS)
 	}
 
 	public static setSuspend(suspend: boolean) {

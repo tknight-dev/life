@@ -46,6 +46,13 @@ a,
 	cursor: pointer;
 }
 
+.download {
+	height: 0;
+	display: block;
+	overflow: hidden;
+	width: 0;
+}
+
 .wrapper {
 	height: 100%;
 	position: relative;

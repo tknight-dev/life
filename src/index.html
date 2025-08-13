@@ -123,18 +123,7 @@
 								<br>
 								<strong>Limitations:</strong><br>
 								<ul>
-									<li>Iterations per Second (<i>i/s</i>)
-										<ul>
-											<li>Max: 1,024</li>
-											<li>Min: 1</li>
-										</ul>
-									</li>
-									<li>Table size (16x9 aspect ratio)
-										<ul>
-											<li>Max: is 2,032 by 1,143 (&le; ~9 MB)</li>
-											<li>Min: is &nbsp;&nbsp;&nbsp;48 by &nbsp;&nbsp;&nbsp;27 (&le; ~5 KB)</li>
-										</ul>
-									</li>
+									<li>Resolution will be atleast the size of table as JavaScript doesn't work with sub-pixel sizes</li>
 								</ul>
 							</div>
 							<div class="buttons">
@@ -171,6 +160,8 @@
 													<option autocomplete="off" value="30">30</option>
 													<option autocomplete="off" value="40">40</option>
 													<option autocomplete="off" value="60">60</option>
+													<option autocomplete="off" value="120">120</option>
+													<option autocomplete="off" value="144">144</option>
 												</select>
 											</td>
 										</tr>
@@ -191,12 +182,12 @@
 											<td>
 												<select autocomplete="off" id="settings-value-resolution">
 													<option autocomplete="off" value="null">Native</option>
-													<option autocomplete="off" value="256">256</option>
-													<option autocomplete="off" value="384">384</option>
-													<option autocomplete="off" value="512">512</option>
-													<option autocomplete="off" value="640">640</option>
-													<option autocomplete="off" value="1280">1280</option>
-													<option autocomplete="off" value="1920">1920</option>
+													<option autocomplete="off" value="160">160 by 90 (90p)</option>
+													<option autocomplete="off" value="320">320 by 180 (180p)</option>
+													<option autocomplete="off" value="640">640 by 360 (360p)</option>
+													<option autocomplete="off" value="1280">1280 by 720 (720p)</option>
+													<option autocomplete="off" value="1920">1920 by 1,080 (1080p)</option>
+													<option autocomplete="off" value="2560">2560 by 1,440 (1440p)</option>
 												</select>
 											</td>
 										</tr>
@@ -216,12 +207,14 @@
 											<td>Table Size</td>
 											<td>
 												<select autocomplete="off" id="settings-value-table-size">
-													<option autocomplete="off" value="2032">2,032 by 1,143 (&le; ~9 MB)</option>
-													<option autocomplete="off" value="1008">1,008 by 567 (&le; ~2 MB)</option>
-													<option autocomplete="off" value="496">496 by 279 (&le; ~550 KB)</option>
-													<option autocomplete="off" value="240">240 by 135 (&le; ~130 KB)</option>
-													<option autocomplete="off" value="112">112 by 63 (&le; ~28 KB)</option>
-													<option autocomplete="off" value="48">48 by 27 (&le; ~5 KB)</option>
+													<option autocomplete="off" value="2560">2,560 by 1,440 (&le; ~15 MB)</option>
+													<option autocomplete="off" value="1920">1,920 by 1,080 (&le; ~8 MB)</option>
+													<option autocomplete="off" value="1280">1,280 by 720 (&le; ~4 MB)</option>
+													<option autocomplete="off" value="640">640 by 360 (&le; ~819 KB)</option>
+													<option autocomplete="off" value="320">320 by 180 (&le; ~230 KB)</option>
+													<option autocomplete="off" value="160">160 by 90 (&le; ~58 KB)</option>
+													<option autocomplete="off" value="80">80 by 45 (&le; ~14 KB)</option>
+													<option autocomplete="off" value="32">32 by 18 (&le; ~2 KB)</option>
 												</select>
 											</td>
 										</tr>
@@ -244,10 +237,13 @@
 					<div class="stats" id="stats">
 						<div class="left"></div>
 						<div class="middle">
-							<span class="button active" id="edit-move"><span class="life-icon hand"></span></span>
 							<span class="button" id="edit-add-life"><span class="life-icon heart"></span></span>
 							<span class="button" id="edit-add-death"><span class="life-icon skull"></span></span>
 							<span class="button" id="edit-remove"><span class="life-icon eraser"></span></span>
+							<span class="button active" id="edit-move"><span class="life-icon hand"></span></span>
+							<span class="button" id="edit-screenshot"><span class="life-icon camera"></span></span>
+			<!-- 				<span class="button" id="edit-save"><span class="life-icon download"></span></span>
+							<span class="button" id="edit-load"><span class="life-icon upload"></span></span> -->
 						</div>
 						<div class="right">
 							<span id="cps-all"><span id="cps"></span>&nbsp;<sup>i/s</sup>&nbsp;|&nbsp;</span><span id="c"></span>&nbsp;<sup>i</sup>

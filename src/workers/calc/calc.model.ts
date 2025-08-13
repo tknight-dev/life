@@ -16,7 +16,7 @@ export const masks = {
 	xyValueDead: 0,
 	yMask: 0,
 };
-export const xyWidthBits: number = 11;
+export const xyWidthBits: number = 12;
 
 masks.xMask = (Math.pow(2, xyWidthBits) - 1) << xyWidthBits;
 masks.xShifted1 = 0x1 << xyWidthBits;
@@ -100,7 +100,7 @@ export const scale = (v: number, a: number, b: number, y: number, z: number) => 
 	return ((v - a) * (z - y)) / (b - a) + y;
 };
 
-export const scalePx = (cameraZoom: number, tableSizeX: number) => scale(cameraZoom, 1, 100, 1, scale(tableSizeX, 48, 2023, 2, 30));
+export const scalePx = (cameraZoom: number, tableSizeX: number) => scale(cameraZoom, 1, 100, 1, scale(tableSizeX, 48, 2560, 2, 35));
 
 /*
  * Inputs
@@ -124,7 +124,7 @@ export interface CalcBusInputDataSettings {
 	homeostaticPause: boolean;
 	fps: VideoBusInputDataSettingsFPS;
 	iterationsPerSecond: number;
-	tableSizeX: 48 | 112 | 240 | 496 | 1008 | 2032;
+	tableSizeX: 32 | 80 | 160 | 320 | 640 | 960 | 1280 | 1920 | 2560;
 }
 
 export interface CalcBusInputPayload {
