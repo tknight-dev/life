@@ -252,9 +252,22 @@ export class Interaction {
 			if (Interaction.cameraReset) {
 				Interaction.cameraReset = false;
 
+				cameraMove = false;
+				cameraRelX = 0.5;
+				cameraRelY = 0.5;
 				cameraZoom = 1;
 
-				cameraUpdated = true;
+				if (Interaction.cameraZoom !== cameraZoom) {
+					Interaction.cameraZoom = cameraZoom;
+					Interaction.pxSizeCalc();
+				}
+
+				VideoBusEngine.outputCamera({
+					move: cameraMove,
+					relX: cameraRelX,
+					relY: cameraRelY,
+					zoom: cameraZoom,
+				});
 			}
 
 			while (true) {

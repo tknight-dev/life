@@ -113,6 +113,7 @@ $life-spinnet-border-size-small: 10px;
 		.canvas,
 		.canvas-interactive,
 		.controls,
+		.error,
 		.game-over,
 		.fps,
 		.ips-requested,
@@ -351,6 +352,7 @@ $life-spinnet-border-size-small: 10px;
 			}
 		}
 
+		.error,
 		.game-over,
 		.ips-requested,
 		.spinout,
@@ -590,6 +592,7 @@ $life-spinnet-border-size-small: 10px;
 			}
 		}
 
+		.error,
 		.spinout {
 			span {
 				background-color: rgba(0, 0, 0, 0.85);

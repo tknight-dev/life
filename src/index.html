@@ -15,6 +15,7 @@
 	</head>
 
 	<body id="body">
+		<input accept=".life" class="hidden" id="file" type="file" />
 		<div class="life wrapper">
 			<div class="header-menu">
 				<div class="wrapper">
@@ -65,6 +66,7 @@
 							<div class="life-icon forward" id="forward"></div>
 						</div>
 					</div>
+					<div class="error" id="error"><span>Error</span><br /><br /></div>
 					<div class="game-over" id="game-over">Game Over</div>
 					<div class="homeostatic" id="homeostatic"><span>Homeostatic</span></div>
 					<div class="fps" id="fps"></div>
@@ -242,8 +244,8 @@
 							<span class="button" id="edit-remove"><span class="life-icon eraser"></span></span>
 							<span class="button active" id="edit-move"><span class="life-icon hand"></span></span>
 							<span class="button" id="edit-screenshot"><span class="life-icon camera"></span></span>
-			<!-- 				<span class="button" id="edit-save"><span class="life-icon download"></span></span>
-							<span class="button" id="edit-load"><span class="life-icon upload"></span></span> -->
+							<span class="button" id="edit-save"><span class="life-icon download"></span></span>
+							<span class="button" id="edit-upload"><span class="life-icon upload"></span></span>
 						</div>
 						<div class="right">
 							<span id="cps-all"><span id="cps"></span>&nbsp;<sup>i/s</sup>&nbsp;|&nbsp;</span><span id="c"></span>&nbsp;<sup>i</sup>

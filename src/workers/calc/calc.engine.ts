@@ -5,6 +5,7 @@ import {
 	CalcBusInputPayload,
 	CalcBusOutputCmd,
 	CalcBusOutputDataPositions,
+	CalcBusOutputDataSave,
 	CalcBusOutputPayload,
 	masks,
 	Stat,
@@ -39,6 +40,12 @@ self.onmessage = (event: MessageEvent) => {
 		case CalcBusInputCmd.RESET:
 			CalcWorkerEngine.inputReset(<Uint32Array | undefined>videoBusInputPayload.data);
 			break;
+		case CalcBusInputCmd.RESTORE:
+			CalcWorkerEngine.inputRestore(<CalcBusOutputDataSave>videoBusInputPayload.data);
+			break;
+		case CalcBusInputCmd.SAVE:
+			CalcWorkerEngine.inputSave();
+			break;
 		case CalcBusInputCmd.SETTINGS:
 			CalcWorkerEngine.inputSettings(<CalcBusInputDataSettings>videoBusInputPayload.data);
 			break;
@@ -60,7 +67,10 @@ class CalcWorkerEngine {
 	private static iterationsPerMillisecond: number;
 	private static play: boolean;
 	private static reset: boolean;
+	private static restore: boolean;
+	private static restoreData: CalcBusOutputDataSave;
 	private static self: Window & typeof globalThis;
+	private static save: boolean;
 	private static stats: { [key: number]: Stat } = {};
 	private static tableSizeAltered: boolean;
 	private static tableSizeX: 32 | 80 | 160 | 320 | 640 | 960 | 1280 | 1920 | 2560;
@@ -114,6 +124,15 @@ class CalcWorkerEngine {
 		if (data) {
 			CalcWorkerEngine.inputLife(data);
 		}
+	}
+
+	public static inputRestore(data: CalcBusOutputDataSave): void {
+		CalcWorkerEngine.restore = true;
+		CalcWorkerEngine.restoreData = data;
+	}
+
+	public static inputSave(): void {
+		CalcWorkerEngine.save = true;
 	}
 
 	public static inputSettings(data: CalcBusInputDataSettings): void {
@@ -230,6 +249,49 @@ class CalcWorkerEngine {
 			timestampNow |= 0;
 
 			/**
+			 * Save
+			 */
+			if (CalcWorkerEngine.save) {
+				CalcWorkerEngine.save = false;
+
+				const alive: Uint32Array = Uint32Array.from(dataAlive.slice(0, dataAliveIndex)),
+					dead: Uint32Array = Uint32Array.from(dataDead.slice(0, dataDeadIndex));
+
+				CalcWorkerEngine.post(
+					[
+						{
+							cmd: CalcBusOutputCmd.SAVE,
+							data: {
+								alive: alive,
+								dead: dead,
+								ipsTotal: calcCountTotal,
+								tableSizeX: CalcWorkerEngine.tableSizeX,
+							},
+						},
+					],
+					[alive.buffer, dead.buffer],
+				);
+			}
+
+			/**
+			 * Restore: Part1
+			 */
+			if (CalcWorkerEngine.restore) {
+				CalcWorkerEngine.tableSizeAltered = true;
+				CalcWorkerEngine.tableSizeX = <32 | 80 | 160 | 320 | 640 | 960 | 1280 | 1920 | 2560>CalcWorkerEngine.restoreData.tableSizeX;
+				CalcWorkerEngine.tableSizeY = (CalcWorkerEngine.restoreData.tableSizeX * 9) / 16;
+
+				calcCount = 0;
+				calcCountTotal = CalcWorkerEngine.restoreData.ipsTotal;
+				calcTimestampFPSThen = timestampNow;
+				calcTimestampIPSThen = timestampNow;
+				calcTimestampIPSDelta = 0;
+				calcTimestampThen = timestampNow;
+				homeostatic = false;
+				spinOut = false;
+			}
+
+			/**
 			 * Reset
 			 */
 			if (CalcWorkerEngine.reset) {
@@ -241,12 +303,7 @@ class CalcWorkerEngine {
 				homeostatic = false;
 				spinOut = false;
 
-				if (dataAlive.length < tableSizeX * tableSizeY) {
-					arrayExpand(dataAlive, tableSizeX * tableSizeY - dataAlive.length);
-					arrayExpand(dataDead, tableSizeX * tableSizeY - dataDead.length);
-					arrayExpand(dataNone, tableSizeX * tableSizeY - dataNone.length);
-				}
-
+				// Reset meta
 				dataAliveIndex = 0;
 				dataDeadIndex = 0;
 				dataNoneIndex = 0;
@@ -272,8 +329,8 @@ class CalcWorkerEngine {
 
 				calcTimestampFPSThen = timestampNow;
 				calcTimestampIPSThen = timestampNow;
+				calcTimestampIPSDelta = 0;
 				calcTimestampThen = timestampNow;
-				return;
 			}
 
 			/**
@@ -341,6 +398,61 @@ class CalcWorkerEngine {
 					// Post postions
 					dataPost();
 				}
+			}
+
+			/**
+			 * Restore: Part2
+			 */
+			if (CalcWorkerEngine.restore) {
+				CalcWorkerEngine.restore = false;
+
+				// Reset meta
+				for (cellMeta of data.values()) {
+					cellMeta.alive = false;
+					cellMeta.dead = false;
+					cellMeta.neighbors = 0;
+				}
+
+				// Apply meta
+				const alive: Uint32Array = CalcWorkerEngine.restoreData.alive,
+					dead: Uint32Array = CalcWorkerEngine.restoreData.dead;
+
+				dataAliveIndex = 0;
+				for (xy of alive) {
+					(<CellMeta>data.get(xy)).alive = true;
+					dataAlive[dataAliveIndex++] = xy;
+				}
+
+				dataDeadIndex = 0;
+				for (xy of dead) {
+					(<CellMeta>data.get(xy)).dead = true;
+					dataDead[dataDeadIndex++] = xy;
+				}
+
+				dataNoneIndex = 0;
+				for ([xy, cellMeta] of data) {
+					if (!cellMeta.alive && !cellMeta.dead) {
+						dataNone[dataNoneIndex++] = xy;
+					}
+				}
+
+				// Post postions
+				dataPost();
+
+				// Post stats
+				CalcWorkerEngine.post([
+					{
+						cmd: CalcBusOutputCmd.STATS,
+						data: {
+							alive: dataAliveIndex,
+							dead: dataDeadIndex,
+							ips: 0,
+							ipsDeltaInMS: 0,
+							ipsTotal: calcCountTotal,
+							performance: CalcWorkerEngine.stats,
+						},
+					},
+				]);
 			}
 
 			/**

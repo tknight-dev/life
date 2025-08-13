@@ -1,5 +1,5 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
-import { CalcBusOutputDataStats, masks, Stat, Stats, xyWidthBits } from './workers/calc/calc.model';
+import { CalcBusOutputDataSave, CalcBusOutputDataStats, masks, Stat, Stats, xyWidthBits } from './workers/calc/calc.model';
 import { FullscreenEngine } from './engines/fullscreen.engine';
 import { Interaction, InteractionMode } from './interaction';
 import { KeyboardEngine, KeyAction, KeyCommon } from './engines/keyboard.engine';
@@ -27,14 +27,16 @@ class Life extends Interaction {
 	private static elementDataContainer: HTMLElement;
 	private static elementEditAddDeath: HTMLElement;
 	private static elementEditAddLife: HTMLElement;
-	private static elementEditLoad: HTMLElement;
+	private static elementEditUpload: HTMLElement;
 	private static elementEditMove: HTMLElement;
 	private static elementEditRemove: HTMLElement;
 	private static elementEditSave: HTMLElement;
 	private static elementEditScreenshot: HTMLElement;
+	private static elementError: HTMLElement;
 	private static elementGame: HTMLElement;
 	private static elementGameOver: HTMLElement;
 	private static elementHomeostatic: HTMLElement;
+	private static elementFile: HTMLElement;
 	private static elementFPS: HTMLElement;
 	private static elementFullscreen: HTMLElement;
 	private static elementIPSRequested: HTMLElement;
@@ -81,6 +83,7 @@ class Life extends Interaction {
 	private static performanceCalc: number = 0;
 	private static performanceVideo: number = 0;
 	private static timeoutControl: ReturnType<typeof setTimeout>;
+	private static timeoutError: ReturnType<typeof setTimeout>;
 	private static timeoutFullscreen: ReturnType<typeof setTimeout>;
 	private static timeoutPlay: ReturnType<typeof setTimeout>;
 	private static timeoutReset: ReturnType<typeof setTimeout>;
@@ -99,6 +102,8 @@ class Life extends Interaction {
 		Life.elementCounts = <HTMLElement>document.getElementById('counts');
 		Life.elementDataContainer = <HTMLElement>document.getElementById('data-container');
 		Life.elementDead = <HTMLCanvasElement>document.getElementById('dead');
+		Life.elementError = <HTMLElement>document.getElementById('error');
+		Life.elementFile = <HTMLElement>document.getElementById('file');
 		Life.elementFPS = <HTMLElement>document.getElementById('fps');
 		Life.elementFullscreen = <HTMLElement>document.getElementById('fullscreen');
 		Life.elementGame = <HTMLElement>document.getElementById('game');
@@ -285,7 +290,6 @@ class Life extends Interaction {
 				}
 			}
 		};
-		Life.elementEditLoad = <HTMLElement>document.getElementById('edit-load');
 		Life.elementEditMove = <HTMLElement>document.getElementById('edit-move');
 		Life.elementEditMove.onclick = () => {
 			if (Interaction.mode !== InteractionMode.MOVE_ZOOM) {
@@ -325,6 +329,9 @@ class Life extends Interaction {
 		};
 		Life.elementEditScreenshot = <HTMLElement>document.getElementById('edit-screenshot');
 		Life.elementEditScreenshot.onclick = () => {
+			if (Interaction.elementControlsPause.style.display === 'block') {
+				Interaction.elementControlsPause.click();
+			}
 			Interaction.spinner(true);
 
 			setTimeout(() => {
@@ -333,19 +340,18 @@ class Life extends Interaction {
 				// Set anchor
 				Interaction.elementCanvas.toBlob(
 					(blob: Blob | null) => {
-						let data: any = URL.createObjectURL(<Blob>blob);
-						a.href = data;
-						a.name = 'screenshot.png';
-						a.rel = 'noreferrer';
-						a.target = '_blank';
+						let downloadData: any = URL.createObjectURL(<Blob>blob);
+						a.classList.add('hidden');
+						a.download = 'screenshot.png';
+						a.href = downloadData;
 
-						// Open new tab
+						// Download
 						document.body.appendChild(a);
 						a.click();
 						document.body.removeChild(a);
 
 						setTimeout(() => {
-							URL.revokeObjectURL(data);
+							URL.revokeObjectURL(downloadData);
 							Interaction.spinner(false);
 						}, 250);
 					},
@@ -355,6 +361,111 @@ class Life extends Interaction {
 			}, 250);
 		};
 		Life.elementEditSave = <HTMLElement>document.getElementById('edit-save');
+		Life.elementEditSave.onclick = () => {
+			if (Interaction.elementControlsPause.style.display === 'block') {
+				Interaction.elementControlsPause.click();
+			}
+			Interaction.spinner(true);
+
+			setTimeout(() => {
+				const a: HTMLAnchorElement = document.createElement('a');
+
+				CalcBusEngine.setCallbackSave((data: CalcBusOutputDataSave) => {
+					let downloadData =
+						'data:text/json;charset=utf-8,' +
+						btoa(
+							JSON.stringify({
+								alive: Array.from(data.alive),
+								dead: Array.from(data.dead),
+								ipsTotal: data.ipsTotal,
+								tableSizeX: data.tableSizeX,
+							}),
+						);
+					a.classList.add('hidden');
+					a.download = 'save.life';
+					a.href = downloadData;
+
+					// Download
+					document.body.appendChild(a);
+					a.click();
+					document.body.removeChild(a);
+
+					setTimeout(() => {
+						Interaction.spinner(false);
+					}, 250);
+				});
+				CalcBusEngine.outputSave();
+			}, 250);
+		};
+		Life.elementEditUpload = <HTMLElement>document.getElementById('edit-upload');
+		Life.elementEditUpload.onclick = () => {
+			if (Interaction.elementControlsPause.style.display === 'block') {
+				Interaction.elementControlsPause.click();
+			}
+
+			Life.elementFile.onchange = (data: any) => {
+				if (data.target.files.length === 0) {
+					return;
+				}
+				Interaction.spinner(true);
+
+				setTimeout(() => {
+					const fileReader: FileReader = new FileReader();
+
+					fileReader.onloadend = () => {
+						try {
+							const parsed = JSON.parse(atob(<string>fileReader.result));
+
+							/**
+							 * Validate: Settings
+							 */
+							if (![32, 80, 160, 320, 640, 960, 1280, 1920, 2560].includes(parsed.tableSizeX)) {
+								throw new Error('unsupported tableSizeX value: ' + parsed.tableSizeX);
+							}
+
+							/**
+							 * Restore: Settings
+							 */
+							Interaction.settingsCalc.tableSizeX = parsed.tableSizeX;
+							Interaction.settingsVideo.tableSizeX = parsed.tableSizeX;
+							Life.elementSettingsValueTableSize.value = String(parsed.tableSizeX);
+							VideoBusEngine.outputSettings(Interaction.settingsVideo);
+
+							/**
+							 * Restore: Data
+							 */
+							VideoBusEngine.outputReset();
+							CalcBusEngine.outputRestore(<CalcBusOutputDataSave>{
+								alive: Uint32Array.from(parsed.alive || []),
+								dead: Uint32Array.from(parsed.dead || []),
+								ipsTotal: parsed.ipsTotal || 0,
+								tableSizeX: parsed.tableSizeX,
+							});
+						} catch (error) {
+							console.error('upload failed with', error);
+
+							Life.elementError.style.display = 'flex';
+							setTimeout(() => {
+								Life.elementError.classList.add('show');
+
+								clearTimeout(Life.timeoutError);
+								Life.timeoutError = setTimeout(() => {
+									Life.elementError.classList.remove('show');
+
+									Life.timeoutError = setTimeout(() => {
+										Life.elementError.style.display = 'none';
+									}, 1000);
+								}, 3000);
+
+								Interaction.spinner(false);
+							}, 10);
+						}
+					};
+					fileReader.readAsBinaryString(data.target.files[0]);
+				}, 250);
+			};
+			Life.elementFile.click();
+		};
 
 		/**
 		 * Fullscreen

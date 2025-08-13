@@ -112,6 +112,8 @@ export enum CalcBusInputCmd {
 	PLAY,
 	PAUSE,
 	RESET,
+	RESTORE,
+	SAVE,
 	SETTINGS,
 }
 
@@ -129,7 +131,7 @@ export interface CalcBusInputDataSettings {
 
 export interface CalcBusInputPayload {
 	cmd: CalcBusInputCmd;
-	data: CalcBusInputDataInit | Uint32Array | undefined;
+	data: CalcBusInputDataInit | CalcBusOutputDataSave | Uint32Array | undefined;
 }
 
 /*
@@ -141,6 +143,7 @@ export enum CalcBusOutputCmd {
 	HOMEOSTATIC,
 	INIT_COMPLETE,
 	POSITIONS,
+	SAVE,
 	SPIN_OUT,
 	STATS,
 }
@@ -150,6 +153,13 @@ export interface CalcBusOutputDataPositions {
 	deadMode: boolean;
 	deadOrNone: Uint32Array;
 	timestamp: number;
+}
+
+export interface CalcBusOutputDataSave {
+	alive: Uint32Array;
+	dead: Uint32Array;
+	ipsTotal: number;
+	tableSizeX: number;
 }
 
 export interface CalcBusOutputDataStats {
@@ -163,5 +173,5 @@ export interface CalcBusOutputDataStats {
 
 export interface CalcBusOutputPayload {
 	cmd: CalcBusOutputCmd;
-	data: CalcBusOutputDataPositions | CalcBusOutputDataStats | number | Uint32Array | undefined;
+	data: CalcBusOutputDataPositions | CalcBusOutputDataSave | CalcBusOutputDataStats | number | Uint32Array | undefined;
 }

@@ -5,6 +5,7 @@ import {
 	CalcBusInputPayload,
 	CalcBusOutputCmd,
 	CalcBusOutputDataPositions,
+	CalcBusOutputDataSave,
 	CalcBusOutputDataStats,
 	CalcBusOutputPayload,
 } from './calc.model';
@@ -18,6 +19,7 @@ export class CalcBusEngine {
 	private static callbackGameOver: () => void;
 	private static callbackHomeostatic: () => void;
 	private static callbackInitComplete: () => void;
+	private static callbackSave: (data: CalcBusOutputDataSave) => void;
 	private static callbackSpinOut: () => void;
 	private static callbackStats: (data: CalcBusOutputDataStats) => void;
 	private static worker: Worker;
@@ -78,6 +80,9 @@ export class CalcBusEngine {
 					case CalcBusOutputCmd.POSITIONS:
 						VideoBusEngine.outputData(<CalcBusOutputDataPositions>payloads[i].data);
 						break;
+					case CalcBusOutputCmd.SAVE:
+						CalcBusEngine.callbackSave(<CalcBusOutputDataSave>payloads[i].data);
+						break;
 					case CalcBusOutputCmd.SPIN_OUT:
 						CalcBusEngine.callbackSpinOut();
 						break;
@@ -130,6 +135,23 @@ export class CalcBusEngine {
 		}
 	}
 
+	public static outputRestore(data: CalcBusOutputDataSave): void {
+		CalcBusEngine.worker.postMessage(
+			{
+				cmd: CalcBusInputCmd.RESTORE,
+				data: data,
+			},
+			[data.alive.buffer, data.dead.buffer],
+		);
+	}
+
+	public static outputSave(): void {
+		CalcBusEngine.worker.postMessage({
+			cmd: CalcBusInputCmd.SAVE,
+			data: undefined,
+		});
+	}
+
 	public static outputSettings(data: CalcBusInputDataSettings): void {
 		CalcBusEngine.worker.postMessage({
 			cmd: CalcBusInputCmd.SETTINGS,
@@ -143,6 +165,10 @@ export class CalcBusEngine {
 
 	public static setCallbackHomeostatic(callbackHomeostatic: () => void): void {
 		CalcBusEngine.callbackHomeostatic = callbackHomeostatic;
+	}
+
+	public static setCallbackSave(callbackSave: (data: CalcBusOutputDataSave) => void): void {
+		CalcBusEngine.callbackSave = callbackSave;
 	}
 
 	public static setCallbackSpinOut(callbackSpinOut: () => void): void {
