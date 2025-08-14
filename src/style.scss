@@ -288,6 +288,10 @@ $life-spinnet-border-size-small: 10px;
 					cursor: grabbing;
 				}
 			}
+
+			@media only screen and (max-width: 500px) {
+				top: 80px;
+			}
 		}
 
 		.controls,
@@ -604,14 +608,12 @@ $life-spinnet-border-size-small: 10px;
 		}
 
 		.stats {
-			align-items: center;
 			border-bottom: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
-			display: flex;
 			font-family: monospace;
 			font-size: 20px;
 			height: 40px;
-			justify-content: center;
 			padding: 0 10px;
+			position: relative;
 			top: 0;
 			z-index: 2;
 
@@ -620,14 +622,20 @@ $life-spinnet-border-size-small: 10px;
 			.right {
 				align-items: center;
 				display: flex;
-				width: 33%;
-				max-width: 33%;
-				min-width: 33%;
-				z-index: 1;
+				height: 40px;
+				position: absolute;
+				top: 0;
+			}
+
+			.left {
+				left: 0;
+				width: 60px;
 			}
 
 			.middle {
-				justify-content: center;
+				left: 100px;
+				justify-content: space-evenly;
+				right: 100px;
 				z-index: 2;
 
 				.button {
@@ -659,7 +667,7 @@ $life-spinnet-border-size-small: 10px;
 					}
 
 					&:not(:first-child) {
-						margin-left: 20px;
+						margin-left: 10px;
 					}
 
 					.life-icon {
@@ -704,7 +712,8 @@ $life-spinnet-border-size-small: 10px;
 
 			.right {
 				justify-content: right;
-				white-space: nowrap;
+				left: 60px;
+				right: 5px;
 
 				#cps {
 					font-weight: bold;
@@ -713,6 +722,17 @@ $life-spinnet-border-size-small: 10px;
 
 				#cps-all {
 					display: none;
+				}
+			}
+
+			@media only screen and (max-width: 500px) {
+				height: 80px;
+
+				.middle {
+					left: 0;
+					height: 40px;
+					right: 0;
+					top: 40px;
 				}
 			}
 		}
