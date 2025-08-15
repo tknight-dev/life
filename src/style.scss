@@ -425,6 +425,10 @@ $life-spinnet-border-size-small: 10px;
 			right: auto;
 			top: 1px;
 			z-index: 4;
+
+			@media only screen and (max-width: 500px) {
+				top: 40px;
+			}
 		}
 
 		.performance {
@@ -728,11 +732,15 @@ $life-spinnet-border-size-small: 10px;
 			@media only screen and (max-width: 500px) {
 				height: 80px;
 
+				.left,
+				.right {
+					top: 40px;
+				}
+
 				.middle {
 					left: 0;
 					height: 40px;
 					right: 0;
-					top: 40px;
 				}
 			}
 		}
