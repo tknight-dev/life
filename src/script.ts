@@ -940,7 +940,7 @@ class Life extends Interaction {
 			elementInject: [DOM.elementEdit],
 			elementInteractive: DOM.elementVideoInteractive,
 			orientation: Interaction.settingsRotateAutoEnable ? GamingCanvasOrientation.AUTO : GamingCanvasOrientation.LANDSCAPE,
-			resolutionByWidthPx: null,
+			resolutionByWidthPx: Interaction.settingsVideo.resolution,
 		};
 
 		DOM.elementVideoCanvases = GamingCanvas.initialize(DOM.elementVideo, Interaction.settingsGamingCanvas);
