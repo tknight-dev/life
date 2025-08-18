@@ -318,6 +318,14 @@ $life-spinnet-border-size-small: 10px;
 
 			@media only screen and (max-width: 620px) {
 				top: 100px;
+
+				&.fullscreen {
+					top: 1px;
+
+					&.adjust {
+						top: 100px;
+					}
+				}
 			}
 		}
 
@@ -335,6 +343,15 @@ $life-spinnet-border-size-small: 10px;
 
 			@media only screen and (max-width: 620px) {
 				top: 40px;
+
+				&.fullscreen {
+					top: 1px;
+					transition: top 1s linear;
+
+					&.adjust {
+						top: 40px;
+					}
+				}
 			}
 		}
 

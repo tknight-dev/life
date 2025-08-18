@@ -367,6 +367,7 @@ class Life extends Interaction {
 
 				DOM.elementControls.classList.remove('fullscreen');
 				DOM.elementCounts.classList.remove('fullscreen');
+				DOM.elementFPS.classList.remove('fullscreen');
 				DOM.elementGame.classList.remove('fullscreen');
 				DOM.elementHomeostatic.classList.remove('fullscreen');
 				DOM.elementPerformance.classList.remove('fullscreen');
@@ -386,6 +387,8 @@ class Life extends Interaction {
 				DOM.elementControls.classList.add('show');
 				DOM.elementCounts.classList.add('fullscreen');
 				DOM.elementCounts.classList.add('adjust');
+				DOM.elementFPS.classList.add('fullscreen');
+				DOM.elementFPS.classList.add('adjust');
 				DOM.elementGame.classList.add('fullscreen');
 				DOM.elementHomeostatic.classList.add('fullscreen');
 				DOM.elementHomeostatic.classList.add('adjust');
@@ -409,12 +412,14 @@ class Life extends Interaction {
 				if (Interaction.mode === InteractionMode.MOVE_ZOOM && DOM.elementControls.classList.contains('show')) {
 					DOM.elementControls.classList.remove('show');
 					DOM.elementCounts.classList.remove('adjust');
+					DOM.elementFPS.classList.remove('adjust');
 					DOM.elementHomeostatic.classList.remove('adjust');
 					DOM.elementPerformance.classList.remove('adjust');
 					DOM.elementStats.classList.remove('show');
 				} else {
 					DOM.elementControls.classList.add('show');
 					DOM.elementCounts.classList.add('adjust');
+					DOM.elementFPS.classList.add('adjust');
 					DOM.elementHomeostatic.classList.add('adjust');
 					DOM.elementPerformance.classList.add('adjust');
 					DOM.elementStats.classList.add('show');
@@ -430,6 +435,7 @@ class Life extends Interaction {
 				Life.timeoutFullscreen = setTimeout(() => {
 					DOM.elementControls.classList.remove('show');
 					DOM.elementCounts.classList.remove('adjust');
+					DOM.elementFPS.classList.remove('adjust');
 					DOM.elementHomeostatic.classList.remove('adjust');
 					DOM.elementPerformance.classList.remove('adjust');
 					DOM.elementStats.classList.remove('show');
@@ -439,6 +445,7 @@ class Life extends Interaction {
 		DOM.elementControls.onmouseenter = () => {
 			DOM.elementControls.classList.add('show');
 			DOM.elementCounts.classList.add('adjust');
+			DOM.elementFPS.classList.add('adjust');
 			DOM.elementHomeostatic.classList.add('adjust');
 			DOM.elementPerformance.classList.add('adjust');
 			DOM.elementStats.classList.add('show');
@@ -447,6 +454,7 @@ class Life extends Interaction {
 		DOM.elementStats.onmouseenter = () => {
 			DOM.elementControls.classList.add('show');
 			DOM.elementCounts.classList.add('adjust');
+			DOM.elementFPS.classList.add('adjust');
 			DOM.elementHomeostatic.classList.add('adjust');
 			DOM.elementPerformance.classList.add('adjust');
 			DOM.elementStats.classList.add('show');
@@ -463,6 +471,7 @@ class Life extends Interaction {
 				DOM.elementControls.classList.remove('fullscreen');
 				DOM.elementCounts.classList.remove('fullscreen');
 				DOM.elementGame.classList.remove('fullscreen');
+				DOM.elementFPS.classList.remove('fullscreen');
 				DOM.elementHomeostatic.classList.remove('fullscreen');
 				DOM.elementPerformance.classList.remove('fullscreen');
 				DOM.elementStats.classList.remove('fullscreen');
