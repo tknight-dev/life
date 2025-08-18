@@ -123,6 +123,7 @@ export interface CalcBusInputDataInit extends CalcBusInputDataSettings {
 
 export interface CalcBusInputDataSettings {
 	cpuSpinOutProtection: boolean;
+	debug: boolean;
 	homeostaticPause: boolean;
 	fps: VideoBusInputDataSettingsFPS;
 	iterationsPerSecond: number;

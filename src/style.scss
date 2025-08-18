@@ -110,8 +110,6 @@ $life-spinnet-border-size-small: 10px;
 		z-index: 1;
 
 		.alive,
-		.canvas,
-		.canvas-interactive,
 		.controls,
 		.error,
 		.game-over,
@@ -123,6 +121,8 @@ $life-spinnet-border-size-small: 10px;
 		.spinner,
 		.spinout,
 		.stats,
+		.video,
+		.video-interactive,
 		.webgl-not-supported {
 			left: 0;
 			position: absolute;
@@ -194,103 +194,6 @@ $life-spinnet-border-size-small: 10px;
 						}
 					}
 				}
-			}
-		}
-
-		.canvas {
-			align-items: center;
-			display: flex;
-			bottom: 0;
-			justify-content: center;
-			top: 0;
-
-			.aspect-ratio {
-				align-items: center;
-				aspect-ratio: 16 / 9;
-				display: flex;
-				justify-content: center;
-				max-height: 100%;
-				position: relative;
-				width: 100%;
-
-				.aspect-ratio2 {
-					aspect-ratio: 16 / 9;
-					height: 100%;
-					position: relative;
-					max-width: 100%;
-
-					.data-container {
-						bottom: 0;
-						left: 0;
-						position: absolute;
-						right: 0;
-						top: 0;
-
-						.data {
-							opacity: 85%;
-							position: relative;
-							transform-origin: top left;
-						}
-
-						.edit {
-							border-radius: 25%;
-							cursor: pointer;
-							display: none;
-							left: 0;
-							position: absolute;
-							top: 0;
-
-							&.add {
-								background-color: rgba(255, 255, 255, 0.5);
-								border: 1px solid white;
-								box-shadow: 0 0 2px 2px white;
-							}
-
-							&.remove {
-								background-color: rgba(255, 0, 0, 0.5);
-								border: 1px solid red;
-								box-shadow: 0 0 2px 2px red;
-							}
-						}
-					}
-				}
-
-				&.rotate {
-					aspect-ratio: 9 / 16;
-					transform: rotate(-90deg);
-
-					.aspect-ratio2 {
-						aspect-ratio: 9 / 16;
-						transform: rotate(90deg);
-
-						.data-container {
-							transform: rotate(-90deg) scaleX(-1) scaleY(-1) translate(0, -56.25%);
-							transform-origin: top left;
-						}
-					}
-				}
-			}
-		}
-
-		.canvas-interactive {
-			bottom: 60px;
-			top: 40px;
-			z-index: 3;
-
-			&.cursor-crosshair {
-				cursor: crosshair;
-			}
-
-			&.cursor-grab {
-				cursor: grab;
-
-				&:active {
-					cursor: grabbing;
-				}
-			}
-
-			@media only screen and (max-width: 500px) {
-				top: 80px;
 			}
 		}
 
@@ -412,6 +315,10 @@ $life-spinnet-border-size-small: 10px;
 				color: yellow;
 				padding: 10px;
 			}
+
+			@media only screen and (max-width: 620px) {
+				top: 100px;
+			}
 		}
 
 		.ips-requested {
@@ -426,7 +333,7 @@ $life-spinnet-border-size-small: 10px;
 			top: 1px;
 			z-index: 4;
 
-			@media only screen and (max-width: 500px) {
+			@media only screen and (max-width: 620px) {
 				top: 40px;
 			}
 		}
@@ -437,7 +344,7 @@ $life-spinnet-border-size-small: 10px;
 			right: 0;
 
 			table {
-				border-left: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
+				border-left: 2px solid rgba(var(--global-color-menu-border-rgb), 0.25);
 				border-right: none;
 			}
 		}
@@ -449,7 +356,7 @@ $life-spinnet-border-size-small: 10px;
 			display: none;
 			justify-content: center;
 			top: 0;
-			z-index: 3;
+			z-index: 4;
 
 			.buttons,
 			.body,
@@ -617,7 +524,6 @@ $life-spinnet-border-size-small: 10px;
 			font-size: 20px;
 			height: 40px;
 			padding: 0 10px;
-			position: relative;
 			top: 0;
 			z-index: 2;
 
@@ -637,9 +543,9 @@ $life-spinnet-border-size-small: 10px;
 			}
 
 			.middle {
-				left: 100px;
+				left: 120px;
 				justify-content: space-evenly;
-				right: 100px;
+				right: 120px;
 				z-index: 2;
 
 				.button {
@@ -671,7 +577,7 @@ $life-spinnet-border-size-small: 10px;
 					}
 
 					&:not(:first-child) {
-						margin-left: 10px;
+						margin-left: 5px;
 					}
 
 					.life-icon {
@@ -729,7 +635,7 @@ $life-spinnet-border-size-small: 10px;
 				}
 			}
 
-			@media only screen and (max-width: 500px) {
+			@media only screen and (max-width: 620px) {
 				height: 80px;
 
 				.left,
@@ -742,6 +648,61 @@ $life-spinnet-border-size-small: 10px;
 					height: 40px;
 					right: 0;
 				}
+			}
+		}
+
+		.video {
+			bottom: 0;
+			top: 0;
+
+			#gaming-canvas-canvas1 {
+				opacity: 85%;
+			}
+
+			.edit {
+				border-radius: 25%;
+				cursor: pointer;
+				display: none;
+				left: 0;
+				position: absolute;
+				top: 0;
+
+				&.add {
+					background-color: rgba(255, 255, 255, 0.5);
+					border: 1px solid white;
+					box-shadow: 0 0 2px 2px white;
+				}
+
+				&.remove {
+					background-color: rgba(255, 0, 0, 0.5);
+					border: 1px solid red;
+					box-shadow: 0 0 2px 2px red;
+				}
+			}
+		}
+
+		.video-interactive {
+			// background-color: rgba(255, 0, 0, 0.25);
+			bottom: 60px;
+			left: -10px;
+			right: -10px;
+			top: 40px;
+			z-index: 3;
+
+			&.cursor-crosshair {
+				cursor: crosshair;
+			}
+
+			&.cursor-grab {
+				cursor: grab;
+
+				&:active {
+					cursor: grabbing;
+				}
+			}
+
+			@media only screen and (max-width: 465px) {
+				top: 80px;
 			}
 		}
 

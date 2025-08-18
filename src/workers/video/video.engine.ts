@@ -9,6 +9,7 @@ import {
 	VideoBusOutputPayload,
 } from './video.model';
 import { CalcBusOutputDataPositions, masks, scalePx, Stat, Stats, xyWidthBits } from '../calc/calc.model';
+import { GamingCanvas } from '@tknight-dev/gaming-canvas';
 
 /**
  * @author tknight-dev
@@ -50,6 +51,7 @@ class VideoWorkerEngine {
 	private static ctxWidth: number;
 	private static data: CalcBusOutputDataPositions;
 	private static dataNew: boolean;
+	private static debug: boolean;
 	private static drawDeadCells: boolean;
 	private static drawGrid: boolean;
 	private static frameRequest: number;
@@ -140,8 +142,8 @@ class VideoWorkerEngine {
 
 	public static inputResize(data: VideoBusInputDataResize): void {
 		let devicePixelRatio: number = data.devicePixelRatio,
-			height: number = Math.floor(data.height * devicePixelRatio),
-			width: number = Math.floor(data.width * devicePixelRatio);
+			height: number = (data.height * devicePixelRatio) | 0,
+			width: number = (data.width * devicePixelRatio) | 0;
 
 		VideoWorkerEngine.ctxHeight = height;
 		VideoWorkerEngine.ctxWidth = width;
@@ -149,6 +151,7 @@ class VideoWorkerEngine {
 	}
 
 	public static inputSettings(data: VideoBusInputDataSettings): void {
+		VideoWorkerEngine.debug = data.debug;
 		VideoWorkerEngine.drawDeadCells = data.drawDeadCells;
 		VideoWorkerEngine.drawGrid = data.drawGrid;
 		VideoWorkerEngine.framesPerMillisecond = (1000 / data.fps) | 0;
@@ -198,6 +201,7 @@ class VideoWorkerEngine {
 				preserveDrawingBuffer: true,
 			},
 			data: CalcBusOutputDataPositions,
+			debug: boolean,
 			drawDeadCells: boolean,
 			drawGrid: boolean,
 			frameCount: number = 0,
@@ -282,6 +286,7 @@ class VideoWorkerEngine {
 				// Cache: variables
 				cache = false;
 				cameraZoom = VideoWorkerEngine.camera.zoom;
+				debug = VideoWorkerEngine.debug;
 				drawDeadCells = VideoWorkerEngine.drawDeadCells;
 				drawGrid = VideoWorkerEngine.drawGrid;
 				pxHeight = VideoWorkerEngine.ctxHeight;
@@ -298,7 +303,7 @@ class VideoWorkerEngine {
 				}
 
 				// Calc: pixel size
-				pxCellSize = Math.round((pxWidth / tableSizeX) * 1000) / 1000;
+				pxCellSize = Math.max(1, Math.round((pxWidth / tableSizeX) * 1000) / 1000);
 				if (cameraZoom !== 1) {
 					pxCellSize *= scalePx(cameraZoom, tableSizeX);
 
@@ -416,12 +421,12 @@ class VideoWorkerEngine {
 				// Cache: Cells
 				cacheCanvasCellAlive.height = pxCellSize;
 				cacheCanvasCellAlive.width = pxCellSize;
-				cacheCanvasCellAliveCtx.fillStyle = 'rgb(0,255,0)';
+				cacheCanvasCellAliveCtx.fillStyle = debug ? 'rgb(0,0,0)' : 'rgb(0,255,0)';
 				cacheCanvasCellAliveCtx.fillRect(0, 0, pxCellSize, pxCellSize);
 
 				cacheCanvasCellDead.height = pxCellSize;
 				cacheCanvasCellDead.width = pxCellSize;
-				cacheCanvasCellDeadCtx.fillStyle = 'rgb(0,64,0)';
+				cacheCanvasCellDeadCtx.fillStyle = debug ? 'rgb(128,0,0)' : 'rgb(0,64,0)';
 				cacheCanvasCellDeadCtx.fillRect(0, 0, pxCellSize, pxCellSize);
 
 				// Grid: Enable/Disable (auto)
@@ -477,7 +482,7 @@ class VideoWorkerEngine {
 
 					// Draw: Background
 					if (drawDeadCells && !data.deadMode) {
-						canvasOffscreenContext.fillStyle = 'rgb(0,64,0)';
+						canvasOffscreenContext.fillStyle = debug ? 'rgb(128,0,0)' : 'rgb(0,64,0)';
 						canvasOffscreenContext.fillRect(0, 0, pxWidth, pxHeight);
 					} else {
 						canvasOffscreenContext.clearRect(0, 0, pxWidth, pxHeight);

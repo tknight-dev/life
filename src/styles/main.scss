@@ -5,12 +5,9 @@
 // System
 @forward 'system/color.scss';
 @forward 'system/scrollbar.scss';
-@forward 'system/z-index.scss';
 
 // Elements
 @forward 'elements/inputs.scss';
-@forward 'elements/modal.scss';
-@forward 'elements/table.scss';
 
 html,
 body {
@@ -59,6 +56,12 @@ a,
 	width: 0;
 	max-width: 0;
 	min-width: 0;
+}
+
+table {
+	border-collapse: collapse;
+	height: 100%;
+	width: 100%;
 }
 
 .wrapper {

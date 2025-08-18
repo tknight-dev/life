@@ -11,6 +11,7 @@ import {
 	VideoBusOutputPayload,
 } from './video.model';
 import { CalcBusOutputDataPositions } from '../calc/calc.model';
+import { GamingCanvas, GamingCanvasReport } from '@tknight-dev/gaming-canvas';
 
 /**
  * @author tknight-dev
@@ -21,26 +22,17 @@ export class VideoBusEngine {
 	private static callbackInitComplete: (status: boolean) => void;
 	private static callbackResetComplete: () => void;
 	private static callbackStats: (data: VideoBusOutputDataStats) => void;
-	private static canvas: HTMLCanvasElement;
 	private static canvasOffscreen: OffscreenCanvas;
 	private static complete: boolean;
-	private static game: HTMLElement;
 	private static resolution: null | 160 | 320 | 640 | 1280 | 1920 | 2560;
 	private static tableSizeX: 32 | 80 | 160 | 320 | 640 | 960 | 1280 | 1920 | 2560;
 	private static worker: Worker;
 	/**
 	 * Start the video streams in another thread
 	 */
-	public static initialize(
-		canvas: HTMLCanvasElement,
-		game: HTMLElement,
-		settings: VideoBusInputDataSettings,
-		callback: (status: boolean) => void,
-	): void {
+	public static initialize(canvas: HTMLCanvasElement, settings: VideoBusInputDataSettings, callback: (status: boolean) => void): void {
 		VideoBusEngine.callbackInitComplete = callback;
-		VideoBusEngine.canvas = canvas;
 		VideoBusEngine.canvasOffscreen = canvas.transferControlToOffscreen();
-		VideoBusEngine.game = game;
 		VideoBusEngine.resolution = settings.resolution;
 		VideoBusEngine.tableSizeX = settings.tableSizeX;
 
@@ -61,7 +53,7 @@ export class VideoBusEngine {
 				{
 					canvasOffscreen: VideoBusEngine.canvasOffscreen,
 				},
-				VideoBusEngine.resized(true),
+				VideoBusEngine.resized(GamingCanvas.getReport(), true),
 				settings,
 			);
 			const videoBusInputPayload: VideoBusInputPayload = {
@@ -129,7 +121,7 @@ export class VideoBusEngine {
 		if (VideoBusEngine.resolution !== data.resolution || VideoBusEngine.tableSizeX !== data.tableSizeX) {
 			VideoBusEngine.resolution = data.resolution;
 			VideoBusEngine.tableSizeX = data.tableSizeX;
-			VideoBusEngine.resized(false, true);
+			VideoBusEngine.resized(GamingCanvas.getReport());
 		}
 
 		VideoBusEngine.worker.postMessage({
@@ -138,44 +130,11 @@ export class VideoBusEngine {
 		});
 	}
 
-	public static resized(disablePost?: boolean, force?: boolean): VideoBusInputDataResize {
-		let data: VideoBusInputDataResize,
-			devicePixelRatio: number = Math.round(window.devicePixelRatio * 1000) / 1000,
-			devicePixelRatioEff: number = Math.round((1 / window.devicePixelRatio) * 1000) / 1000,
-			domRect: DOMRect = VideoBusEngine.game.getBoundingClientRect(),
-			height: number,
-			scaler: number,
-			tableSizeX: number = VideoBusEngine.tableSizeX,
-			width: null | number = VideoBusEngine.resolution;
-
-		// Resolution
-		if (width === null) {
-			height = domRect.height;
-			width = domRect.width;
-		} else {
-			height = (width * 9) / 16;
-		}
-
-		// Canvas cells must be atleast 1 px in size
-		if (tableSizeX > width) {
-			height = (tableSizeX * 9) / 16;
-			width = tableSizeX;
-
-			scaler = Math.round(((devicePixelRatioEff * domRect.width) / width) * 1000) / 1000;
-		} else if (VideoBusEngine.resolution !== null) {
-			scaler = Math.round(((devicePixelRatioEff * domRect.width) / width) * 1000) / 1000;
-		} else {
-			scaler = devicePixelRatioEff;
-		}
-
-		// Transform the canvas to the intended size
-		VideoBusEngine.canvas.style.transform = 'scale(' + scaler + ')';
-
-		data = {
-			devicePixelRatio: devicePixelRatio,
-			force: force,
-			height: Math.round(height),
-			width: Math.round(width),
+	public static resized(report: GamingCanvasReport, disablePost?: boolean): VideoBusInputDataResize {
+		const data: VideoBusInputDataResize = {
+			devicePixelRatio: report.devicePixelRatio,
+			height: report.canvasHeight,
+			width: report.canvasWidth,
 		};
 
 		if (VideoBusEngine.complete && disablePost !== true) {

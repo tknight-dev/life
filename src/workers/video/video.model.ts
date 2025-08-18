@@ -29,13 +29,13 @@ export interface VideoBusInputDataCamera {
 }
 
 export interface VideoBusInputDataResize {
-	devicePixelRatio: number; // precision 3
-	force?: boolean;
+	devicePixelRatio: number;
 	height: number;
 	width: number;
 }
 
 export interface VideoBusInputDataSettings {
+	debug: boolean;
 	drawDeadCells: boolean;
 	drawGrid: boolean;
 	fps: VideoBusInputDataSettingsFPS;
