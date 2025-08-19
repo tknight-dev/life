@@ -11,8 +11,7 @@
     "type": "module",
     "version": "1.9.1",
     "dependencies": {
-        "@tknight-dev/gaming-canvas": "~0.0.1",
-        "nosleep.js": "^0.12.0"
+        "@tknight-dev/gaming-canvas": "~1.0.0"
     },
     "devDependencies": {
         "@jgoz/esbuild-plugin-typecheck": "^4.0.0",
