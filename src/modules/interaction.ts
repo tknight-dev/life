@@ -8,9 +8,8 @@ import {
 	GamingCanvasInput,
 	GamingCanvasInputGamepad,
 	GamingCanvasInputGamepadControllerType,
-	GamingCanvasInputGamepadControllerTypeXboxAxes,
-	GamingCanvasInputGamepadControllerTypeXboxButtons,
-	GamingCanvasInputGamepadControllerTypeXboxToAxes,
+	GamingCanvasInputGamepadControllerTypeMapAxes,
+	GamingCanvasInputGamepadControllerTypeMappedAxes,
 	GamingCanvasInputKeyboard,
 	GamingCanvasInputMouse,
 	GamingCanvasInputMouseAction,
@@ -38,7 +37,6 @@ export enum InteractionMode {
 }
 
 export class Interaction extends DOM {
-	// protected static bufferInteraction: DoubleLinkedList<InteractionEntry> = new DoubleLinkedList<InteractionEntry>();
 	protected static cameraViewportHeightC: number = 0;
 	protected static cameraViewportStartXC: number = 0;
 	protected static cameraViewportStartYC: number = 0;
@@ -118,12 +116,12 @@ export class Interaction extends DOM {
 			cameraZoom: number,
 			cameraZoomMax: number = 100,
 			cameraZoomMin: number = 1,
-			cameraZoomPrevious: number,
+			cameraZoomPrevious: number = cameraZoomMin,
 			cameraZoomStep: number = 5,
 			down: boolean,
 			downMode: boolean,
 			elementEditStyle: CSSStyleDeclaration = DOM.elementEdit.style,
-			gamepadAxes: GamingCanvasInputGamepadControllerTypeXboxAxes,
+			gamepadAxes: GamingCanvasInputGamepadControllerTypeMappedAxes | null,
 			gamepadX: number = 0,
 			gamepadY: number = 0,
 			gamepadZoom: number = 0,
@@ -150,6 +148,11 @@ export class Interaction extends DOM {
 				if (Interaction.cameraZoom !== cameraZoom) {
 					Interaction.cameraZoom = cameraZoom;
 					Interaction.pxSizeCalc();
+
+					// Vibrate if at max or min zoom
+					if (cameraZoom === cameraZoomMax || cameraZoom === cameraZoomMin) {
+						GamingCanvas.isVibrateSupported() && GamingCanvas.vibrate([100]);
+					}
 				}
 
 				VideoBusEngine.outputCamera({
@@ -258,16 +261,18 @@ export class Interaction extends DOM {
 			if (input.propriatary.connected) {
 				if (input.propriatary.type === GamingCanvasInputGamepadControllerType.XBOX) {
 					if (input.propriatary.axes) {
-						gamepadAxes = GamingCanvasInputGamepadControllerTypeXboxToAxes(input);
+						gamepadAxes = GamingCanvasInputGamepadControllerTypeMapAxes(input);
 
-						if (mode == InteractionMode.MOVE_ZOOM) {
-							gamepadX = gamepadAxes.stickLeftX;
-							gamepadY = gamepadAxes.stickLeftY;
+						if (gamepadAxes !== null) {
+							if (mode == InteractionMode.MOVE_ZOOM) {
+								gamepadX = gamepadAxes.stickLeftX;
+								gamepadY = gamepadAxes.stickLeftY;
 
-							gamepadZoom = Math.max(
-								-1,
-								Math.min(1, gamepadAxes.stickRightY + gamepadAxes.triggerRight - gamepadAxes.triggerLeft),
-							);
+								gamepadZoom = Math.max(
+									-1,
+									Math.min(1, gamepadAxes.stickRightY + gamepadAxes.triggerRight - gamepadAxes.triggerLeft),
+								);
+							}
 						}
 					}
 
