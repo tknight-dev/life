@@ -1,9 +1,8 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
 import { CalcBusOutputDataSave, CalcBusOutputDataStats, masks, Stat, Stats, xyWidthBits } from './workers/calc/calc.model';
 import { DOM } from './modules/dom';
-import { GamingCanvas, GamingCanvasDirection, GamingCanvasOrientation } from '@tknight-dev/gaming-canvas';
+import { GamingCanvas, GamingCanvasOrientation } from '@tknight-dev/gaming-canvas';
 import { Interaction, InteractionMode } from './modules/interaction';
-import NoSleep from 'nosleep.js';
 import { VideoBusEngine } from './workers/video/video.bus';
 import { VideoBusInputDataSettingsFPS, VideoBusOutputDataStats } from './workers/video/video.model';
 import packageJSON from '../package.json';
@@ -16,7 +15,6 @@ import packageJSON from '../package.json';
 new EventSource('/esbuild').addEventListener('change', () => location.reload());
 
 class Life extends Interaction {
-	private static noSleep: NoSleep = new NoSleep();
 	private static performanceCalc: number = 0;
 	private static performanceVideo: number = 0;
 	private static timeoutControl: ReturnType<typeof setTimeout>;
@@ -376,7 +374,7 @@ class Life extends Interaction {
 				DOM.elementFullscreen.classList.remove('fullscreen-exit');
 				DOM.elementFullscreen.classList.add('fullscreen');
 
-				Life.noSleep.disable();
+				GamingCanvas.isWakeLockSupported() && GamingCanvas.wakeLock(false);
 				setTimeout(() => {
 					Interaction.pxSizeCalc();
 				}, 100);
@@ -403,7 +401,7 @@ class Life extends Interaction {
 				fullscreenFader();
 				setTimeout(() => {
 					Interaction.pxSizeCalc();
-					Life.noSleep.enable();
+					GamingCanvas.isWakeLockSupported() && GamingCanvas.wakeLock(true);
 				}, 100);
 			}
 		};
@@ -479,7 +477,7 @@ class Life extends Interaction {
 				DOM.elementFullscreen.classList.remove('fullscreen-exit');
 				DOM.elementFullscreen.classList.add('fullscreen');
 
-				Life.noSleep.disable();
+				GamingCanvas.isWakeLockSupported() && GamingCanvas.wakeLock(false);
 				setTimeout(() => {
 					Interaction.pxSizeCalc();
 				}, 100);
@@ -948,6 +946,10 @@ class Life extends Interaction {
 			// direction: GamingCanvasDirection.INVERTED,
 			elementInject: [DOM.elementEdit],
 			elementInteractive: DOM.elementVideoInteractive,
+			inputGamepadEnable: true,
+			inputKeyboardEnable: true,
+			inputMouseEnable: true,
+			inputTouchEnable: true,
 			orientation: Interaction.settingsRotateAutoEnable ? GamingCanvasOrientation.AUTO : GamingCanvasOrientation.LANDSCAPE,
 			resolutionByWidthPx: Interaction.settingsVideo.resolution,
 		};

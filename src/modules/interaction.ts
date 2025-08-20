@@ -6,6 +6,11 @@ import { VideoBusEngine } from '../workers/video/video.bus';
 import {
 	GamingCanvas,
 	GamingCanvasInput,
+	GamingCanvasInputGamepad,
+	GamingCanvasInputGamepadControllerType,
+	GamingCanvasInputGamepadControllerTypeXboxAxes,
+	GamingCanvasInputGamepadControllerTypeXboxButtons,
+	GamingCanvasInputGamepadControllerTypeXboxToAxes,
 	GamingCanvasInputKeyboard,
 	GamingCanvasInputMouse,
 	GamingCanvasInputMouseAction,
@@ -48,6 +53,7 @@ export class Interaction extends DOM {
 	protected static elementControlsPlayFunc: () => void;
 	protected static elementControlsResetFunc: () => void;
 	protected static fullscreenClickFunc: () => void;
+	protected static gamepadNotCompatibleTimeout: ReturnType<typeof setTimeout>;
 	protected static gameover: boolean;
 	protected static inputRequest: number;
 	protected static mode: InteractionMode = InteractionMode.MOVE_ZOOM;
@@ -117,9 +123,12 @@ export class Interaction extends DOM {
 			down: boolean,
 			downMode: boolean,
 			elementEditStyle: CSSStyleDeclaration = DOM.elementEdit.style,
+			gamepadAxes: GamingCanvasInputGamepadControllerTypeXboxAxes,
+			gamepadX: number = 0,
+			gamepadY: number = 0,
+			gamepadZoom: number = 0,
 			inputLimitPerMs: number = GamingCanvas.getInputLimitPerMs(),
 			mode: InteractionMode = InteractionMode.MOVE_ZOOM,
-			move: boolean,
 			position1: GamingCanvasInputPosition,
 			position2: GamingCanvasInputPosition,
 			positions: GamingCanvasInputPosition[] | undefined,
@@ -131,9 +140,7 @@ export class Interaction extends DOM {
 			touchDistancePrevious: number = -1,
 			value: number,
 			x: number,
-			xRelative: number,
-			y: number,
-			yRelative: number;
+			y: number;
 
 		// Limit how often a camera update can be sent via the bus
 		setInterval(() => {
@@ -207,8 +214,9 @@ export class Interaction extends DOM {
 
 				while ((queueInput = queue.pop())) {
 					switch (queueInput.type) {
-						// case GamingCanvasInputType.GAMEPAD:
-						// 	break;
+						case GamingCanvasInputType.GAMEPAD:
+							processorGamepad(queueInput);
+							break;
 						case GamingCanvasInputType.KEYBOARD:
 							processorKeyboard(queueInput);
 							break;
@@ -225,6 +233,71 @@ export class Interaction extends DOM {
 			}
 		};
 		Interaction.processor = processor;
+
+		setInterval(() => {
+			if (mode == InteractionMode.MOVE_ZOOM) {
+				if (gamepadX !== 0 || gamepadY !== 0) {
+					cameraMove = true;
+					cameraRelX -= gamepadX / 30;
+					cameraRelY -= gamepadY / 30;
+					cameraUpdated = true;
+				}
+
+				if (gamepadZoom !== 0) {
+					cameraZoomPrevious = cameraZoom;
+					cameraZoom = Math.max(cameraZoomMin, Math.min(cameraZoomMax, cameraZoom + cameraZoomStep * gamepadZoom));
+					downMode = false;
+					if (cameraZoom !== cameraZoomPrevious) {
+						cameraUpdated = true;
+					}
+				}
+			}
+		}, 40); // how often the state is applied
+		const processorGamepad = (input: GamingCanvasInputGamepad) => {
+			// Check the connection state
+			if (input.propriatary.connected) {
+				if (input.propriatary.type === GamingCanvasInputGamepadControllerType.XBOX) {
+					if (input.propriatary.axes) {
+						gamepadAxes = GamingCanvasInputGamepadControllerTypeXboxToAxes(input);
+
+						if (mode == InteractionMode.MOVE_ZOOM) {
+							gamepadX = gamepadAxes.stickLeftX;
+							gamepadY = gamepadAxes.stickLeftY;
+
+							gamepadZoom = Math.max(
+								-1,
+								Math.min(1, gamepadAxes.stickRightY + gamepadAxes.triggerRight - gamepadAxes.triggerLeft),
+							);
+						}
+					}
+
+					// if (input.propriatary.buttons) {
+					//     for (const [buttonNumber, pressed] of Object.entries(input.propriatary.buttons)) {
+					//         switch (Number(buttonNumber)) {
+					//             case GamingCanvasInputGamepadControllerTypeXboxButtons.DPAD_UP:
+					//                 // Move player up
+					//                 break;
+					//         }
+					//     }
+					// }
+				} else {
+					// Not a support controller
+					clearTimeout(Interaction.gamepadNotCompatibleTimeout);
+					DOM.elementGamepadNotCompatible.style.display = 'flex';
+					setTimeout(() => {
+						DOM.elementGamepadNotCompatible.classList.add('show');
+
+						Interaction.gamepadNotCompatibleTimeout = setTimeout(() => {
+							DOM.elementGamepadNotCompatible.classList.remove('show');
+
+							Interaction.gamepadNotCompatibleTimeout = setTimeout(() => {
+								DOM.elementGamepadNotCompatible.style.display = 'none';
+							}, 1000);
+						}, 1000);
+					}, 10);
+				}
+			}
+		};
 
 		const processorKeyboard = (input: GamingCanvasInputKeyboard) => {
 			if (input.propriatary.down) {
