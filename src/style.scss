@@ -112,6 +112,7 @@ $life-spinnet-border-size-small: 10px;
 		.alive,
 		.controls,
 		.error,
+		.gamepad-not-compatible,
 		.game-over,
 		.fps,
 		.ips-requested,
@@ -260,6 +261,7 @@ $life-spinnet-border-size-small: 10px;
 		}
 
 		.error,
+		.gamepad-not-compatible,
 		.game-over,
 		.ips-requested,
 		.spinout,
@@ -274,9 +276,22 @@ $life-spinnet-border-size-small: 10px;
 			pointer-events: none;
 			top: 0;
 			transition: opacity 1s linear;
+			z-index: 2;
 
 			&.show {
 				opacity: 1;
+			}
+		}
+
+		.error,
+		.gamepad-not-compatible,
+		.spinout {
+			span {
+				background-color: rgba(0, 0, 0, 0.85);
+				border-radius: 20px;
+				box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.5);
+				color: red;
+				padding: 20px;
 			}
 		}
 
@@ -327,10 +342,6 @@ $life-spinnet-border-size-small: 10px;
 					}
 				}
 			}
-		}
-
-		.ips-requested {
-			z-index: 2;
 		}
 
 		.fps {
@@ -524,17 +535,6 @@ $life-spinnet-border-size-small: 10px;
 			}
 		}
 
-		.error,
-		.spinout {
-			span {
-				background-color: rgba(0, 0, 0, 0.85);
-				border-radius: 20px;
-				box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.5);
-				color: red;
-				padding: 20px;
-			}
-		}
-
 		.stats {
 			border-bottom: 2px solid rgba(var(--global-color-menu-border-rgb), 0.5);
 			font-family: monospace;
@@ -721,10 +721,6 @@ $life-spinnet-border-size-small: 10px;
 			@media only screen and (max-width: 465px) {
 				top: 80px;
 			}
-		}
-
-		.webgl-not-supported {
-			z-index: 3;
 		}
 	}
 

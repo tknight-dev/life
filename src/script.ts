@@ -946,6 +946,10 @@ class Life extends Interaction {
 			// direction: GamingCanvasDirection.INVERTED,
 			elementInject: [DOM.elementEdit],
 			elementInteractive: DOM.elementVideoInteractive,
+			inputGamepadEnable: true,
+			inputKeyboardEnable: true,
+			inputMouseEnable: true,
+			inputTouchEnable: true,
 			orientation: Interaction.settingsRotateAutoEnable ? GamingCanvasOrientation.AUTO : GamingCanvasOrientation.LANDSCAPE,
 			resolutionByWidthPx: Interaction.settingsVideo.resolution,
 		};

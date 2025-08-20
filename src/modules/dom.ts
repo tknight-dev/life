@@ -26,6 +26,7 @@ export class DOM {
 	protected static elementFPS: HTMLElement;
 	protected static elementFullscreen: HTMLElement;
 	protected static elementGame: HTMLElement;
+	protected static elementGamepadNotCompatible: HTMLElement;
 	protected static elementGameOver: HTMLElement;
 	protected static elementHomeostatic: HTMLElement;
 	protected static elementIPSRequested: HTMLElement;
@@ -97,6 +98,7 @@ export class DOM {
 		DOM.elementFPS = <HTMLElement>document.getElementById('fps');
 		DOM.elementFullscreen = <HTMLElement>document.getElementById('fullscreen');
 		DOM.elementGame = <HTMLElement>document.getElementById('game');
+		DOM.elementGamepadNotCompatible = <HTMLElement>document.getElementById('gamepad-not-compatible');
 		DOM.elementGameOver = <HTMLElement>document.getElementById('game-over');
 		DOM.elementHomeostatic = <HTMLElement>document.getElementById('homeostatic');
 		DOM.elementIPSRequested = <HTMLElement>document.getElementById('ips-requested');
