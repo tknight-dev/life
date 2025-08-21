@@ -954,14 +954,15 @@ class Life extends Interaction {
 		Interaction.settingsGamingCanvas = {
 			callbackReportLimitPerMs: 8, // 8ms is faster than 120fps (8.3333ms)
 			debug: Interaction.settingsCalc.debug,
-			// direction: GamingCanvasDirection.INVERTED,
-			elementInject: [DOM.elementEdit],
+			// elementInjectAsCanvas: [DOM.elementEdit],
+			elementInjectAsOverlay: [DOM.elementEdit],
 			elementInteractive: DOM.elementVideoInteractive,
 			inputGamepadEnable: true,
 			inputKeyboardEnable: true,
 			inputMouseEnable: true,
 			inputTouchEnable: true,
 			orientation: Interaction.settingsRotateAutoEnable ? GamingCanvasOrientation.AUTO : GamingCanvasOrientation.LANDSCAPE,
+			// orientationLeftOnPortait: true,
 			resolutionScaleType: GamingCanvasResolutionScaleType.PIXELATED,
 			resolutionWidthPx: Interaction.settingsVideo.resolution,
 		};

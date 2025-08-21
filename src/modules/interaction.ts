@@ -1,5 +1,5 @@
 import { CalcBusEngine } from '../workers/calc/calc.bus';
-import { CalcBusInputDataSettings, masks, scalePx, xyWidthBits } from '../workers/calc/calc.model';
+import { CalcBusInputDataSettings, masks, scale, scalePx, xyWidthBits } from '../workers/calc/calc.model';
 import { DOM } from './dom';
 import { VideoBusInputDataSettings, VideoBusOutputDataCamera } from '../workers/video/video.model';
 import { VideoBusEngine } from '../workers/video/video.bus';
@@ -133,6 +133,7 @@ export class Interaction extends DOM {
 			pxCellSize: number,
 			queue: GamingCanvasFIFOQueue<GamingCanvasInput> = GamingCanvas.getInputQueue(),
 			queueInput: GamingCanvasInput | undefined,
+			queueInputOverlay: GamingCanvasInput,
 			queueTimestamp: number = -2025,
 			touchDistance: number,
 			touchDistancePrevious: number = -1,
@@ -224,11 +225,12 @@ export class Interaction extends DOM {
 							processorKeyboard(queueInput);
 							break;
 						case GamingCanvasInputType.MOUSE:
-							GamingCanvas.relativizeInput(queueInput);
-							processorMouse(queueInput);
+							queueInputOverlay = JSON.parse(JSON.stringify(queueInput));
+							GamingCanvas.relativizeInputToCanvas(queueInput);
+							processorMouse(queueInput, queueInputOverlay);
 							break;
 						case GamingCanvasInputType.TOUCH:
-							GamingCanvas.relativizeInput(queueInput);
+							GamingCanvas.relativizeInputToCanvas(queueInput);
 							processorTouch(queueInput);
 							break;
 					}
@@ -330,7 +332,7 @@ export class Interaction extends DOM {
 			}
 		};
 
-		const processorMouse = (input: GamingCanvasInputMouse) => {
+		const processorMouse = (input: GamingCanvasInputMouse, inputOverlay: GamingCanvasInputMouse) => {
 			position1 = input.propriatary.position;
 			if (input.propriatary.down !== undefined) {
 				down = input.propriatary.down;
@@ -383,8 +385,8 @@ export class Interaction extends DOM {
 							cameraUpdated = true;
 						}
 					} else {
-						x = position1.x;
-						y = position1.y;
+						x = inputOverlay.propriatary.position.x;
+						y = inputOverlay.propriatary.position.y;
 
 						elementEditStyle.display = 'block';
 						elementEditStyle.left = x - ((x + (cameraViewportStartXC % 1) * pxCellSize) % pxCellSize) + 'px';
@@ -537,11 +539,13 @@ export class Interaction extends DOM {
 	protected static pxSizeCalc(): void {
 		const report: GamingCanvasReport = GamingCanvas.getReport();
 
-		let pxCellSize: number = Math.max(1, Math.round((report.canvasWidth / Interaction.settingsVideo.tableSizeX) * 1000) / 1000);
+		let pxCellSize: number = Math.max(1, report.canvasWidth / Interaction.settingsVideo.tableSizeX);
 
 		if (Interaction.cameraZoom !== 1) {
 			pxCellSize *= scalePx(Interaction.cameraZoom, Interaction.settingsVideo.tableSizeX);
 		}
+
+		pxCellSize = Math.round(pxCellSize * report.scaler * 1000) / 1000;
 
 		DOM.elementEdit.style.height = pxCellSize + 'px';
 		DOM.elementEdit.style.width = pxCellSize + 'px';
