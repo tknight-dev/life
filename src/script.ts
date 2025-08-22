@@ -1,7 +1,7 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
-import { CalcBusOutputDataSave, CalcBusOutputDataStats, masks, Stat, Stats, xyWidthBits } from './workers/calc/calc.model';
+import { CalcBusOutputDataSave, CalcBusOutputDataStats, masks, Stats, xyWidthBits } from './workers/calc/calc.model';
 import { DOM } from './modules/dom';
-import { GamingCanvas, GamingCanvasOrientation, GamingCanvasResolutionScaleType } from '@tknight-dev/gaming-canvas';
+import { GamingCanvas, GamingCanvasOrientation, GamingCanvasResolutionScaleType, GamingCanvasStat } from '@tknight-dev/gaming-canvas';
 import { Interaction, InteractionMode } from './modules/interaction';
 import { VideoBusEngine } from './workers/video/video.bus';
 import { VideoBusInputDataSettingsFPS, VideoBusOutputDataStats } from './workers/video/video.model';
@@ -691,9 +691,8 @@ class Life extends Interaction {
 						Interaction.settingsVideo.resolution = null;
 					} else {
 						switch (Number(value)) {
-							case 256:
-							case 384:
-							case 512:
+							case 160:
+							case 320:
 							case 640:
 							case 1280:
 							case 1920:
@@ -702,6 +701,7 @@ class Life extends Interaction {
 								break;
 						}
 					}
+					break;
 				case 'seedrandom':
 					Interaction.settingsSeedRandom = String(value).toLowerCase() === 'true';
 					break;
@@ -841,15 +841,15 @@ class Life extends Interaction {
 			});
 			CalcBusEngine.setCallbackStats((data: CalcBusOutputDataStats) => {
 				// Performance
-				const calcAvgInMs: number = Stat.getAVG(data.performance[Stats.CALC_AVG]),
-					neighborsAvgInMs: number = Stat.getAVG(data.performance[Stats.CALC_NEIGHBORS_AVG]),
-					stateAvgInMs: number = Stat.getAVG(data.performance[Stats.CALC_STATE_AVG]);
+				const calcAvgInMs: number = GamingCanvasStat.calc(data.performance[Stats.CALC_AVG]),
+					neighborsAvgInMs: number = GamingCanvasStat.calc(data.performance[Stats.CALC_NEIGHBORS_AVG]),
+					stateAvgInMs: number = GamingCanvasStat.calc(data.performance[Stats.CALC_STATE_AVG]);
 
 				Life.performanceCalc = neighborsAvgInMs + stateAvgInMs;
 
-				DOM.elementPerformanceBus.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_BUS_AVG]));
+				DOM.elementPerformanceBus.innerHTML = perf(GamingCanvasStat.calc(data.performance[Stats.CALC_BUS_AVG]));
 				DOM.elementPerformanceCalc.innerHTML = perf(calcAvgInMs);
-				DOM.elementPerformanceHomeostatis.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_HOMEOSTASIS_AVG]));
+				DOM.elementPerformanceHomeostatis.innerHTML = perf(GamingCanvasStat.calc(data.performance[Stats.CALC_HOMEOSTASIS_AVG]));
 				DOM.elementPerformanceNeighbors.innerHTML = perf(neighborsAvgInMs);
 				DOM.elementPerformanceState.innerHTML = perf(stateAvgInMs);
 
@@ -893,13 +893,13 @@ class Life extends Interaction {
 				});
 				VideoBusEngine.setCallbackStats((data: VideoBusOutputDataStats) => {
 					// Performance
-					const drawAvgInMs: number = Stat.getAVG(data.performance[Stats.VIDEO_DRAW_AVG]),
+					const drawAvgInMs: number = GamingCanvasStat.calc(data.performance[Stats.VIDEO_DRAW_AVG]),
 						fpsInMS: number = 1000 / Interaction.settingsVideo.fps;
 
 					Life.performanceVideo = drawAvgInMs;
 
 					DOM.elementPerformanceAll.innerHTML = perf(Life.performanceCalc + Life.performanceVideo);
-					DOM.elementPerformanceCtV.innerHTML = perf(Stat.getAVG(data.performance[Stats.CALC_TO_VIDEO_BUS_AVG]));
+					DOM.elementPerformanceCtV.innerHTML = perf(GamingCanvasStat.calc(data.performance[Stats.CALC_TO_VIDEO_BUS_AVG]));
 					DOM.elementPerformanceDraw.innerHTML = perf(drawAvgInMs);
 
 					if (drawAvgInMs > fpsInMS * 1.2) {

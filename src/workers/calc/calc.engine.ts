@@ -8,10 +8,10 @@ import {
 	CalcBusOutputDataSave,
 	CalcBusOutputPayload,
 	masks,
-	Stat,
 	Stats,
 	xyWidthBits,
 } from './calc.model';
+import { GamingCanvasStat } from '@tknight-dev/gaming-canvas';
 
 /**
  * FPS determines how often data must be outputted from this webworker to the video webworker
@@ -71,7 +71,7 @@ class CalcWorkerEngine {
 	private static restoreData: CalcBusOutputDataSave;
 	private static self: Window & typeof globalThis;
 	private static save: boolean;
-	private static stats: { [key: number]: Stat } = {};
+	private static stats: { [key: number]: GamingCanvasStat } = {};
 	private static tableSizeAltered: boolean;
 	private static tableSizeX: 32 | 80 | 160 | 320 | 640 | 960 | 1280 | 1920 | 2560;
 	private static tableSizeY: number;
@@ -85,11 +85,11 @@ class CalcWorkerEngine {
 		CalcWorkerEngine.inputSettings(data);
 
 		// Stats
-		CalcWorkerEngine.stats[Stats.CALC_AVG] = new Stat();
-		CalcWorkerEngine.stats[Stats.CALC_BUS_AVG] = new Stat();
-		CalcWorkerEngine.stats[Stats.CALC_HOMEOSTASIS_AVG] = new Stat();
-		CalcWorkerEngine.stats[Stats.CALC_NEIGHBORS_AVG] = new Stat();
-		CalcWorkerEngine.stats[Stats.CALC_STATE_AVG] = new Stat();
+		CalcWorkerEngine.stats[Stats.CALC_AVG] = new GamingCanvasStat();
+		CalcWorkerEngine.stats[Stats.CALC_BUS_AVG] = new GamingCanvasStat();
+		CalcWorkerEngine.stats[Stats.CALC_HOMEOSTASIS_AVG] = new GamingCanvasStat();
+		CalcWorkerEngine.stats[Stats.CALC_NEIGHBORS_AVG] = new GamingCanvasStat();
+		CalcWorkerEngine.stats[Stats.CALC_STATE_AVG] = new GamingCanvasStat();
 
 		// Done
 		CalcWorkerEngine.post([
@@ -192,11 +192,11 @@ class CalcWorkerEngine {
 			homeostaticDataIndex: number = 0,
 			positions: Uint32Array,
 			spinOut: boolean = false,
-			statCalcAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_AVG],
-			statBusAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_BUS_AVG],
-			statHomeostasisAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_HOMEOSTASIS_AVG],
-			statNeighborAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_NEIGHBORS_AVG],
-			statStatAvg: Stat = CalcWorkerEngine.stats[Stats.CALC_STATE_AVG],
+			statCalcAvg: GamingCanvasStat = CalcWorkerEngine.stats[Stats.CALC_AVG],
+			statBusAvg: GamingCanvasStat = CalcWorkerEngine.stats[Stats.CALC_BUS_AVG],
+			statHomeostasisAvg: GamingCanvasStat = CalcWorkerEngine.stats[Stats.CALC_HOMEOSTASIS_AVG],
+			statNeighborAvg: GamingCanvasStat = CalcWorkerEngine.stats[Stats.CALC_NEIGHBORS_AVG],
+			statStatAvg: GamingCanvasStat = CalcWorkerEngine.stats[Stats.CALC_STATE_AVG],
 			tableSizeX: number = CalcWorkerEngine.tableSizeX,
 			tableSizeY: number = CalcWorkerEngine.tableSizeY,
 			x: number,
