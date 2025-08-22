@@ -1,5 +1,5 @@
 import { CalcBusEngine } from '../workers/calc/calc.bus';
-import { CalcBusInputDataSettings, masks, scalePx, xyWidthBits } from '../workers/calc/calc.model';
+import { CalcBusInputDataSettings, masks, scale, scalePx, xyWidthBits } from '../workers/calc/calc.model';
 import { DOM } from './dom';
 import { VideoBusInputDataSettings, VideoBusOutputDataCamera } from '../workers/video/video.model';
 import { VideoBusEngine } from '../workers/video/video.bus';
@@ -8,9 +8,8 @@ import {
 	GamingCanvasInput,
 	GamingCanvasInputGamepad,
 	GamingCanvasInputGamepadControllerType,
-	GamingCanvasInputGamepadControllerTypeXboxAxes,
-	GamingCanvasInputGamepadControllerTypeXboxButtons,
-	GamingCanvasInputGamepadControllerTypeXboxToAxes,
+	GamingCanvasInputGamepadControllerTypeMapAxes,
+	GamingCanvasInputGamepadControllerTypeMappedAxes,
 	GamingCanvasInputKeyboard,
 	GamingCanvasInputMouse,
 	GamingCanvasInputMouseAction,
@@ -38,7 +37,6 @@ export enum InteractionMode {
 }
 
 export class Interaction extends DOM {
-	// protected static bufferInteraction: DoubleLinkedList<InteractionEntry> = new DoubleLinkedList<InteractionEntry>();
 	protected static cameraViewportHeightC: number = 0;
 	protected static cameraViewportStartXC: number = 0;
 	protected static cameraViewportStartYC: number = 0;
@@ -118,12 +116,12 @@ export class Interaction extends DOM {
 			cameraZoom: number,
 			cameraZoomMax: number = 100,
 			cameraZoomMin: number = 1,
-			cameraZoomPrevious: number,
+			cameraZoomPrevious: number = cameraZoomMin,
 			cameraZoomStep: number = 5,
 			down: boolean,
 			downMode: boolean,
 			elementEditStyle: CSSStyleDeclaration = DOM.elementEdit.style,
-			gamepadAxes: GamingCanvasInputGamepadControllerTypeXboxAxes,
+			gamepadAxes: GamingCanvasInputGamepadControllerTypeMappedAxes | null,
 			gamepadX: number = 0,
 			gamepadY: number = 0,
 			gamepadZoom: number = 0,
@@ -135,6 +133,7 @@ export class Interaction extends DOM {
 			pxCellSize: number,
 			queue: GamingCanvasFIFOQueue<GamingCanvasInput> = GamingCanvas.getInputQueue(),
 			queueInput: GamingCanvasInput | undefined,
+			queueInputOverlay: GamingCanvasInput,
 			queueTimestamp: number = -2025,
 			touchDistance: number,
 			touchDistancePrevious: number = -1,
@@ -150,6 +149,11 @@ export class Interaction extends DOM {
 				if (Interaction.cameraZoom !== cameraZoom) {
 					Interaction.cameraZoom = cameraZoom;
 					Interaction.pxSizeCalc();
+
+					// Vibrate if at max or min zoom
+					if (cameraZoom === cameraZoomMax || cameraZoom === cameraZoomMin) {
+						GamingCanvas.isVibrateSupported() && GamingCanvas.vibrate([100]);
+					}
 				}
 
 				VideoBusEngine.outputCamera({
@@ -221,11 +225,12 @@ export class Interaction extends DOM {
 							processorKeyboard(queueInput);
 							break;
 						case GamingCanvasInputType.MOUSE:
-							GamingCanvas.relativizeInput(queueInput);
-							processorMouse(queueInput);
+							queueInputOverlay = JSON.parse(JSON.stringify(queueInput));
+							GamingCanvas.relativizeInputToCanvas(queueInput);
+							processorMouse(queueInput, queueInputOverlay);
 							break;
 						case GamingCanvasInputType.TOUCH:
-							GamingCanvas.relativizeInput(queueInput);
+							GamingCanvas.relativizeInputToCanvas(queueInput);
 							processorTouch(queueInput);
 							break;
 					}
@@ -258,16 +263,18 @@ export class Interaction extends DOM {
 			if (input.propriatary.connected) {
 				if (input.propriatary.type === GamingCanvasInputGamepadControllerType.XBOX) {
 					if (input.propriatary.axes) {
-						gamepadAxes = GamingCanvasInputGamepadControllerTypeXboxToAxes(input);
+						gamepadAxes = GamingCanvasInputGamepadControllerTypeMapAxes(input);
 
-						if (mode == InteractionMode.MOVE_ZOOM) {
-							gamepadX = gamepadAxes.stickLeftX;
-							gamepadY = gamepadAxes.stickLeftY;
+						if (gamepadAxes !== null) {
+							if (mode == InteractionMode.MOVE_ZOOM) {
+								gamepadX = gamepadAxes.stickLeftX;
+								gamepadY = gamepadAxes.stickLeftY;
 
-							gamepadZoom = Math.max(
-								-1,
-								Math.min(1, gamepadAxes.stickRightY + gamepadAxes.triggerRight - gamepadAxes.triggerLeft),
-							);
+								gamepadZoom = Math.max(
+									-1,
+									Math.min(1, gamepadAxes.stickRightY + gamepadAxes.triggerRight - gamepadAxes.triggerLeft),
+								);
+							}
 						}
 					}
 
@@ -325,7 +332,7 @@ export class Interaction extends DOM {
 			}
 		};
 
-		const processorMouse = (input: GamingCanvasInputMouse) => {
+		const processorMouse = (input: GamingCanvasInputMouse, inputOverlay: GamingCanvasInputMouse) => {
 			position1 = input.propriatary.position;
 			if (input.propriatary.down !== undefined) {
 				down = input.propriatary.down;
@@ -378,8 +385,8 @@ export class Interaction extends DOM {
 							cameraUpdated = true;
 						}
 					} else {
-						x = position1.x;
-						y = position1.y;
+						x = inputOverlay.propriatary.position.x;
+						y = inputOverlay.propriatary.position.y;
 
 						elementEditStyle.display = 'block';
 						elementEditStyle.left = x - ((x + (cameraViewportStartXC % 1) * pxCellSize) % pxCellSize) + 'px';
@@ -532,11 +539,13 @@ export class Interaction extends DOM {
 	protected static pxSizeCalc(): void {
 		const report: GamingCanvasReport = GamingCanvas.getReport();
 
-		let pxCellSize: number = Math.max(1, Math.round((report.canvasWidth / Interaction.settingsVideo.tableSizeX) * 1000) / 1000);
+		let pxCellSize: number = Math.max(1, report.canvasWidth / Interaction.settingsVideo.tableSizeX);
 
 		if (Interaction.cameraZoom !== 1) {
 			pxCellSize *= scalePx(Interaction.cameraZoom, Interaction.settingsVideo.tableSizeX);
 		}
+
+		pxCellSize = Math.round(pxCellSize * report.scaler * 1000) / 1000;
 
 		DOM.elementEdit.style.height = pxCellSize + 'px';
 		DOM.elementEdit.style.width = pxCellSize + 'px';

@@ -59,6 +59,7 @@ export class DOM {
 	protected static elementSettingsValueIPS: HTMLInputElement;
 	protected static elementSettingsValueOrientationAutoRotate: HTMLInputElement;
 	protected static elementSettingsValueResolution: HTMLInputElement;
+	protected static elementSettingsValueResolutionScaleType: HTMLInputElement;
 	protected static elementSettingsValueSeedRandom: HTMLInputElement;
 	protected static elementSettingsValueStatsShowAliveDead: HTMLInputElement;
 	protected static elementSettingsValueStatsShowPerformance: HTMLInputElement;
@@ -131,6 +132,7 @@ export class DOM {
 		DOM.elementSettingsValueIPS = <HTMLInputElement>document.getElementById('settings-value-ips');
 		DOM.elementSettingsValueOrientationAutoRotate = <HTMLInputElement>document.getElementById('settings-value-orientation-auto-rotate');
 		DOM.elementSettingsValueResolution = <HTMLInputElement>document.getElementById('settings-value-resolution');
+		DOM.elementSettingsValueResolutionScaleType = <HTMLInputElement>document.getElementById('settings-value-resolution-scale-type');
 		DOM.elementSettingsValueSeedRandom = <HTMLInputElement>document.getElementById('settings-value-seed-random');
 		DOM.elementSettingsValueStatsShowAliveDead = <HTMLInputElement>document.getElementById('settings-value-stats-show-alive-dead');
 		DOM.elementSettingsValueStatsShowPerformance = <HTMLInputElement>document.getElementById('settings-value-stats-show-performance');

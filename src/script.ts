@@ -1,7 +1,7 @@
 import { CalcBusEngine } from './workers/calc/calc.bus';
 import { CalcBusOutputDataSave, CalcBusOutputDataStats, masks, Stat, Stats, xyWidthBits } from './workers/calc/calc.model';
 import { DOM } from './modules/dom';
-import { GamingCanvas, GamingCanvasOrientation } from '@tknight-dev/gaming-canvas';
+import { GamingCanvas, GamingCanvasOrientation, GamingCanvasResolutionScaleType } from '@tknight-dev/gaming-canvas';
 import { Interaction, InteractionMode } from './modules/interaction';
 import { VideoBusEngine } from './workers/video/video.bus';
 import { VideoBusInputDataSettingsFPS, VideoBusOutputDataStats } from './workers/video/video.model';
@@ -543,12 +543,12 @@ class Life extends Interaction {
 				),
 				tableSizeX: Interaction.settingsCalc.tableSizeX,
 			};
-
 			Interaction.settingsGamingCanvas.debug = Interaction.settingsCalc.debug;
 			Interaction.settingsGamingCanvas.orientation = Interaction.settingsRotateAutoEnable
 				? GamingCanvasOrientation.AUTO
 				: GamingCanvasOrientation.LANDSCAPE;
-			Interaction.settingsGamingCanvas.resolutionByWidthPx = Interaction.settingsVideo.resolution;
+			Interaction.settingsGamingCanvas.resolutionWidthPx = Interaction.settingsVideo.resolution;
+			Interaction.settingsGamingCanvas.resolutionScaleType = Number(DOM.elementSettingsValueResolutionScaleType.value);
 
 			if (Interaction.settingsVideo.drawDeadCells) {
 				DOM.elementEditAddDeath.classList.remove('disable');
@@ -751,6 +751,17 @@ class Life extends Interaction {
 
 		DOM.elementSettingsValueOrientationAutoRotate.checked = Interaction.settingsRotateAutoEnable;
 		DOM.elementSettingsValueResolution.value = String(Interaction.settingsVideo.resolution);
+
+		let option: HTMLOptionElement;
+		for (const [key, value] of Object.entries(GamingCanvasResolutionScaleType)) {
+			if (isNaN(Number(key))) {
+				option = document.createElement('option');
+				option.innerText = key;
+				option.value = String(value);
+				DOM.elementSettingsValueResolutionScaleType.appendChild(option);
+			}
+		}
+
 		DOM.elementSettingsValueSeedRandom.checked = Interaction.settingsSeedRandom;
 
 		DOM.elementSettingsValueStatsShowAliveDead.checked = Interaction.settingsStatsShowAliveDead;
@@ -943,16 +954,21 @@ class Life extends Interaction {
 		Interaction.settingsGamingCanvas = {
 			callbackReportLimitPerMs: 8, // 8ms is faster than 120fps (8.3333ms)
 			debug: Interaction.settingsCalc.debug,
-			// direction: GamingCanvasDirection.INVERTED,
-			elementInject: [DOM.elementEdit],
+			// elementInjectAsCanvas: [DOM.elementEdit],
+			elementInjectAsOverlay: [DOM.elementEdit],
 			elementInteractive: DOM.elementVideoInteractive,
 			inputGamepadEnable: true,
 			inputKeyboardEnable: true,
 			inputMouseEnable: true,
 			inputTouchEnable: true,
 			orientation: Interaction.settingsRotateAutoEnable ? GamingCanvasOrientation.AUTO : GamingCanvasOrientation.LANDSCAPE,
-			resolutionByWidthPx: Interaction.settingsVideo.resolution,
+			// orientationLeftOnPortait: true,
+			resolutionScaleType: GamingCanvasResolutionScaleType.PIXELATED,
+			resolutionWidthPx: Interaction.settingsVideo.resolution,
 		};
+		DOM.elementSettingsValueResolutionScaleType.value = String(
+			<GamingCanvasResolutionScaleType>Interaction.settingsGamingCanvas.resolutionScaleType,
+		);
 
 		DOM.elementVideoCanvases = GamingCanvas.initialize(DOM.elementVideo, Interaction.settingsGamingCanvas);
 

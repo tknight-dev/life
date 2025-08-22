@@ -245,10 +245,10 @@
     "@parcel/watcher-win32-ia32" "2.5.1"
     "@parcel/watcher-win32-x64" "2.5.1"
 
-"@tknight-dev/gaming-canvas@~0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@tknight-dev/gaming-canvas/-/gaming-canvas-0.0.1.tgz#c724357565eacdc42e08be6dfc960982a53b41d1"
-  integrity sha512-0hKtSgEd0ADNe+vzfIaYrLMfkEWbgOanyw/YOxvB6FtwNLBzpJbVjaiBTn/g6F2mTSm4vy7s9UHbfzowX/zUJQ==
+"@tknight-dev/gaming-canvas@1.2.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@tknight-dev/gaming-canvas/-/gaming-canvas-1.2.0.tgz#9b472f0aba8646b31a73f493886ca1011e2abc2b"
+  integrity sha512-axC5obynxVzNAewxb8c+G/grWGvO/wq5IFmmZfRsBRXFkf5oIldPLrGyyhQBPdp9+9zBXxGGoL9oq4HhGCspVg==
 
 ansi-regex@^5.0.1:
   version "5.0.1"
@@ -525,11 +525,6 @@ node-addon-api@^7.0.0:
   version "7.1.1"
   resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-7.1.1.tgz#1aba6693b0f255258a049d621329329322aad558"
   integrity sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==
-
-nosleep.js@^0.12.0:
-  version "0.12.0"
-  resolved "https://registry.yarnpkg.com/nosleep.js/-/nosleep.js-0.12.0.tgz#a01fddab2c13af357d673928b1f40a9013a4dc08"
-  integrity sha512-9d1HbpKLh3sdWlhXMhU6MMH+wQzKkrgfRkYV0EBdvt99YJfj0ilCJrWRDYG2130Tm4GXbEoTCx5b34JSaP+HhA==
 
 open@^10.0.0:
   version "10.1.2"
