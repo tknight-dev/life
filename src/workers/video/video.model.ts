@@ -1,4 +1,5 @@
-import { CalcBusOutputDataPositions, Stat } from '../calc/calc.model';
+import { CalcBusOutputDataPositions } from '../calc/calc.model';
+import { GamingCanvasStat } from '@tknight-dev/gaming-canvas';
 
 /**
  * @author tknight-dev
@@ -84,7 +85,7 @@ export interface VideoBusOutputDataCamera {
 
 export interface VideoBusOutputDataStats {
 	fps: number;
-	performance: { [key: number]: Stat };
+	performance: { [key: number]: GamingCanvasStat };
 }
 
 export interface VideoBusOutputPayload {

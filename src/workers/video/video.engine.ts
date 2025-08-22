@@ -8,8 +8,8 @@ import {
 	VideoBusOutputCmd,
 	VideoBusOutputPayload,
 } from './video.model';
-import { CalcBusOutputDataPositions, masks, scalePx, Stat, Stats, xyWidthBits } from '../calc/calc.model';
-import { GamingCanvas } from '@tknight-dev/gaming-canvas';
+import { CalcBusOutputDataPositions, masks, scalePx, Stats, xyWidthBits } from '../calc/calc.model';
+import { GamingCanvasStat } from '@tknight-dev/gaming-canvas';
 
 /**
  * @author tknight-dev
@@ -60,7 +60,7 @@ class VideoWorkerEngine {
 	private static resized: boolean;
 	private static self: Window & typeof globalThis;
 	private static settingsNew: boolean;
-	private static stats: { [key: number]: Stat } = {};
+	private static stats: { [key: number]: GamingCanvasStat } = {};
 	private static tableSizeX: 32 | 80 | 160 | 320 | 640 | 960 | 1280 | 1920 | 2560;
 	private static tableSizeY: number;
 
@@ -86,8 +86,8 @@ class VideoWorkerEngine {
 		VideoWorkerEngine.self = self;
 
 		// Stats
-		VideoWorkerEngine.stats[Stats.CALC_TO_VIDEO_BUS_AVG] = new Stat();
-		VideoWorkerEngine.stats[Stats.VIDEO_DRAW_AVG] = new Stat();
+		VideoWorkerEngine.stats[Stats.CALC_TO_VIDEO_BUS_AVG] = new GamingCanvasStat();
+		VideoWorkerEngine.stats[Stats.VIDEO_DRAW_AVG] = new GamingCanvasStat();
 
 		// Engines
 		VideoWorkerEngine.inputData({
@@ -213,7 +213,7 @@ class VideoWorkerEngine {
 			pxHeightEff: number,
 			pxWidth: number,
 			pxWidthEff: number,
-			statDrawAvg: Stat = VideoWorkerEngine.stats[Stats.VIDEO_DRAW_AVG],
+			statDrawAvg: GamingCanvasStat = VideoWorkerEngine.stats[Stats.VIDEO_DRAW_AVG],
 			tableSizeX: number,
 			tableSizeY: number,
 			viewPortMode: boolean,
