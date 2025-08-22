@@ -691,9 +691,8 @@ class Life extends Interaction {
 						Interaction.settingsVideo.resolution = null;
 					} else {
 						switch (Number(value)) {
-							case 256:
-							case 384:
-							case 512:
+							case 160:
+							case 320:
 							case 640:
 							case 1280:
 							case 1920:
@@ -702,6 +701,7 @@ class Life extends Interaction {
 								break;
 						}
 					}
+					break;
 				case 'seedrandom':
 					Interaction.settingsSeedRandom = String(value).toLowerCase() === 'true';
 					break;
