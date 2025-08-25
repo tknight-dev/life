@@ -7,9 +7,8 @@ import {
 	GamingCanvas,
 	GamingCanvasInput,
 	GamingCanvasInputGamepad,
-	GamingCanvasInputGamepadControllerType,
-	GamingCanvasInputGamepadControllerTypeMapAxes,
-	GamingCanvasInputGamepadControllerTypeMappedAxes,
+	GamingCanvasInputGamepadControllerAxes,
+	GamingCanvasInputGamepadControllerAxesMapper,
 	GamingCanvasInputKeyboard,
 	GamingCanvasInputMouse,
 	GamingCanvasInputMouseAction,
@@ -132,7 +131,7 @@ export class Interaction extends DOM {
 			down: boolean,
 			downMode: boolean,
 			elementEditStyle: CSSStyleDeclaration = DOM.elementEdit.style,
-			gamepadAxes: GamingCanvasInputGamepadControllerTypeMappedAxes | null,
+			gamepadAxes: GamingCanvasInputGamepadControllerAxes | null,
 			gamepadX: number = 0,
 			gamepadY: number = 0,
 			gamepadZoom: number = 0,
@@ -274,47 +273,35 @@ export class Interaction extends DOM {
 		const processorGamepad = (input: GamingCanvasInputGamepad) => {
 			// Check the connection state
 			if (input.propriatary.connected) {
-				if (input.propriatary.type === GamingCanvasInputGamepadControllerType.XBOX) {
-					if (input.propriatary.axes) {
-						gamepadAxes = GamingCanvasInputGamepadControllerTypeMapAxes(input);
+				if (input.propriatary.axes) {
+					gamepadAxes = GamingCanvasInputGamepadControllerAxesMapper(input);
 
-						if (gamepadAxes !== null) {
-							if (mode == InteractionMode.MOVE_ZOOM) {
-								gamepadX = gamepadAxes.stickLeftX;
-								gamepadY = gamepadAxes.stickLeftY;
+					if (gamepadAxes !== null) {
+						if (mode == InteractionMode.MOVE_ZOOM) {
+							gamepadX = gamepadAxes.stickLeftX;
+							gamepadY = gamepadAxes.stickLeftY;
 
-								gamepadZoom = Math.max(
-									-1,
-									Math.min(1, gamepadAxes.stickRightY + gamepadAxes.triggerRight - gamepadAxes.triggerLeft),
-								);
-							}
+							gamepadZoom = Math.max(
+								-1,
+								Math.min(1, gamepadAxes.stickRightY + gamepadAxes.triggerRight - gamepadAxes.triggerLeft),
+							);
 						}
-					}
-
-					// if (input.propriatary.buttons) {
-					//     for (const [buttonNumber, pressed] of Object.entries(input.propriatary.buttons)) {
-					//         switch (Number(buttonNumber)) {
-					//             case GamingCanvasInputGamepadControllerTypeXboxButtons.DPAD_UP:
-					//                 // Move player up
-					//                 break;
-					//         }
-					//     }
-					// }
-				} else {
-					// Not a support controller
-					clearTimeout(Interaction.gamepadNotCompatibleTimeout);
-					DOM.elementGamepadNotCompatible.style.display = 'flex';
-					setTimeout(() => {
-						DOM.elementGamepadNotCompatible.classList.add('show');
-
-						Interaction.gamepadNotCompatibleTimeout = setTimeout(() => {
-							DOM.elementGamepadNotCompatible.classList.remove('show');
+					} else {
+						// Not a support controller
+						clearTimeout(Interaction.gamepadNotCompatibleTimeout);
+						DOM.elementGamepadNotCompatible.style.display = 'flex';
+						setTimeout(() => {
+							DOM.elementGamepadNotCompatible.classList.add('show');
 
 							Interaction.gamepadNotCompatibleTimeout = setTimeout(() => {
-								DOM.elementGamepadNotCompatible.style.display = 'none';
+								DOM.elementGamepadNotCompatible.classList.remove('show');
+
+								Interaction.gamepadNotCompatibleTimeout = setTimeout(() => {
+									DOM.elementGamepadNotCompatible.style.display = 'none';
+								}, 1000);
 							}, 1000);
-						}, 1000);
-					}, 10);
+						}, 10);
+					}
 				}
 			}
 		};

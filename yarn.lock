@@ -245,10 +245,10 @@
     "@parcel/watcher-win32-ia32" "2.5.1"
     "@parcel/watcher-win32-x64" "2.5.1"
 
-"@tknight-dev/gaming-canvas@1.5.1":
-  version "1.5.1"
-  resolved "https://registry.yarnpkg.com/@tknight-dev/gaming-canvas/-/gaming-canvas-1.5.1.tgz#cc3c4196f84fd24797a98a7b6d92ab88c5a449fd"
-  integrity sha512-XCgFw1WqWaK1HTwGK4jlBVsUye2/7qhPf3eRf9FiSLK84QgMCLX53y3xkxd2O0rbPRfg6o71uUhOMlCHvtQjXw==
+"@tknight-dev/gaming-canvas@1.5.5":
+  version "1.5.5"
+  resolved "https://registry.yarnpkg.com/@tknight-dev/gaming-canvas/-/gaming-canvas-1.5.5.tgz#d03a9c2bb2c0e10f0074731ff14adcb2a271f7a7"
+  integrity sha512-S9ExFWbLWbBlHprV7hVSuYMLse7ha3M4r75gTbS07GbaIbu0R85x2QyUeg97+i5mk2j/SRknz/FnauHscSaBOA==
 
 ansi-regex@^5.0.1:
   version "5.0.1"
