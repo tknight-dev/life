@@ -7,8 +7,6 @@ import {
 	GamingCanvas,
 	GamingCanvasInput,
 	GamingCanvasInputGamepad,
-	GamingCanvasInputGamepadControllerAxes,
-	GamingCanvasInputGamepadControllerAxesMapper,
 	GamingCanvasInputKeyboard,
 	GamingCanvasInputMouse,
 	GamingCanvasInputMouseAction,
@@ -131,7 +129,7 @@ export class Interaction extends DOM {
 			down: boolean,
 			downMode: boolean,
 			elementEditStyle: CSSStyleDeclaration = DOM.elementEdit.style,
-			gamepadAxes: GamingCanvasInputGamepadControllerAxes | null,
+			gamepadAxes: number[] | undefined,
 			gamepadX: number = 0,
 			gamepadY: number = 0,
 			gamepadZoom: number = 0,
@@ -255,8 +253,8 @@ export class Interaction extends DOM {
 			if (mode == InteractionMode.MOVE_ZOOM) {
 				if (gamepadX !== 0 || gamepadY !== 0) {
 					cameraMove = true;
-					cameraRelX -= gamepadX / 30;
-					cameraRelY -= gamepadY / 30;
+					cameraRelX += gamepadX / 30;
+					cameraRelY += gamepadY / 30;
 					cameraUpdated = true;
 				}
 
@@ -274,33 +272,14 @@ export class Interaction extends DOM {
 			// Check the connection state
 			if (input.propriatary.connected) {
 				if (input.propriatary.axes) {
-					gamepadAxes = GamingCanvasInputGamepadControllerAxesMapper(input);
+					gamepadAxes = input.propriatary.axes;
 
-					if (gamepadAxes !== null) {
+					if (gamepadAxes !== undefined) {
 						if (mode == InteractionMode.MOVE_ZOOM) {
-							gamepadX = gamepadAxes.stickLeftX;
-							gamepadY = gamepadAxes.stickLeftY;
-
-							gamepadZoom = Math.max(
-								-1,
-								Math.min(1, gamepadAxes.stickRightY + gamepadAxes.triggerRight - gamepadAxes.triggerLeft),
-							);
+							gamepadX = gamepadAxes[0];
+							gamepadY = gamepadAxes[1];
+							gamepadZoom = Math.max(-1, Math.min(1, -gamepadAxes[3]));
 						}
-					} else {
-						// Not a support controller
-						clearTimeout(Interaction.gamepadNotCompatibleTimeout);
-						DOM.elementGamepadNotCompatible.style.display = 'flex';
-						setTimeout(() => {
-							DOM.elementGamepadNotCompatible.classList.add('show');
-
-							Interaction.gamepadNotCompatibleTimeout = setTimeout(() => {
-								DOM.elementGamepadNotCompatible.classList.remove('show');
-
-								Interaction.gamepadNotCompatibleTimeout = setTimeout(() => {
-									DOM.elementGamepadNotCompatible.style.display = 'none';
-								}, 1000);
-							}, 1000);
-						}, 10);
 					}
 				}
 			}
