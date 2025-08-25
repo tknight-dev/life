@@ -410,7 +410,6 @@ export class Interaction extends DOM {
 						y = inputOverlay.propriatary.position.y;
 
 						elementEditStyle.display = 'block';
-						console.log(cameraViewportStartXC, cameraViewportStartYC);
 						elementEditStyle.left = x - ((x + (cameraViewportStartXC % 1) * pxCellSize) % pxCellSize) + 'px';
 						elementEditStyle.top = y - ((y + (cameraViewportStartYC % 1) * pxCellSize) % pxCellSize) + 'px';
 
@@ -419,14 +418,6 @@ export class Interaction extends DOM {
 								(((cameraViewportStartXC + cameraViewportWidthC * position1.xRelative) | 0) << xyWidthBits) |
 									((cameraViewportStartYC + cameraViewportHeightC * position1.yRelative) | 0) |
 									value,
-							);
-							GamingCanvas.audioControlPlay(
-								AudioAsset.CLICK,
-								true,
-								false,
-								inputOverlay.propriatary.position.xRelative * 2 - 1,
-								0,
-								audioClickVolume,
 							);
 						}
 					}
@@ -485,7 +476,6 @@ export class Interaction extends DOM {
 									((cameraViewportStartYC + cameraViewportHeightC * position1.yRelative) | 0) |
 									value,
 							);
-
 							GamingCanvas.audioControlPlay(AudioAsset.CLICK, true, false, position1.xRelative * 2 - 1, 0, audioClickVolume);
 
 							clearInterval(Interaction.editInterval);
@@ -561,8 +551,6 @@ export class Interaction extends DOM {
 									((cameraViewportStartYC + cameraViewportHeightC * position1.yRelative) | 0) |
 									value,
 							);
-
-							GamingCanvas.audioControlPlay(AudioAsset.CLICK, true, false, position1.xRelative * 2 - 1, 0, audioClickVolume);
 						}
 					}
 					break;
