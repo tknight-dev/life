@@ -9,9 +9,9 @@
         "prod": "rimraf dist && node esbuild.mjs"
     },
     "type": "module",
-    "version": "1.13.1",
+    "version": "1.15.0",
     "dependencies": {
-        "@tknight-dev/gaming-canvas": "1.4.2"
+        "@tknight-dev/gaming-canvas": "1.5.1"
     },
     "devDependencies": {
         "@jgoz/esbuild-plugin-typecheck": "^4.0.0",
