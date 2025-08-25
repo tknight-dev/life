@@ -22,12 +22,17 @@ import {
 	GamingCanvasReport,
 	GamingCanvasFIFOQueue,
 } from '@tknight-dev/gaming-canvas';
+import { click } from '../models/audio.files';
 
 /**
  * @author tknight-dev
  */
 
 const { xyValueAlive, xyValueDead } = masks;
+
+enum AudioAsset {
+	CLICK,
+}
 
 export enum InteractionMode {
 	DRAW_LIFE,
@@ -76,6 +81,11 @@ export class Interaction extends DOM {
 	protected static touchDownClickTimeout: ReturnType<typeof setTimeout>;
 
 	protected static initializeInteraction(): void {
+		// Audio
+		let assets: Map<number, string> = new Map();
+		assets.set(AudioAsset.CLICK, click);
+		GamingCanvas.audioLoad(assets);
+
 		// Config
 		Interaction.mobile = Interaction.isMobileOrTablet();
 
@@ -104,7 +114,8 @@ export class Interaction extends DOM {
 	private static processor(_: number): void {}
 
 	private static processorBinder(): void {
-		let buffer: Set<number> = new Set(),
+		let audioClickVolume: number = 0.25,
+			buffer: Set<number> = new Set(),
 			cameraMove: boolean,
 			cameraRelX: number,
 			cameraRelY: number,
@@ -216,7 +227,9 @@ export class Interaction extends DOM {
 						break;
 				}
 
-				while ((queueInput = queue.pop())) {
+				while (queue.length !== 0) {
+					queueInput = <GamingCanvasInput>queue.pop();
+
 					switch (queueInput.type) {
 						case GamingCanvasInputType.GAMEPAD:
 							processorGamepad(queueInput);
@@ -360,6 +373,14 @@ export class Interaction extends DOM {
 									((cameraViewportStartYC + cameraViewportHeightC * position1.yRelative) | 0) |
 									value,
 							);
+							GamingCanvas.audioControlPlay(
+								AudioAsset.CLICK,
+								true,
+								false,
+								inputOverlay.propriatary.position.xRelative * 2 - 1,
+								0,
+								audioClickVolume,
+							);
 							clearInterval(Interaction.editInterval);
 							Interaction.editInterval = setInterval(() => {
 								if (buffer.size) {
@@ -389,6 +410,7 @@ export class Interaction extends DOM {
 						y = inputOverlay.propriatary.position.y;
 
 						elementEditStyle.display = 'block';
+						console.log(cameraViewportStartXC, cameraViewportStartYC);
 						elementEditStyle.left = x - ((x + (cameraViewportStartXC % 1) * pxCellSize) % pxCellSize) + 'px';
 						elementEditStyle.top = y - ((y + (cameraViewportStartYC % 1) * pxCellSize) % pxCellSize) + 'px';
 
@@ -397,6 +419,14 @@ export class Interaction extends DOM {
 								(((cameraViewportStartXC + cameraViewportWidthC * position1.xRelative) | 0) << xyWidthBits) |
 									((cameraViewportStartYC + cameraViewportHeightC * position1.yRelative) | 0) |
 									value,
+							);
+							GamingCanvas.audioControlPlay(
+								AudioAsset.CLICK,
+								true,
+								false,
+								inputOverlay.propriatary.position.xRelative * 2 - 1,
+								0,
+								audioClickVolume,
 							);
 						}
 					}
@@ -455,6 +485,8 @@ export class Interaction extends DOM {
 									((cameraViewportStartYC + cameraViewportHeightC * position1.yRelative) | 0) |
 									value,
 							);
+
+							GamingCanvas.audioControlPlay(AudioAsset.CLICK, true, false, position1.xRelative * 2 - 1, 0, audioClickVolume);
 
 							clearInterval(Interaction.editInterval);
 							Interaction.editInterval = setInterval(() => {
@@ -529,6 +561,8 @@ export class Interaction extends DOM {
 									((cameraViewportStartYC + cameraViewportHeightC * position1.yRelative) | 0) |
 									value,
 							);
+
+							GamingCanvas.audioControlPlay(AudioAsset.CLICK, true, false, position1.xRelative * 2 - 1, 0, audioClickVolume);
 						}
 					}
 					break;
@@ -545,7 +579,7 @@ export class Interaction extends DOM {
 			pxCellSize *= scalePx(Interaction.cameraZoom, Interaction.settingsVideo.tableSizeX);
 		}
 
-		pxCellSize = Math.round(pxCellSize * report.scaler * 1000) / 1000;
+		pxCellSize = pxCellSize * report.scaler;
 
 		DOM.elementEdit.style.height = pxCellSize + 'px';
 		DOM.elementEdit.style.width = pxCellSize + 'px';

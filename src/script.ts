@@ -952,6 +952,7 @@ class Life extends Interaction {
 		DOM.elementEdit.className = 'edit';
 		DOM.elementEdit.id = 'edit';
 		Interaction.settingsGamingCanvas = {
+			audioEnable: true,
 			callbackReportLimitPerMs: 8, // 8ms is faster than 120fps (8.3333ms)
 			debug: Interaction.settingsCalc.debug,
 			// elementInjectAsCanvas: [DOM.elementEdit],
