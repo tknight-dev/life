@@ -426,7 +426,7 @@ class Life extends Interaction {
 				}
 			}
 		};
-		DOM.elementVideoInteractive.addEventListener('click', Interaction.fullscreenClickFunc);
+		// DOM.elementVideoInteractive.addEventListener('click', Interaction.fullscreenClickFunc);
 		const fullscreenFader = () => {
 			clearTimeout(Life.timeoutFullscreen);
 			if (Interaction.mode === InteractionMode.MOVE_ZOOM) {

@@ -135,6 +135,7 @@ export class Interaction extends DOM {
 			gamepadZoom: number = 0,
 			inputLimitPerMs: number = GamingCanvas.getInputLimitPerMs(),
 			mode: InteractionMode = InteractionMode.MOVE_ZOOM,
+			mouseAdded: boolean,
 			position1: GamingCanvasInputPosition,
 			position2: GamingCanvasInputPosition,
 			positions: GamingCanvasInputPosition[] | undefined,
@@ -143,6 +144,7 @@ export class Interaction extends DOM {
 			queueInput: GamingCanvasInput | undefined,
 			queueInputOverlay: GamingCanvasInput,
 			queueTimestamp: number = -2025,
+			touchAdded: boolean,
 			touchDistance: number,
 			touchDistancePrevious: number = -1,
 			value: number,
@@ -323,7 +325,14 @@ export class Interaction extends DOM {
 			switch (input.propriatary.action) {
 				case GamingCanvasInputMouseAction.LEFT:
 					if (mode == InteractionMode.MOVE_ZOOM) {
-						downMode = down;
+						if (!down && !mouseAdded) {
+							Interaction.fullscreenClickFunc();
+						}
+						mouseAdded = false;
+
+						setTimeout(() => {
+							downMode = down;
+						});
 						VideoBusEngine.outputCamera({
 							move: false,
 							relX: 1 - position1.xRelative,
@@ -331,7 +340,6 @@ export class Interaction extends DOM {
 							zoom: cameraZoom,
 						});
 					} else {
-						Interaction.fullscreenClickFunc();
 						Interaction.editActive = down;
 						if (down) {
 							buffer.add(
@@ -366,6 +374,7 @@ export class Interaction extends DOM {
 				case GamingCanvasInputMouseAction.MOVE:
 					if (mode == InteractionMode.MOVE_ZOOM) {
 						if (downMode && !position1.out && cameraRelX !== position1.xRelative && cameraRelY !== position1.yRelative) {
+							mouseAdded = true;
 							cameraMove = true;
 							cameraRelX = 1 - position1.xRelative;
 							cameraRelY = 1 - position1.yRelative;
@@ -416,11 +425,16 @@ export class Interaction extends DOM {
 			switch (input.propriatary.action) {
 				case GamingCanvasInputTouchAction.ACTIVE:
 					if (mode == InteractionMode.MOVE_ZOOM) {
-						!cameraMove && !down && Interaction.fullscreenClickFunc();
+						if (!down && !touchAdded) {
+							Interaction.fullscreenClickFunc();
+						}
 						cameraMove = false;
-						downMode = down;
+						touchAdded = false;
 						touchDistancePrevious = -1;
 
+						setTimeout(() => {
+							downMode = down;
+						});
 						if (down && positions && positions.length === 1) {
 							position1 = positions[0];
 
@@ -432,7 +446,6 @@ export class Interaction extends DOM {
 							});
 						}
 					} else {
-						Interaction.fullscreenClickFunc();
 						Interaction.editActive = down;
 						if (down && positions) {
 							position1 = positions[0];
@@ -501,6 +514,7 @@ export class Interaction extends DOM {
 
 								// Move
 								if (downMode && cameraRelX !== position1.xRelative && cameraRelY !== position1.yRelative) {
+									touchAdded = true;
 									cameraMove = true;
 									cameraRelX = 1 - position1.xRelative;
 									cameraRelY = 1 - position1.yRelative;
