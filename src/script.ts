@@ -963,7 +963,8 @@ class Life extends Interaction {
 			inputMouseEnable: true,
 			inputTouchEnable: true,
 			orientation: Interaction.settingsRotateAutoEnable ? GamingCanvasOrientation.AUTO : GamingCanvasOrientation.LANDSCAPE,
-			// orientationLeftOnPortait: true,
+			// orientationCanvasRotateEnable: false,
+			// orientationCanvasPortaitRotateLeft: true,
 			resolutionScaleType: GamingCanvasResolutionScaleType.PIXELATED,
 			resolutionWidthPx: Interaction.settingsVideo.resolution,
 		};

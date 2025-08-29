@@ -100,7 +100,7 @@ export class Interaction extends DOM {
 			Interaction.cameraViewportWidthC = data.widthC;
 		});
 
-		// // Done
+		// Done
 		Interaction.processorBinder();
 		Interaction.inputRequest = requestAnimationFrame(Interaction.processor);
 		setTimeout(() => {

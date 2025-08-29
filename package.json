@@ -11,7 +11,7 @@
     "type": "module",
     "version": "1.14.3",
     "dependencies": {
-        "@tknight-dev/gaming-canvas": "1.5.7"
+        "@tknight-dev/gaming-canvas": "1.5.15"
     },
     "devDependencies": {
         "@jgoz/esbuild-plugin-typecheck": "^4.0.0",
