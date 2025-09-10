@@ -533,7 +533,9 @@ class Life extends Interaction {
 				tableSizeX: <any>Number(DOM.elementSettingsValueTableSize.value),
 			};
 
+			Interaction.settingsGamingCanvas.resolutionScaleType = Number(DOM.elementSettingsValueResolutionScaleType.value);
 			Interaction.settingsVideo = {
+				antialias: Interaction.settingsGamingCanvas.resolutionScaleType === GamingCanvasResolutionScaleType.ANTIALIAS,
 				debug: Interaction.settingsVideo.debug,
 				drawDeadCells: Boolean(DOM.elementSettingsValueDrawDeadCells.checked),
 				drawGrid: Boolean(DOM.elementSettingsValueDrawGrid.checked),
@@ -548,7 +550,6 @@ class Life extends Interaction {
 				? GamingCanvasOrientation.AUTO
 				: GamingCanvasOrientation.LANDSCAPE;
 			Interaction.settingsGamingCanvas.resolutionWidthPx = Interaction.settingsVideo.resolution;
-			Interaction.settingsGamingCanvas.resolutionScaleType = Number(DOM.elementSettingsValueResolutionScaleType.value);
 
 			if (Interaction.settingsVideo.drawDeadCells) {
 				DOM.elementEditAddDeath.classList.remove('disable');
@@ -633,6 +634,7 @@ class Life extends Interaction {
 		 * Video
 		 */
 		Interaction.settingsVideo = {
+			antialias: false,
 			debug: false, // def false
 			drawDeadCells: true, // def true
 			drawGrid: true, // def true
@@ -841,15 +843,17 @@ class Life extends Interaction {
 			});
 			CalcBusEngine.setCallbackStats((data: CalcBusOutputDataStats) => {
 				// Performance
-				const calcAvgInMs: number = GamingCanvasStat.calc(data.performance[Stats.CALC_AVG]),
-					neighborsAvgInMs: number = GamingCanvasStat.calc(data.performance[Stats.CALC_NEIGHBORS_AVG]),
-					stateAvgInMs: number = GamingCanvasStat.calc(data.performance[Stats.CALC_STATE_AVG]);
+				const calcAvgInMs: number = <number>GamingCanvasStat.calc(data.performance[Stats.CALC_AVG]),
+					neighborsAvgInMs: number = <number>GamingCanvasStat.calc(data.performance[Stats.CALC_NEIGHBORS_AVG]),
+					stateAvgInMs: number = <number>GamingCanvasStat.calc(data.performance[Stats.CALC_STATE_AVG]);
 
 				Life.performanceCalc = neighborsAvgInMs + stateAvgInMs;
 
-				DOM.elementPerformanceBus.innerHTML = perf(GamingCanvasStat.calc(data.performance[Stats.CALC_BUS_AVG]));
+				DOM.elementPerformanceBus.innerHTML = perf(<number>GamingCanvasStat.calc(data.performance[Stats.CALC_BUS_AVG]));
 				DOM.elementPerformanceCalc.innerHTML = perf(calcAvgInMs);
-				DOM.elementPerformanceHomeostatis.innerHTML = perf(GamingCanvasStat.calc(data.performance[Stats.CALC_HOMEOSTASIS_AVG]));
+				DOM.elementPerformanceHomeostatis.innerHTML = perf(
+					<number>GamingCanvasStat.calc(data.performance[Stats.CALC_HOMEOSTASIS_AVG]),
+				);
 				DOM.elementPerformanceNeighbors.innerHTML = perf(neighborsAvgInMs);
 				DOM.elementPerformanceState.innerHTML = perf(stateAvgInMs);
 
@@ -893,13 +897,15 @@ class Life extends Interaction {
 				});
 				VideoBusEngine.setCallbackStats((data: VideoBusOutputDataStats) => {
 					// Performance
-					const drawAvgInMs: number = GamingCanvasStat.calc(data.performance[Stats.VIDEO_DRAW_AVG]),
+					const drawAvgInMs: number = <number>GamingCanvasStat.calc(data.performance[Stats.VIDEO_DRAW_AVG]),
 						fpsInMS: number = 1000 / Interaction.settingsVideo.fps;
 
 					Life.performanceVideo = drawAvgInMs;
 
 					DOM.elementPerformanceAll.innerHTML = perf(Life.performanceCalc + Life.performanceVideo);
-					DOM.elementPerformanceCtV.innerHTML = perf(GamingCanvasStat.calc(data.performance[Stats.CALC_TO_VIDEO_BUS_AVG]));
+					DOM.elementPerformanceCtV.innerHTML = perf(
+						<number>GamingCanvasStat.calc(data.performance[Stats.CALC_TO_VIDEO_BUS_AVG]),
+					);
 					DOM.elementPerformanceDraw.innerHTML = perf(drawAvgInMs);
 
 					if (drawAvgInMs > fpsInMS * 1.2) {
@@ -963,7 +969,8 @@ class Life extends Interaction {
 			inputMouseEnable: true,
 			inputTouchEnable: true,
 			orientation: Interaction.settingsRotateAutoEnable ? GamingCanvasOrientation.AUTO : GamingCanvasOrientation.LANDSCAPE,
-			// orientationLeftOnPortait: true,
+			// orientationCanvasRotateEnable: false,
+			// orientationCanvasPortaitRotateLeft: true,
 			resolutionScaleType: GamingCanvasResolutionScaleType.PIXELATED,
 			resolutionWidthPx: Interaction.settingsVideo.resolution,
 		};

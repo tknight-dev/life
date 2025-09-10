@@ -36,6 +36,7 @@ export interface VideoBusInputDataResize {
 }
 
 export interface VideoBusInputDataSettings {
+	antialias: boolean;
 	debug: boolean;
 	drawDeadCells: boolean;
 	drawGrid: boolean;
