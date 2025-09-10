@@ -297,6 +297,9 @@ class VideoWorkerEngine {
 				tableSizeY = VideoWorkerEngine.tableSizeY;
 
 				canvasOffscreenContext.imageSmoothingEnabled = VideoWorkerEngine.antialias === true;
+				setTimeout(() => {
+					canvasOffscreenContext.imageSmoothingEnabled = VideoWorkerEngine.antialias === true;
+				}, 100);
 
 				// Canvas: Resize
 				if (VideoWorkerEngine.resized) {
