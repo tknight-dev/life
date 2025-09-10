@@ -533,7 +533,9 @@ class Life extends Interaction {
 				tableSizeX: <any>Number(DOM.elementSettingsValueTableSize.value),
 			};
 
+			Interaction.settingsGamingCanvas.resolutionScaleType = Number(DOM.elementSettingsValueResolutionScaleType.value);
 			Interaction.settingsVideo = {
+				antialias: Interaction.settingsGamingCanvas.resolutionScaleType === GamingCanvasResolutionScaleType.ANTIALIAS,
 				debug: Interaction.settingsVideo.debug,
 				drawDeadCells: Boolean(DOM.elementSettingsValueDrawDeadCells.checked),
 				drawGrid: Boolean(DOM.elementSettingsValueDrawGrid.checked),
@@ -548,7 +550,6 @@ class Life extends Interaction {
 				? GamingCanvasOrientation.AUTO
 				: GamingCanvasOrientation.LANDSCAPE;
 			Interaction.settingsGamingCanvas.resolutionWidthPx = Interaction.settingsVideo.resolution;
-			Interaction.settingsGamingCanvas.resolutionScaleType = Number(DOM.elementSettingsValueResolutionScaleType.value);
 
 			if (Interaction.settingsVideo.drawDeadCells) {
 				DOM.elementEditAddDeath.classList.remove('disable');
@@ -633,6 +634,7 @@ class Life extends Interaction {
 		 * Video
 		 */
 		Interaction.settingsVideo = {
+			antialias: false,
 			debug: false, // def false
 			drawDeadCells: true, // def true
 			drawGrid: true, // def true

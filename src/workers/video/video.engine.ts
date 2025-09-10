@@ -43,6 +43,7 @@ self.onmessage = (event: MessageEvent) => {
 };
 
 class VideoWorkerEngine {
+	private static antialias: boolean;
 	private static camera: VideoBusInputDataCamera;
 	private static cameraUpdated: boolean;
 	private static canvasOffscreen: OffscreenCanvas;
@@ -151,6 +152,7 @@ class VideoWorkerEngine {
 	}
 
 	public static inputSettings(data: VideoBusInputDataSettings): void {
+		VideoWorkerEngine.antialias = data.antialias;
 		VideoWorkerEngine.debug = data.debug;
 		VideoWorkerEngine.drawDeadCells = data.drawDeadCells;
 		VideoWorkerEngine.drawGrid = data.drawGrid;
@@ -293,6 +295,8 @@ class VideoWorkerEngine {
 				pxWidth = VideoWorkerEngine.ctxWidth;
 				tableSizeX = VideoWorkerEngine.tableSizeX;
 				tableSizeY = VideoWorkerEngine.tableSizeY;
+
+				canvasOffscreenContext.imageSmoothingEnabled = VideoWorkerEngine.antialias === true;
 
 				// Canvas: Resize
 				if (VideoWorkerEngine.resized) {
