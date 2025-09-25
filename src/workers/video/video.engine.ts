@@ -296,11 +296,6 @@ class VideoWorkerEngine {
 				tableSizeX = VideoWorkerEngine.tableSizeX;
 				tableSizeY = VideoWorkerEngine.tableSizeY;
 
-				canvasOffscreenContext.imageSmoothingEnabled = VideoWorkerEngine.antialias === true;
-				setTimeout(() => {
-					canvasOffscreenContext.imageSmoothingEnabled = VideoWorkerEngine.antialias === true;
-				}, 100);
-
 				// Canvas: Resize
 				if (VideoWorkerEngine.resized) {
 					canvasOffscreen.height = pxHeight;
@@ -308,6 +303,11 @@ class VideoWorkerEngine {
 
 					VideoWorkerEngine.resized = false;
 				}
+
+				canvasOffscreenContext.imageSmoothingEnabled = VideoWorkerEngine.antialias === true;
+				setTimeout(() => {
+					canvasOffscreenContext.imageSmoothingEnabled = VideoWorkerEngine.antialias === true;
+				}, 100);
 
 				// Calc: pixel size
 				pxCellSize = Math.max(1, Math.round((pxWidth / tableSizeX) * 1000) / 1000);
